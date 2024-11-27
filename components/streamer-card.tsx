@@ -687,33 +687,102 @@ export function StreamerCard({ streamer }: { streamer: Streamer }) {
 
       {/* Profile Modal */}
       <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
-          <DialogClose className="absolute right-4 top-4 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 transition-colors z-50">
-            <X className="h-4 w-4" />
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto overflow-x-hidden p-3 sm:p-4">
+          <DialogClose className="absolute right-2 top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 transition-colors z-50">
+            <X className="h-3 w-3" />
           </DialogClose>
           
           {extendedProfile && (
-            <>
+            <div className="space-y-4">
+              {/* Profile Info */}
+              <div className="flex gap-3">
+                <Image
+                  src={extendedProfile.image_url}
+                  alt={fullName}
+                  width={48}
+                  height={48}
+                  className="object-cover border-2 border-red-500 rounded-lg"
+                />
+                
+                <div className="flex-1">
+                  <h2 className="text-sm font-bold">{fullName}</h2>
+                  <p className="text-[10px] text-foreground/70">{extendedProfile.category}</p>
+                  <div className="mt-0.5 scale-90 origin-left">
+                    <RatingStars rating={averageRating} />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1.5">
+                    <div className="flex items-center gap-1.5 text-red-500">
+                      <User className="w-3 h-3" />
+                      <span className="text-[10px]">{extendedProfile.age} Years</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-red-500">
+                      <User className="w-3 h-3" />
+                      <span className="text-[10px]">{extendedProfile.gender}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-red-500">
+                      <Clock className="w-3 h-3" />
+                      <span className="text-[10px]">{extendedProfile.experience}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-red-500">
+                      <MapPin className="w-3 h-3" />
+                      <span className="text-[10px]">{extendedProfile.location}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* About Me Section */}
+              <div className="space-y-1.5 px-0.5">
+                <h3 className="text-[10px] font-semibold text-gray-900">About Me</h3>
+                <p className="text-[10px] text-gray-600 leading-relaxed">{extendedProfile.fullBio}</p>
+              </div>
+
+              {/* Divider */}
+              <div className="h-1.5 bg-gray-100 -mx-3" />
+
+              {/* Client Testimonials */}
+              <div className="px-0.5">
+                <h3 className="text-[10px] font-semibold text-gray-900 mb-2">Client Testimonials</h3>
+                <div className="space-y-2">
+                  {extendedProfile.testimonials.map((testimonial, index) => (
+                    <div key={index} className="border border-red-500 p-2 rounded-lg">
+                      <p className="italic text-[10px] text-gray-600">"{testimonial.comment}"</p>
+                      <p className="font-medium mt-1 text-[10px] text-red-500">- {testimonial.client_name}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Divider */}
+              <div className="h-1.5 bg-gray-100 -mx-3" />
+
               {/* Video Section */}
               {extendedProfile.video_url && (
-                <div className="mb-4 sm:mb-6 w-full aspect-video">
-                  <iframe
-                    width="100%"
-                    height="100%"
-                    src={`https://www.youtube.com/embed/${getYouTubeVideoId(extendedProfile.video_url) || ''}`}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="rounded-lg"
-                  />
-                </div>
+                <>
+                  <div>
+                    <h3 className="text-[10px] font-semibold text-gray-900 mb-1.5">Featured Video</h3>
+                    <div className="w-full aspect-video">
+                      <iframe
+                        width="100%"
+                        height="100%"
+                        src={`https://www.youtube.com/embed/${getYouTubeVideoId(extendedProfile.video_url) || ''}`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        className="rounded-lg"
+                      />
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-gray-100 -mx-3" />
+                </>
               )}
 
               {/* Gallery Section */}
               <div>
-                <h3 className="text-xs font-semibold text-gray-900 mb-3">Gallery</h3>
-                <div className="flex flex-col space-y-3">
-                  {/* Main Image - Fixed aspect ratio container */}
+                <h3 className="text-[10px] font-semibold text-gray-900 mb-1.5">Gallery</h3>
+                <div className="flex flex-col space-y-1.5">
+                  {/* Main Image */}
                   <div className="w-full aspect-[4/3] relative rounded-lg overflow-hidden bg-gray-100">
                     <Image
                       src={selectedImage || extendedProfile.image_url}
@@ -724,13 +793,13 @@ export function StreamerCard({ streamer }: { streamer: Streamer }) {
                     />
                   </div>
 
-                  {/* Thumbnails Grid */}
-                  <div className="grid grid-cols-4 gap-2 w-full">
+                  {/* Thumbnails */}
+                  <div className="grid grid-cols-4 gap-1 w-full">
                     {extendedProfile.gallery.photos.map((photo) => (
                       <div
                         key={photo.id}
                         className={`aspect-square relative cursor-pointer overflow-hidden rounded-md bg-gray-100
-                          ${selectedImage === photo.photo_url ? 'ring-2 ring-red-500' : ''}`}
+                          ${selectedImage === photo.photo_url ? 'ring-1 ring-red-500' : ''}`}
                         onClick={() => setSelectedImage(photo.photo_url)}
                       >
                         <Image
@@ -746,83 +815,17 @@ export function StreamerCard({ streamer }: { streamer: Streamer }) {
                 </div>
               </div>
 
-              {/* Thick grey divider */}
-              <div className="h-3 bg-gray-200 -mx-6 my-6" />
-
-              {/* Profile Info - reduced spacing */}
-              <div className="flex gap-3">
-                <Image
-                  src={extendedProfile.image_url}
-                  alt={fullName}
-                  width={60} // Reduced from 80
-                  height={60}
-                  className="object-cover border-2 border-red-500 rounded-lg"
-                />
-                
-                <div className="flex-1">
-                  <div className="mb-2">
-                    <h2 className="text-base font-bold">{fullName}</h2>
-                    <p className="text-xs text-foreground/70">{extendedProfile.category}</p>
-                    <div className="mt-1 scale-90 origin-left">
-                      <RatingStars rating={averageRating} />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
-                    <div className="flex items-center gap-1.5 text-red-500">
-                      <User className="w-3.5 h-3.5" />
-                      <span className="text-xs">{extendedProfile.age} Years</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-red-500">
-                      <User className="w-3.5 h-3.5" />
-                      <span className="text-xs">{extendedProfile.gender}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-red-500">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span className="text-xs">{extendedProfile.experience}</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-red-500">
-                      <MapPin className="w-3.5 h-3.5" />
-                      <span className="text-xs">{extendedProfile.location}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* About Me Section */}
-              <div className="space-y-1.5">
-                <h3 className="text-xs font-semibold text-gray-900">About Me</h3>
-                <p className="text-xs text-gray-600 leading-relaxed">{extendedProfile.fullBio}</p>
-              </div>
-
-              {/* Thick grey divider */}
-              <div className="h-3 bg-gray-200 -mx-6 my-6" />
-
-              {/* Testimonials */}
-              <div>
-                <h3 className="text-xs font-semibold text-gray-900 mb-2">Client Testimonials</h3>
-                <div className="space-y-2">
-                  {extendedProfile.testimonials.map((testimonial, index) => (
-                    <div key={index} className="border border-red-500 p-2 rounded-lg">
-                      <p className="italic text-xs text-gray-600">"{testimonial.comment}"</p>
-                      <p className="font-medium mt-1 text-xs text-red-500">- {testimonial.client_name}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex gap-4 mt-6">
-                <Button 
-                  className="flex-1 bg-red-500 hover:bg-red-600 text-white text-sm"
-                  onClick={() => {
-                    setIsProfileModalOpen(false);
-                    openBookingModal();
-                  }}
-                >
-                  Book Livestreamer
-                </Button>
-              </div>
-            </>
+              {/* Book Button */}
+              <Button 
+                className="w-full bg-red-500 hover:bg-red-600 text-white text-[10px] py-2 mt-2"
+                onClick={() => {
+                  setIsProfileModalOpen(false);
+                  openBookingModal();
+                }}
+              >
+                Book Livestreamer
+              </Button>
+            </div>
           )}
         </DialogContent>
       </Dialog>
