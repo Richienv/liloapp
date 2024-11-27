@@ -687,29 +687,67 @@ export function StreamerCard({ streamer }: { streamer: Streamer }) {
 
       {/* Profile Modal */}
       <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto p-4 sm:p-6">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto overflow-x-hidden p-4 sm:p-6">
           <DialogClose className="absolute right-4 top-4 rounded-full bg-red-500 p-1 text-white hover:bg-red-600 transition-colors z-50">
             <X className="h-4 w-4" />
           </DialogClose>
           
           {extendedProfile && (
             <>
-              {/* Video Section - smaller height on mobile */}
+              {/* Video Section */}
               {extendedProfile.video_url && (
-                <div className="mb-4 sm:mb-6">
+                <div className="mb-4 sm:mb-6 w-full aspect-video">
                   <iframe
                     width="100%"
-                    height="240" // Reduced from 315
+                    height="100%"
                     src={`https://www.youtube.com/embed/${getYouTubeVideoId(extendedProfile.video_url) || ''}`}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                     allowFullScreen
-                  ></iframe>
+                    className="rounded-lg"
+                  />
                 </div>
               )}
 
-              {/* Thick grey divider - reduced margins */}
-              <div className="h-2 bg-gray-200 -mx-4 sm:-mx-6 my-4" />
+              {/* Gallery Section */}
+              <div>
+                <h3 className="text-xs font-semibold text-gray-900 mb-3">Gallery</h3>
+                <div className="flex flex-col space-y-3">
+                  {/* Main Image - Fixed aspect ratio container */}
+                  <div className="w-full aspect-[4/3] relative rounded-lg overflow-hidden bg-gray-100">
+                    <Image
+                      src={selectedImage || extendedProfile.image_url}
+                      alt="Selected gallery image"
+                      fill
+                      className="object-contain"
+                      sizes="(max-width: 600px) 100vw, 600px"
+                    />
+                  </div>
+
+                  {/* Thumbnails Grid */}
+                  <div className="grid grid-cols-4 gap-2 w-full">
+                    {extendedProfile.gallery.photos.map((photo) => (
+                      <div
+                        key={photo.id}
+                        className={`aspect-square relative cursor-pointer overflow-hidden rounded-md bg-gray-100
+                          ${selectedImage === photo.photo_url ? 'ring-2 ring-red-500' : ''}`}
+                        onClick={() => setSelectedImage(photo.photo_url)}
+                      >
+                        <Image
+                          src={photo.photo_url}
+                          alt={`Gallery photo ${photo.order_number}`}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 600px) 25vw, 150px"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Thick grey divider */}
+              <div className="h-3 bg-gray-200 -mx-6 my-6" />
 
               {/* Profile Info - reduced spacing */}
               <div className="flex gap-3">
@@ -755,45 +793,6 @@ export function StreamerCard({ streamer }: { streamer: Streamer }) {
               <div className="space-y-1.5">
                 <h3 className="text-xs font-semibold text-gray-900">About Me</h3>
                 <p className="text-xs text-gray-600 leading-relaxed">{extendedProfile.fullBio}</p>
-              </div>
-
-              {/* Thick grey divider */}
-              <div className="h-3 bg-gray-200 -mx-6 my-6" />
-
-              {/* Gallery - smaller height */}
-              <div>
-                <h3 className="text-xs font-semibold text-gray-900 mb-2">Gallery</h3>
-                <div className="flex flex-col space-y-2">
-                  {/* Main Image - reduced height */}
-                  <div className="relative w-full h-48 sm:h-64">
-                    <Image
-                      src={selectedImage || extendedProfile.image_url}
-                      alt="Selected gallery image"
-                      layout="fill"
-                      objectFit="cover"
-                      className="rounded-lg"
-                    />
-                  </div>
-
-                  {/* Thumbnails - reduced gap */}
-                  <div className="grid grid-cols-4 gap-1.5 w-full">
-                    {extendedProfile.gallery.photos.map((photo) => (
-                      <div
-                        key={photo.id}
-                        className={`relative pt-[100%] cursor-pointer overflow-hidden rounded-md
-                          ${selectedImage === photo.photo_url ? 'ring-2 ring-red-500' : ''}`}
-                        onClick={() => setSelectedImage(photo.photo_url)}
-                      >
-                        <Image
-                          src={photo.photo_url}
-                          alt={`Gallery photo ${photo.order_number}`}
-                          layout="fill"
-                          objectFit="cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               {/* Thick grey divider */}
