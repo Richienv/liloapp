@@ -156,137 +156,75 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd }: { booking: Bookin
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-xs border border-gray-100 hover:shadow-sm transition-all duration-200 p-6">
-      <div className="flex justify-between items-start mb-4">
-        <div className="space-y-2">
-          <h3 className="font-bold text-2xl">
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 hover:border-[#E23744]/20 transition-all duration-200 p-3 sm:p-4">
+      {/* Header */}
+      <div className="flex justify-between items-start mb-2">
+        <div className="space-y-1">
+          <h3 className="font-bold text-sm sm:text-base">
             {booking.client_first_name} {booking.client_last_name}
           </h3>
-          <div className="flex items-center gap-3">
-            <MapPin className="h-5 w-5 text-[#E23744]" />
-            <span className="text-lg text-gray-600">Jakarta, Indonesia</span>
+          <div className="flex items-center gap-2">
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+            <span className="text-xs sm:text-sm text-gray-600">Jakarta, Indonesia</span>
           </div>
         </div>
-        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm">
+        <span className="text-[10px] sm:text-xs px-2 py-1 rounded-full font-medium bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
           {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
         </span>
       </div>
 
-      <div className="space-y-4 text-lg">
-        <div className="flex items-center gap-3">
-          <DollarSign className="h-5 w-5 text-[#E23744]" />
-          <span className="text-lg text-gray-600">
+      {/* Booking Details */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+          <span className="text-xs sm:text-sm text-gray-600">
             Rp {booking.price.toLocaleString('id-ID')}
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <Calendar className="h-5 w-5 text-[#E23744]" />
-          <span className="text-lg text-gray-600">{format(new Date(booking.start_time), 'MMMM d, yyyy')}</span>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+          <span className="text-xs sm:text-sm text-gray-600">
+            {format(new Date(booking.start_time), 'MMMM d, yyyy')}
+          </span>
         </div>
-        <div className="flex items-center gap-3">
-          <Clock className="h-5 w-5 text-[#E23744]" />
-          <span className="text-lg text-gray-600">
+        <div className="flex items-center gap-2">
+          <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+          <span className="text-xs sm:text-sm text-gray-600">
             {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
-            <span className="text-gray-500 ml-2">
+            <span className="text-gray-400 ml-1">
               ({differenceInHours(new Date(booking.end_time), new Date(booking.start_time))} hours)
             </span>
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          <Monitor className="h-5 w-5 text-[#E23744]" />
-          <span className={`px-3 py-1 rounded-full text-base font-medium shadow-sm ${
+        <div className="flex items-center gap-2">
+          <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
             booking.platform.toLowerCase() === 'shopee' 
               ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white' 
-              : 'bg-gradient-to-r from-[#00f2ea] to-[#ff0050] text-white'}`}>
+              : 'bg-gradient-to-r from-[#00f2ea] to-[#ff0050] text-white'
+          }`}>
             {booking.platform}
           </span>
         </div>
       </div>
 
-      {/* Special Request */}
-      {booking.special_request && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2">
-          <p className="text-lg font-medium text-gray-700 flex items-center gap-2">
-            <MessageSquare className="h-5 w-5 text-[#E23744]" />
-            Special Request
-          </p>
-          <p className="text-lg text-gray-600">{booking.special_request}</p>
-        </div>
-      )}
-
-      {/* Sub Account Link */}
-      {booking.sub_account_links?.[0] && (
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2">
-          <p className="text-lg font-medium text-gray-700 flex items-center gap-2">
-            <LinkIcon className="h-5 w-5 text-[#E23744]" />
-            Sub Account Link
-          </p>
-          <a 
-            href={booking.sub_account_links[0].link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-lg text-[#E23744] hover:text-[#E23744]/80 break-all"
-          >
-            {booking.sub_account_links[0].link}
-          </a>
-        </div>
-      )}
-
       {/* Stream Actions */}
       {booking.status === 'live' ? (
         <Button 
           onClick={handleEndStream}
-          className="mt-8 w-full py-6 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-medium flex items-center justify-center gap-2"
+          className="mt-3 w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs sm:text-sm font-medium"
         >
-          <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
+          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-2" />
           End Stream
         </Button>
-      ) : booking.stream_link ? (
-        <Button
-          className="mt-8 w-full py-6 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-medium flex items-center justify-center gap-2"
-          onClick={() => booking.stream_link ? window.open(booking.stream_link, '_blank') : null}
-        >
-          <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-          Join Stream
-        </Button>
       ) : (
-        <>
-          <Button
-            onClick={() => setIsStartLiveModalOpen(true)}
-            className="mt-8 w-full py-6 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-lg font-medium flex items-center justify-center gap-2"
-          >
-            <span className="h-2 w-2 rounded-full bg-white animate-pulse" />
-            Start Live
-          </Button>
-
-          <Dialog open={isStartLiveModalOpen} onOpenChange={setIsStartLiveModalOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Start Live Stream</DialogTitle>
-                <DialogDescription>
-                  Enter your stream link to begin streaming
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Stream Link</Label>
-                  <Input
-                    value={streamLink}
-                    onChange={(e) => setStreamLink(e.target.value)}
-                    placeholder="Enter your stream link"
-                  />
-                </div>
-                <Button 
-                  onClick={handleStartLive}
-                  disabled={isStarting || !streamLink}
-                  className="w-full bg-gradient-to-r from-red-500 to-red-600"
-                >
-                  {isStarting ? 'Starting...' : 'Start Stream'}
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </>
+        <Button
+          onClick={() => setIsStartLiveModalOpen(true)}
+          className="mt-3 w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs sm:text-sm font-medium"
+        >
+          <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-2" />
+          Start Live
+        </Button>
       )}
     </div>
   );
@@ -472,16 +410,16 @@ const AnalyticsCard = ({ title, value, icon: Icon, trend }: {
   icon: any;
   trend?: string;
 }) => (
-  <div className="bg-gradient-to-br from-white/60 to-white/30 backdrop-blur-sm border border-white/20 rounded-xl p-6 shadow-sm hover:shadow transition-all duration-300">
-    <div className="flex items-start gap-4">
-      <div className="bg-gradient-to-r from-[#E23744] to-[#E23744]/80 p-2.5 rounded-lg flex-shrink-0">
-        <Icon className="h-4 w-4 text-white" />
+  <div className="bg-gradient-to-br from-white/60 to-white/30 backdrop-blur-sm border border-white/20 rounded-xl p-4 sm:p-5 shadow-sm hover:shadow transition-all duration-300">
+    <div className="flex items-start gap-3">
+      <div className="bg-gradient-to-r from-[#E23744] to-[#E23744]/80 p-2 rounded-lg flex-shrink-0">
+        <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
       </div>
       <div className="flex-1">
-        <p className="text-xs font-medium text-gray-500 mb-1.5">{title}</p>
-        <h3 className="text-lg font-bold text-[#E23744]">{value}</h3>
+        <p className="text-[10px] sm:text-xs font-medium text-gray-500 mb-1">{title}</p>
+        <h3 className="text-sm sm:text-base font-bold text-[#E23744]">{value}</h3>
         {trend && (
-          <p className="text-xs text-green-500 mt-1 font-medium">
+          <p className="text-[10px] sm:text-xs text-green-500 mt-0.5 font-medium">
             +{trend}% from last month
           </p>
         )}
@@ -723,15 +661,15 @@ export default function StreamerDashboard() {
   return (
     <div className="flex flex-col min-h-screen w-full">
       <Navbar />
-      <div className="flex-grow w-full px-4 sm:px-6 lg:px-16 xl:px-24 py-8">
+      <div className="flex-grow w-full px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
         <ToastContainer />
         
-        {/* Analytics Section */}
-        <div className="mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Analytics Section - More compact on mobile */}
+        <div className="mb-4 sm:mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
             <AnalyticsCard
               title="Total Earnings"
-              value={`Rp ${(8500000).toLocaleString('id-ID')}`} // Format to Rp 8.500.000
+              value={`Rp ${(8500000).toLocaleString('id-ID')}`}
               icon={DollarSign}
               trend="8"
             />
@@ -755,12 +693,12 @@ export default function StreamerDashboard() {
           </div>
         </div>
 
-        {/* Upcoming Schedule Card */}
-        <Card className="mb-8 border-none shadow-xs hover:shadow-sm transition-all duration-200">
-          <CardHeader className="text-[#E23744] border-b-2 border-gradient-to-r from-[#E23744] to-[#E23744]/80 pb-6">
-            <CardTitle className="text-2xl font-bold">Upcoming Schedule</CardTitle>
+        {/* Upcoming Schedule Card - Reduced padding and font sizes */}
+        <Card className="mb-4 sm:mb-6 border-none shadow-xs hover:shadow-sm transition-all duration-200">
+          <CardHeader className="text-[#E23744] border-b-2 border-gradient-to-r from-[#E23744] to-[#E23744]/80 p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-2xl font-bold">Upcoming Schedule</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-3 sm:p-6">
             <UpcomingSchedule 
               bookings={acceptedBookings} 
               onStreamStart={handleStreamStart} 
@@ -769,117 +707,122 @@ export default function StreamerDashboard() {
           </CardContent>
         </Card>
 
-        {/* Booking Management Card */}
+        {/* Booking Management Card - Reduced padding and font sizes */}
         <Card className="border-none shadow-xs hover:shadow-sm transition-all duration-200">
-          <CardHeader className="text-[#E23744] border-b-2 border-gradient-to-r from-[#E23744] to-[#E23744]/80 pb-6">
-            <CardTitle className="text-2xl font-bold">Booking Management</CardTitle>
+          <CardHeader className="text-[#E23744] border-b-2 border-gradient-to-r from-[#E23744] to-[#E23744]/80 p-4 sm:p-6">
+            <CardTitle className="text-lg sm:text-2xl font-bold">Booking Management</CardTitle>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-3 sm:p-6">
             <Tabs defaultValue="pending" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-gray-50 p-1 rounded-lg mb-6">
+              <TabsList className="grid w-full grid-cols-2 bg-gray-50 p-1 rounded-lg mb-4 sm:mb-6">
                 <TabsTrigger 
                   value="pending" 
-                  className="text-base py-2 data-[state=active]:text-[#E23744] data-[state=active]:border-b-4 data-[state=active]:border-[#E23744]"
+                  className="text-xs sm:text-base py-1.5 sm:py-2 data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
                 >
                   Pending Bookings
                 </TabsTrigger>
                 <TabsTrigger 
                   value="rejected"
-                  className="text-base py-2 data-[state=active]:text-[#E23744] data-[state=active]:border-b-4 data-[state=active]:border-[#E23744]"
+                  className="text-xs sm:text-base py-1.5 sm:py-2 data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
                 >
                   Rejected Bookings
                 </TabsTrigger>
               </TabsList>
 
+              {/* Update the booking cards to be more compact */}
               <TabsContent value="pending">
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {pendingBookings.map((booking) => (
-                    <div key={booking.id} className="bg-white rounded-xl shadow-sm border border-gray-100 hover:border-[#E23744]/20 transition-all duration-200 p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="space-y-2">
-                          <h3 className="font-bold text-2xl">
+                    <div key={booking.id} className="bg-white rounded-lg shadow-sm border border-gray-100 hover:border-[#E23744]/20 transition-all duration-200 p-3 sm:p-4">
+                      {/* Header */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="space-y-1">
+                          <h3 className="font-bold text-sm sm:text-base">
                             {booking.client_first_name} {booking.client_last_name}
                           </h3>
-                          <div className="flex items-center gap-3">
-                            <MapPin className="h-5 w-5 text-[#E23744]" />
-                            <span className="text-lg text-gray-600">Jakarta, Indonesia</span>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+                            <span className="text-xs sm:text-sm text-gray-600">Jakarta, Indonesia</span>
                           </div>
                         </div>
-                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gradient-to-r from-yellow-500 to-yellow-600 text-white shadow-sm">
+                        <span className="text-[10px] sm:text-xs px-2 py-1 rounded-full font-medium bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
                           {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                         </span>
                       </div>
 
-                      <div className="space-y-4 text-lg">
-                        <div className="flex items-center gap-3">
-                          <DollarSign className="h-5 w-5 text-[#E23744]" />
-                          <span className="text-lg text-gray-600">
-                            Rp {booking.price.toLocaleString('id-ID')}
-                          </span>
+                      {/* Booking Details */}
+                      <div className="space-y-2 text-xs sm:text-sm text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+                          <span>Rp {booking.price.toLocaleString('id-ID')}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Calendar className="h-5 w-5 text-[#E23744]" />
-                          <span className="text-lg text-gray-600">{format(new Date(booking.start_time), 'MMMM d, yyyy')}</span>
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+                          <span>{format(new Date(booking.start_time), 'MMMM d, yyyy')}</span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Clock className="h-5 w-5 text-[#E23744]" />
-                          <span className="text-lg text-gray-600">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+                          <span>
                             {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
-                            <span className="text-gray-500 ml-2">
+                            <span className="text-gray-400 ml-1">
                               ({differenceInHours(new Date(booking.end_time), new Date(booking.start_time))} hours)
                             </span>
                           </span>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <Monitor className="h-5 w-5 text-[#E23744]" />
-                          <span className={`px-3 py-1 rounded-full text-sm font-medium shadow-sm
-                            ${booking.platform.toLowerCase() === 'shopee' 
+                        <div className="flex items-center gap-2">
+                          <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
+                            booking.platform.toLowerCase() === 'shopee' 
                               ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white' 
-                              : 'bg-gradient-to-r from-[#00f2ea] to-[#ff0050] text-white'}`}>
+                              : 'bg-gradient-to-r from-[#00f2ea] to-[#ff0050] text-white'
+                          }`}>
                             {booking.platform}
                           </span>
                         </div>
                       </div>
 
+                      {/* Special Request */}
                       {booking.special_request && (
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2">
-                          <p className="text-lg font-medium text-gray-700 flex items-center gap-2">
-                            <MessageSquare className="h-5 w-5 text-[#E23744]" />
+                        <div className="mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg space-y-1">
+                          <p className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <MessageSquare className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
                             Special Request
                           </p>
-                          <p className="text-lg text-gray-600">{booking.special_request}</p>
+                          <p className="text-xs sm:text-sm text-gray-600">{booking.special_request}</p>
                         </div>
                       )}
 
+                      {/* Sub Account Link */}
                       {booking.sub_account_links?.[0] && (
-                        <div className="mt-6 p-4 bg-gray-50 rounded-lg space-y-2">
-                          <p className="text-lg font-medium text-gray-700 flex items-center gap-2">
-                            <LinkIcon className="h-5 w-5 text-[#E23744]" />
+                        <div className="mt-3 p-2 sm:p-3 bg-gray-50 rounded-lg space-y-1">
+                          <p className="text-xs sm:text-sm font-medium text-gray-700 flex items-center gap-2">
+                            <LinkIcon className="h-3 w-3 sm:h-4 sm:w-4 text-[#E23744]" />
                             Sub Account Link
                           </p>
                           <a 
                             href={booking.sub_account_links[0].link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-lg text-[#E23744] hover:text-[#E23744]/80 break-all"
+                            className="text-xs sm:text-sm text-[#E23744] hover:text-[#E23744]/80 break-all"
                           >
                             {booking.sub_account_links[0].link}
                           </a>
                         </div>
                       )}
 
+                      {/* Action Buttons */}
                       {booking.status === 'pending' && (
-                        <div className="flex gap-3 mt-6 pt-4 border-t border-gray-100">
+                        <div className="flex gap-2 mt-4 pt-3 border-t border-gray-100">
                           <Button
                             onClick={() => handleAcceptBooking(booking.id)}
-                            className="flex-1 text-base bg-gradient-to-r from-[#E23744] to-[#E23744]/90 hover:from-[#E23744]/90 hover:to-[#E23744] text-white"
+                            className="flex-1 text-xs sm:text-sm py-2 bg-gradient-to-r from-[#E23744] to-[#E23744]/90 hover:from-[#E23744]/90 hover:to-[#E23744] text-white"
                           >
                             Accept
                           </Button>
                           <Button
                             onClick={() => handleRejectBooking(booking.id)}
                             variant="outline"
-                            className="flex-1 text-base border-2 border-[#E23744] text-[#E23744] hover:bg-[#E23744]/10"
+                            className="flex-1 text-xs sm:text-sm py-2 border-2 border-[#E23744] text-[#E23744] hover:bg-[#E23744]/10"
                           >
                             Reject
                           </Button>
@@ -887,17 +830,7 @@ export default function StreamerDashboard() {
                       )}
                     </div>
                   ))}
-                  {pendingBookings.length === 0 && (
-                    <p className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg text-sm">
-                      No pending bookings.
-                    </p>
-                  )}
                 </div>
-              </TabsContent>
-
-              {/* Similar styling for rejected bookings */}
-              <TabsContent value="rejected">
-                {/* ... same structure as pending but with rejected bookings ... */}
               </TabsContent>
             </Tabs>
           </CardContent>

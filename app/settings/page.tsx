@@ -199,8 +199,6 @@ export default function SettingsPage() {
     </div>;
   }
 
-  const inputClasses = "focus:border-[#000080] focus:ring-[#000080]";
-
   return (
     <div className="container mx-auto p-4 max-w-2xl">
       <div className="flex items-center mb-6">
@@ -208,37 +206,44 @@ export default function SettingsPage() {
           onClick={handleBackNavigation} 
           variant="outline" 
           size="sm" 
-          className="mr-4"
+          className="mr-4 border-red-500 text-red-500 hover:bg-red-50"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back
         </Button>
-        <h1 className="text-2xl font-bold">{userType === 'streamer' ? 'Streamer' : 'Client'} Settings</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold">
+          {userType === 'streamer' ? 'Streamer' : 'Client'} Settings
+        </h1>
       </div>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-semibold">Profile Information</CardTitle>
+
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="border-b border-gray-100 bg-gray-50/50">
+          <CardTitle className="text-lg sm:text-xl font-semibold">Profile Information</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center mb-6">
-              <div className="relative w-32 h-32 mb-2">
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 mb-2">
                 {previewUrl || imageUrl ? (
                   <Image
                     src={previewUrl || imageUrl}
                     alt="Profile"
                     width={128}
                     height={128}
-                    className="w-full h-full rounded-full object-cover"
+                    className="w-full h-full rounded-full object-cover border-4 border-red-100"
                     unoptimized
                   />
                 ) : (
-                  <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
-                    <User className="h-12 w-12 text-gray-400" />
+                  <div className="w-full h-full bg-red-50 rounded-full flex items-center justify-center border-4 border-red-100">
+                    <User className="h-12 w-12 text-red-300" />
                   </div>
                 )}
               </div>
-              <Button type="button" onClick={handleImageClick} className="mt-2 flex items-center">
+              <Button 
+                type="button" 
+                onClick={handleImageClick} 
+                className="mt-2 bg-red-500 hover:bg-red-600 text-white"
+              >
                 <Camera className="mr-2 h-4 w-4" />
                 {imageUrl ? 'Change Image' : 'Upload Image'}
               </Button>
@@ -249,139 +254,158 @@ export default function SettingsPage() {
                 className="hidden"
                 accept="image/*"
               />
-              {imageError && <p className="text-red-500 text-sm mt-2 flex items-center"><AlertCircle className="mr-1 h-4 w-4" />{imageError}</p>}
-            </div>
-            <div>
-              <Label htmlFor="firstName" className="flex items-center">
-                <User className="mr-2 h-4 w-4" />
-                First Name
-              </Label>
-              <Input
-                id="firstName"
-                name="firstName"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                placeholder="Your first name"
-                className={inputClasses}
-              />
-            </div>
-            <div>
-              <Label htmlFor="lastName" className="flex items-center">
-                <User className="mr-2 h-4 w-4" />
-                Last Name
-              </Label>
-              <Input
-                id="lastName"
-                name="lastName"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                placeholder="Your last name"
-                className={inputClasses}
-              />
-            </div>
-            <div>
-              <Label htmlFor="bio" className="flex items-center">
-                <FileText className="mr-2 h-4 w-4" />
-                Bio
-              </Label>
-              <Textarea
-                id="bio"
-                name="bio"
-                value={bio}
-                onChange={(e) => setBio(e.target.value)}
-                placeholder="Tell us about yourself"
-                className={inputClasses}
-              />
-              <p className="text-sm text-gray-500 mt-1">Tip: A good bio helps others understand you better.</p>
-            </div>
-            {userType === 'streamer' && (
-              <>
-                <div>
-                  <Label htmlFor="youtubeUrl" className="flex items-center">
-                    <Youtube className="mr-2 h-4 w-4" />
-                    YouTube Video URL
-                  </Label>
-                  <Input
-                    id="youtubeUrl"
-                    name="youtubeUrl"
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    placeholder="https://youtu.be/..."
-                    className={inputClasses}
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Add a video to showcase your streaming style.</p>
-                </div>
-                <div>
-                  <Label htmlFor="galleryPhotos" className="flex items-center">
-                    <Camera className="mr-2 h-4 w-4" />
-                    Gallery Photos (Max 5)
-                  </Label>
-                  <Input
-                    id="galleryPhotos"
-                    name="galleryPhotos"
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleGalleryPhotoChange}
-                    className={inputClasses}
-                    disabled={galleryPhotos.length + newGalleryPhotos.length >= 5}
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Tip: Choose photos that represent your brand and style.</p>
-                  <div className="grid grid-cols-5 gap-2 mt-2">
-                    {galleryPhotos.map((photo, index) => (
-                      <div key={index} className="relative">
-                        <Image
-                          src={photo}
-                          alt={`Gallery photo ${index + 1}`}
-                          width={100}
-                          height={100}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeGalleryPhoto(index)}
-                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                        >
-                          X
-                        </button>
-                      </div>
-                    ))}
-                    {newGalleryPhotos.map((photo, index) => (
-                      <div key={`new-${index}`} className="relative">
-                        <Image
-                          src={URL.createObjectURL(photo)}
-                          alt={`New gallery photo ${index + 1}`}
-                          width={100}
-                          height={100}
-                          className="w-full h-24 object-cover rounded"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeNewGalleryPhoto(index)}
-                          className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
-                        >
-                          X
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
-            <Button 
-              type="submit" 
-              className="h-10 bg-[#000080] text-white hover:bg-[#000060] w-full"
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving Changes...
-                </>
-              ) : (
-                'Save Changes'
+              {imageError && (
+                <p className="text-red-500 text-xs mt-2 flex items-center">
+                  <AlertCircle className="mr-1 h-4 w-4" />
+                  {imageError}
+                </p>
               )}
-            </Button>
+            </div>
+
+            <div className="grid gap-6">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="firstName" className="flex items-center text-sm text-gray-600">
+                    <User className="mr-2 h-4 w-4 text-red-500" />
+                    First Name
+                  </Label>
+                  <Input
+                    id="firstName"
+                    name="firstName"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Your first name"
+                    className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="lastName" className="flex items-center text-sm text-gray-600">
+                    <User className="mr-2 h-4 w-4 text-red-500" />
+                    Last Name
+                  </Label>
+                  <Input
+                    id="lastName"
+                    name="lastName"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Your last name"
+                    className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="bio" className="flex items-center text-sm text-gray-600">
+                  <FileText className="mr-2 h-4 w-4 text-red-500" />
+                  Bio
+                </Label>
+                <Textarea
+                  id="bio"
+                  name="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Tell us about yourself"
+                  className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500 min-h-[100px]"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Tip: A good bio helps others understand you better.
+                </p>
+              </div>
+
+              {userType === 'streamer' && (
+                <>
+                  <div>
+                    <Label htmlFor="youtubeUrl" className="flex items-center text-sm text-gray-600">
+                      <Youtube className="mr-2 h-4 w-4 text-red-500" />
+                      YouTube Video URL
+                    </Label>
+                    <Input
+                      id="youtubeUrl"
+                      name="youtubeUrl"
+                      value={youtubeUrl}
+                      onChange={(e) => setYoutubeUrl(e.target.value)}
+                      placeholder="https://youtu.be/..."
+                      className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Add a video to showcase your streaming style.
+                    </p>
+                  </div>
+                  <div>
+                    <Label htmlFor="galleryPhotos" className="flex items-center text-sm text-gray-600">
+                      <Camera className="mr-2 h-4 w-4 text-red-500" />
+                      Gallery Photos (Max 5)
+                    </Label>
+                    <Input
+                      id="galleryPhotos"
+                      name="galleryPhotos"
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleGalleryPhotoChange}
+                      className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                      disabled={galleryPhotos.length + newGalleryPhotos.length >= 5}
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Tip: Choose photos that represent your brand and style.
+                    </p>
+                    <div className="grid grid-cols-5 gap-2 mt-2">
+                      {galleryPhotos.map((photo, index) => (
+                        <div key={index} className="relative">
+                          <Image
+                            src={photo}
+                            alt={`Gallery photo ${index + 1}`}
+                            width={100}
+                            height={100}
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeGalleryPhoto(index)}
+                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                          >
+                            X
+                          </button>
+                        </div>
+                      ))}
+                      {newGalleryPhotos.map((photo, index) => (
+                        <div key={`new-${index}`} className="relative">
+                          <Image
+                            src={URL.createObjectURL(photo)}
+                            alt={`New gallery photo ${index + 1}`}
+                            width={100}
+                            height={100}
+                            className="w-full h-24 object-cover rounded"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeNewGalleryPhoto(index)}
+                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                          >
+                            X
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white h-11"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving Changes...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
