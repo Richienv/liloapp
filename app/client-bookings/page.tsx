@@ -54,6 +54,8 @@ const getStatusInfo = (status: string) => {
 function BookingEntry({ booking, onRatingSubmit }: { booking: Booking; onRatingSubmit: () => void }) {
   const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
 
+  const rating = booking.streamer?.rating || 0;
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -64,71 +66,88 @@ function BookingEntry({ booking, onRatingSubmit }: { booking: Booking; onRatingS
     }
   };
 
-  console.log('Booking status:', booking.status); // Add this line for debugging
-
-  // Parse the rating to ensure it's a number
-  const rating = parseFloat(booking.streamer.rating as unknown as string);
-
   return (
-    <div className="border rounded-lg shadow-sm p-4 mb-4 text-sm hover:shadow-md transition-shadow">
-      {/* Top layer - Status and date position switched */}
-      <div className="flex justify-between items-center mb-3 pb-3 border-b">
+    <div className="border rounded-lg shadow-sm p-3 sm:p-4 text-xs sm:text-sm hover:shadow-md transition-shadow">
+      {/* Top layer */}
+      <div className="flex justify-between items-center mb-2 pb-2 border-b">
         <div className="flex items-center gap-1">
-          <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)} flex items-center`}>
-            {booking.status}
+          <span className={`px-2 py-0.5 rounded-full text-[10px] sm:text-xs ${getStatusColor(booking.status)} flex items-center`}>
+            {booking.status.toLowerCase() === 'pending' ? 'Menunggu' :
+             booking.status.toLowerCase() === 'accepted' ? 'Diterima' :
+             booking.status.toLowerCase() === 'completed' ? 'Selesai' :
+             booking.status.toLowerCase() === 'rejected' ? 'Ditolak' :
+             booking.status.toLowerCase() === 'live' ? 'Sedang Live' : booking.status}
             <div className="group relative inline-block ml-1">
               <div className="rounded-full">
                 <Info className="h-3 w-3 text-current opacity-70 stroke-[2.5]" />
               </div>
-              <div className="invisible group-hover:visible absolute z-10 w-72 bg-black text-white text-sm rounded-md p-3 left-0 mt-1">
+              <div className="invisible group-hover:visible absolute z-10 w-72 bg-black text-white text-[10px] sm:text-xs rounded-md p-2 left-0 mt-1">
                 {getStatusInfo(booking.status)}
               </div>
             </div>
           </span>
         </div>
-        <span className="text-gray-500 text-sm">{format(new Date(booking.created_at), 'MMM d, yyyy HH:mm')}</span>
+        <span className="text-[10px] sm:text-xs text-gray-500">
+          {format(new Date(booking.created_at), 'MMM d, yyyy HH:mm')}
+        </span>
       </div>
       
-      {/* Middle layer - Removed duplicate name */}
-      <div className="flex items-start mb-3 pb-3 border-b">
-        <Image 
-          src={booking.streamer.image_url || '/default-avatar.png'}
-          alt={`${booking.streamer.first_name} ${booking.streamer.last_name}`}
-          width={80}
-          height={80}
-          className="rounded-full mr-4"
-        />
+      {/* Middle layer */}
+      <div className="flex items-start mb-2 pb-2 border-b">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 flex-shrink-0 mr-3">
+          <Image 
+            src={booking.streamer.image_url || '/default-avatar.png'}
+            alt={`${booking.streamer.first_name} ${booking.streamer.last_name}`}
+            width={64}
+            height={64}
+            className="w-full h-full object-cover rounded-lg"
+          />
+        </div>
         <div className="flex-grow">
-          <h3 className="font-medium text-base mb-2">{`${booking.streamer.first_name} ${booking.streamer.last_name}`}</h3>
-          <p className="text-gray-600 mb-2">Livestreaming services on {booking.platform}</p>
-          <div className="flex items-center mb-2">
-            <Clock className="w-4 h-4 mr-2 text-gray-400" />
-            <span className="text-base">{`${format(new Date(booking.start_time), 'HH:mm')} - ${format(new Date(booking.end_time), 'HH:mm')}`}</span>
+          <h3 className="font-medium text-sm sm:text-base mb-1">
+            {`${booking.streamer.first_name} ${booking.streamer.last_name}`}
+          </h3>
+          <p className="text-[10px] sm:text-xs text-gray-600 mb-1">
+            Layanan livestreaming di {booking.platform}
+          </p>
+          <div className="flex items-center mb-1">
+            <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 text-red-500" />
+            <span className="text-[10px] sm:text-xs">
+              {`${format(new Date(booking.start_time), 'HH:mm')} - ${format(new Date(booking.end_time), 'HH:mm')}`}
+            </span>
           </div>
           <div className="flex items-center">
-            <Star className="w-4 h-4 mr-2 text-yellow-400" />
-            <span className="text-base">Rating: {isNaN(rating) ? 'N/A' : rating.toFixed(1)}</span>
+            <Star className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5 text-yellow-400" />
+            <span className="text-[10px] sm:text-xs">
+              Penilaian: {rating === 0 ? 'Belum ada' : rating.toFixed(1)}
+            </span>
           </div>
         </div>
       </div>
       
-      {/* Bottom layer - Updated button hover style */}
+      {/* Bottom layer */}
       <div className="flex justify-between items-center">
         <div className="flex items-center">
-          <DollarSign className="w-5 h-5 mr-2 text-green-500" />
-          <span className="font-semibold text-lg">Rp {booking.price.toLocaleString()}</span>
+          <span className="text-[10px] sm:text-xs text-gray-500 mr-1">Total:</span>
+          <span className="text-xs sm:text-sm text-black">
+            Rp {booking.price.toLocaleString()}
+          </span>
         </div>
         {booking.status.toLowerCase() === 'completed' && (
           <Button 
             variant="outline" 
             size="sm" 
-            className="text-sm py-2 px-4 bg-gradient-to-r from-blue-600 to-blue-800 text-white hover:from-blue-700 hover:to-blue-900 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 hover:text-white"
+            className="text-[10px] sm:text-xs py-1.5 px-3 bg-gradient-to-r from-red-500 to-red-600 
+              text-white hover:from-red-600 hover:to-red-700 transition-all duration-200 
+              shadow-sm hover:shadow transform hover:-translate-y-0.5"
             onClick={() => setIsRatingModalOpen(true)}
           >
-            Give Rating
+            Beri Penilaian
           </Button>
         )}
       </div>
+
+      {/* Rating Modal */}
       {isRatingModalOpen && (
         <RatingModal 
           isOpen={isRatingModalOpen} 
@@ -276,26 +295,25 @@ export default function ClientBookings() {
   }
 
   return (
-    <div className="container mx-auto px-4 max-w-3xl font-sans pt-12">
-      <div className="mb-8 border-b pb-4">
-        <div className="flex items-center gap-4">
+    <div className="container mx-auto px-3 sm:px-4 max-w-3xl font-sans pt-8 sm:pt-12">
+      <div className="mb-6 border-b pb-3">
+        <div className="flex items-center gap-3">
           <Button 
             onClick={() => router.push('/protected')} 
             variant="ghost" 
-            size="lg"
-            className="text-gray-600 hover:text-gray-800 p-0"
+            className="p-0 hover:bg-transparent"
           >
-            <ChevronLeft className="w-6 h-6" />
+            <ChevronLeft className="w-5 h-5 text-gray-600 hover:text-gray-800" />
           </Button>
           <div className="flex items-center justify-between flex-grow">
-            <h1 className="text-2xl">{clientName}'s Bookings</h1>
+            <h1 className="text-lg sm:text-xl font-semibold">Pesanan {clientName}</h1>
             <Button 
               onClick={refreshBookings} 
               size="sm" 
               variant="ghost"
-              className="p-2"
+              className="p-1.5"
             >
-              <RefreshCw className="w-5 h-5" />
+              <RefreshCw className="w-4 h-4 text-gray-600" />
             </Button>
           </div>
         </div>
@@ -306,29 +324,34 @@ export default function ClientBookings() {
           <BookingEntry key={booking.id} booking={booking} onRatingSubmit={refreshBookings} />
         ))}
         {bookings.length === 0 && (
-          <p className="text-center mt-4 text-gray-500">No bookings found.</p>
+          <p className="text-center mt-4 text-gray-500 text-xs sm:text-sm">
+            Belum ada pesanan.
+          </p>
         )}
       </div>
 
-      <div className="mt-6 flex justify-between items-center">
+      {/* Pagination */}
+      <div className="mt-4 sm:mt-6 flex justify-between items-center">
         <Button
           onClick={() => paginate(currentPage - 1)}
           disabled={currentPage === 1}
           size="sm"
           variant="ghost"
-          className="p-2"
+          className="p-1.5"
         >
-          <ChevronLeft className="h-5 w-5" />
+          <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="text-sm">Page {currentPage} of {Math.ceil(bookings.length / bookingsPerPage)}</span>
+        <span className="text-xs sm:text-sm text-gray-600">
+          Halaman {currentPage} dari {Math.ceil(bookings.length / bookingsPerPage)}
+        </span>
         <Button
           onClick={() => paginate(currentPage + 1)}
           disabled={indexOfLastBooking >= bookings.length}
           size="sm"
           variant="ghost"
-          className="p-2"
+          className="p-1.5"
         >
-          <ChevronRight className="h-5 w-5" />
+          <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
     </div>

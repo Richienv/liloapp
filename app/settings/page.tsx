@@ -209,16 +209,16 @@ export default function SettingsPage() {
           className="mr-4 border-red-500 text-red-500 hover:bg-red-50"
         >
           <ChevronLeft className="w-4 h-4 mr-1" />
-          Back
+          Kembali
         </Button>
         <h1 className="text-xl sm:text-2xl font-semibold">
-          {userType === 'streamer' ? 'Streamer' : 'Client'} Settings
+          Pengaturan {userType === 'streamer' ? 'Streamer' : 'Client'}
         </h1>
       </div>
 
       <Card className="border-0 shadow-lg">
         <CardHeader className="border-b border-gray-100 bg-gray-50/50">
-          <CardTitle className="text-lg sm:text-xl font-semibold">Profile Information</CardTitle>
+          <CardTitle className="text-lg sm:text-xl font-semibold">Informasi Profil</CardTitle>
         </CardHeader>
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -245,7 +245,7 @@ export default function SettingsPage() {
                 className="mt-2 bg-red-500 hover:bg-red-600 text-white"
               >
                 <Camera className="mr-2 h-4 w-4" />
-                {imageUrl ? 'Change Image' : 'Upload Image'}
+                {imageUrl ? 'Ganti Foto' : 'Unggah Foto'}
               </Button>
               <input
                 type="file"
@@ -267,29 +267,29 @@ export default function SettingsPage() {
                 <div>
                   <Label htmlFor="firstName" className="flex items-center text-sm text-gray-600">
                     <User className="mr-2 h-4 w-4 text-red-500" />
-                    First Name
+                    Nama Depan
                   </Label>
                   <Input
                     id="firstName"
                     name="firstName"
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Your first name"
-                    className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                    placeholder="Masukkan nama depan"
+                    className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500 text-gray-500 placeholder:text-gray-400"
                   />
                 </div>
                 <div>
                   <Label htmlFor="lastName" className="flex items-center text-sm text-gray-600">
                     <User className="mr-2 h-4 w-4 text-red-500" />
-                    Last Name
+                    Nama Belakang
                   </Label>
                   <Input
                     id="lastName"
                     name="lastName"
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
-                    placeholder="Your last name"
-                    className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                    placeholder="Masukkan nama belakang"
+                    className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500 text-gray-500 placeholder:text-gray-400"
                   />
                 </div>
               </div>
@@ -304,11 +304,11 @@ export default function SettingsPage() {
                   name="bio"
                   value={bio}
                   onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell us about yourself"
-                  className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500 min-h-[100px]"
+                  placeholder="Ceritakan tentang diri Anda"
+                  className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500 min-h-[100px] text-gray-500 placeholder:text-gray-400"
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Tip: A good bio helps others understand you better.
+                  Tip: Bio yang baik membantu orang lain memahami Anda lebih baik.
                 </p>
               </div>
 
@@ -317,7 +317,7 @@ export default function SettingsPage() {
                   <div>
                     <Label htmlFor="youtubeUrl" className="flex items-center text-sm text-gray-600">
                       <Youtube className="mr-2 h-4 w-4 text-red-500" />
-                      YouTube Video URL
+                      Link Video YouTube
                     </Label>
                     <Input
                       id="youtubeUrl"
@@ -325,16 +325,16 @@ export default function SettingsPage() {
                       value={youtubeUrl}
                       onChange={(e) => setYoutubeUrl(e.target.value)}
                       placeholder="https://youtu.be/..."
-                      className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500"
+                      className="mt-1 border-gray-200 focus:border-red-500 focus:ring-red-500 text-gray-500 placeholder:text-gray-400"
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Add a video to showcase your streaming style.
+                      Tambahkan video untuk menunjukkan gaya streaming Anda.
                     </p>
                   </div>
                   <div>
                     <Label htmlFor="galleryPhotos" className="flex items-center text-sm text-gray-600">
                       <Camera className="mr-2 h-4 w-4 text-red-500" />
-                      Gallery Photos (Max 5)
+                      Foto Galeri (Maks 5)
                     </Label>
                     <Input
                       id="galleryPhotos"
@@ -347,7 +347,7 @@ export default function SettingsPage() {
                       disabled={galleryPhotos.length + newGalleryPhotos.length >= 5}
                     />
                     <p className="text-xs text-gray-500 mt-1">
-                      Tip: Choose photos that represent your brand and style.
+                      Tip: Pilih foto yang mewakili brand dan gaya Anda.
                     </p>
                     <div className="grid grid-cols-5 gap-2 mt-2">
                       {galleryPhotos.map((photo, index) => (
@@ -362,9 +362,9 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => removeGalleryPhoto(index)}
-                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
                           >
-                            X
+                            ×
                           </button>
                         </div>
                       ))}
@@ -380,9 +380,9 @@ export default function SettingsPage() {
                           <button
                             type="button"
                             onClick={() => removeNewGalleryPhoto(index)}
-                            className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hover:bg-red-600 transition-colors"
                           >
-                            X
+                            ×
                           </button>
                         </div>
                       ))}
@@ -399,10 +399,10 @@ export default function SettingsPage() {
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving Changes...
+                    Menyimpan Perubahan...
                   </>
                 ) : (
-                  'Save Changes'
+                  'Simpan Perubahan'
                 )}
               </Button>
             </div>

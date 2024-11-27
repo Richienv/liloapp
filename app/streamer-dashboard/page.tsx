@@ -100,11 +100,11 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd }: { booking: Bookin
     setIsStarting(false);
     
     if (result.success) {
-      toast.success("Stream started successfully");
+      toast.success("Stream berhasil dimulai");
       setIsStartLiveModalOpen(false);
       onStreamStart();
     } else {
-      toast.error(result.error || "Failed to start stream");
+      toast.error(result.error || "Gagal memulai stream");
     }
   };
 
@@ -169,7 +169,11 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd }: { booking: Bookin
           </div>
         </div>
         <span className="text-[10px] sm:text-xs px-2 py-1 rounded-full font-medium bg-gradient-to-r from-yellow-500 to-yellow-600 text-white">
-          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+          {booking.status.toLowerCase() === 'pending' ? 'Menunggu' :
+           booking.status.toLowerCase() === 'accepted' ? 'Diterima' :
+           booking.status.toLowerCase() === 'completed' ? 'Selesai' :
+           booking.status.toLowerCase() === 'rejected' ? 'Ditolak' :
+           booking.status.toLowerCase() === 'live' ? 'Sedang Live' : booking.status}
         </span>
       </div>
 
@@ -192,7 +196,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd }: { booking: Bookin
           <span className="text-xs sm:text-sm text-gray-600">
             {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
             <span className="text-gray-400 ml-1">
-              ({differenceInHours(new Date(booking.end_time), new Date(booking.start_time))} hours)
+              ({differenceInHours(new Date(booking.end_time), new Date(booking.start_time))} jam)
             </span>
           </span>
         </div>
@@ -215,7 +219,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd }: { booking: Bookin
           className="mt-3 w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs sm:text-sm font-medium"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-2" />
-          End Stream
+          Akhiri Stream
         </Button>
       ) : (
         <Button
@@ -223,7 +227,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd }: { booking: Bookin
           className="mt-3 w-full py-1.5 sm:py-2 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white text-xs sm:text-sm font-medium"
         >
           <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-2" />
-          Start Live
+          Mulai Live
         </Button>
       )}
     </div>
@@ -246,19 +250,19 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd }: {
           value="today" 
           className="text-sm data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
         >
-          Today
+          Hari Ini
         </TabsTrigger>
         <TabsTrigger 
           value="week"
           className="text-sm data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
         >
-          This Week
+          Minggu Ini
         </TabsTrigger>
         <TabsTrigger 
           value="month"
           className="text-sm data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
         >
-          This Month
+          Bulan Ini
         </TabsTrigger>
       </TabsList>
       <TabsContent value="today" className="space-y-4">
@@ -266,7 +270,7 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd }: {
           <ScheduleCard key={booking.id} booking={booking} onStreamStart={onStreamStart} onStreamEnd={onStreamEnd} />
         )) : (
           <p className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg text-sm">
-            No bookings for today.
+            Tidak ada pesanan untuk hari ini.
           </p>
         )}
       </TabsContent>
@@ -275,7 +279,7 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd }: {
           <ScheduleCard key={booking.id} booking={booking} onStreamStart={onStreamStart} onStreamEnd={onStreamEnd} />
         )) : (
           <p className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg text-sm">
-            No bookings for this week.
+            Tidak ada pesanan untuk minggu ini.
           </p>
         )}
       </TabsContent>
@@ -284,7 +288,7 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd }: {
           <ScheduleCard key={booking.id} booking={booking} onStreamStart={onStreamStart} onStreamEnd={onStreamEnd} />
         )) : (
           <p className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg text-sm">
-            No bookings for this month.
+            Tidak ada pesanan untuk bulan ini.
           </p>
         )}
       </TabsContent>
@@ -420,7 +424,7 @@ const AnalyticsCard = ({ title, value, icon: Icon, trend }: {
         <h3 className="text-sm sm:text-base font-bold text-[#E23744]">{value}</h3>
         {trend && (
           <p className="text-[10px] sm:text-xs text-green-500 mt-0.5 font-medium">
-            +{trend}% from last month
+            +{trend}% dibanding bulan lalu
           </p>
         )}
       </div>
@@ -614,20 +618,20 @@ export default function StreamerDashboard() {
   const handleAcceptBooking = async (bookingId: number) => {
     const result = await acceptBooking(bookingId);
     if (result.success) {
-      toast.success("Booking accepted successfully");
+      toast.success("Pesanan berhasil diterima");
       fetchData(); // Refresh the bookings
     } else {
-      toast.error(result.error || "Failed to accept booking");
+      toast.error(result.error || "Gagal menerima pesanan");
     }
   };
 
   const handleRejectBooking = async (bookingId: number) => {
     const result = await rejectBooking(bookingId);
     if (result.success) {
-      toast.success("Booking rejected successfully");
+      toast.success("Pesanan berhasil ditolak");
       fetchData(); // Refresh the bookings
     } else {
-      toast.error(result.error || "Failed to reject booking");
+      toast.error(result.error || "Gagal menolak pesanan");
     }
   };
 
@@ -640,7 +644,7 @@ export default function StreamerDashboard() {
   }, [fetchData]);
 
   if (isLoading) {
-    return <div>Loading...</div>;
+    return <div>Memuat...</div>;
   }
 
   if (error) {
@@ -655,7 +659,7 @@ export default function StreamerDashboard() {
   }
 
   if (!userData) {
-    return <div>No user data available</div>;
+    return <div>Data pengguna tidak tersedia</div>;
   }
 
   return (
@@ -668,25 +672,25 @@ export default function StreamerDashboard() {
         <div className="mb-4 sm:mb-6">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
             <AnalyticsCard
-              title="Total Earnings"
+              title="Total Pendapatan"
               value={`Rp ${(8500000).toLocaleString('id-ID')}`}
               icon={DollarSign}
               trend="8"
             />
             <AnalyticsCard
-              title="Total Bookings"
+              title="Total Pesanan"
               value="124"
               icon={Users}
               trend="12"
             />
             <AnalyticsCard
-              title="Total Livestreams"
+              title="Total Livestream"
               value="89"
               icon={Video}
               trend="15"
             />
             <AnalyticsCard
-              title="Total Rejected"
+              title="Total Ditolak"
               value="23"
               icon={XCircle}
             />
@@ -696,7 +700,7 @@ export default function StreamerDashboard() {
         {/* Upcoming Schedule Card - Reduced padding and font sizes */}
         <Card className="mb-4 sm:mb-6 border-none shadow-xs hover:shadow-sm transition-all duration-200">
           <CardHeader className="text-[#E23744] border-b-2 border-gradient-to-r from-[#E23744] to-[#E23744]/80 p-4 sm:p-6">
-            <CardTitle className="text-lg sm:text-2xl font-bold">Upcoming Schedule</CardTitle>
+            <CardTitle className="text-lg sm:text-2xl font-bold">Jadwal Mendatang</CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-6">
             <UpcomingSchedule 
@@ -710,7 +714,7 @@ export default function StreamerDashboard() {
         {/* Booking Management Card - Reduced padding and font sizes */}
         <Card className="border-none shadow-xs hover:shadow-sm transition-all duration-200">
           <CardHeader className="text-[#E23744] border-b-2 border-gradient-to-r from-[#E23744] to-[#E23744]/80 p-4 sm:p-6">
-            <CardTitle className="text-lg sm:text-2xl font-bold">Booking Management</CardTitle>
+            <CardTitle className="text-lg sm:text-2xl font-bold">Manajemen Pesanan</CardTitle>
           </CardHeader>
           <CardContent className="p-3 sm:p-6">
             <Tabs defaultValue="pending" className="w-full">
@@ -719,13 +723,13 @@ export default function StreamerDashboard() {
                   value="pending" 
                   className="text-xs sm:text-base py-1.5 sm:py-2 data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
                 >
-                  Pending Bookings
+                  Pesanan Menunggu
                 </TabsTrigger>
                 <TabsTrigger 
                   value="rejected"
                   className="text-xs sm:text-base py-1.5 sm:py-2 data-[state=active]:text-[#E23744] data-[state=active]:border-b-2 data-[state=active]:border-[#E23744]"
                 >
-                  Rejected Bookings
+                  Pesanan Ditolak
                 </TabsTrigger>
               </TabsList>
 
@@ -817,14 +821,14 @@ export default function StreamerDashboard() {
                             onClick={() => handleAcceptBooking(booking.id)}
                             className="flex-1 text-xs sm:text-sm py-2 bg-gradient-to-r from-[#E23744] to-[#E23744]/90 hover:from-[#E23744]/90 hover:to-[#E23744] text-white"
                           >
-                            Accept
+                            Terima
                           </Button>
                           <Button
                             onClick={() => handleRejectBooking(booking.id)}
                             variant="outline"
                             className="flex-1 text-xs sm:text-sm py-2 border-2 border-[#E23744] text-[#E23744] hover:bg-[#E23744]/10"
                           >
-                            Reject
+                            Tolak
                           </Button>
                         </div>
                       )}
