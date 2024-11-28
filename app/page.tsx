@@ -227,7 +227,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="aspect-square overflow-hidden rounded-xl mb-4">
                   <Image
-                    src="/images/profile1.png"
+                    src="/images/3.png"
                     alt="Angela"
                     width={400}
                     height={400}
@@ -242,7 +242,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="aspect-square overflow-hidden rounded-xl mb-4">
                   <Image
-                    src="/images/profile2.png"
+                    src="/images/1a.png"
                     alt="David"
                     width={400}
                     height={400}
@@ -257,7 +257,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="aspect-square overflow-hidden rounded-xl mb-4">
                   <Image
-                    src="/images/profile3.png"
+                    src="/images/2.png"
                     alt="Sarah"
                     width={400}
                     height={400}
