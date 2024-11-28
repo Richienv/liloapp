@@ -36,10 +36,39 @@ const IPhoneMockup = ({ imageSrc, altText, padding = "p-0" }: { imageSrc: string
   </div>
 );
 
+const faqData = [
+  {
+    id: 1,
+    question: "Apakah Salda cocok untuk saya?",
+    answer: "Salda cocok untuk semua brand yang ingin meningkatkan penjualan melalui live streaming. Baik Anda baru memulai atau sudah berpengalaman, tim kami akan membantu Anda menemukan streamer yang sesuai dengan kebutuhan Anda."
+  },
+  {
+    id: 2,
+    question: "Apakah saya harus streaming setiap hari?",
+    answer: "Tidak, Anda bisa mengatur jadwal streaming sesuai kebutuhan. Kami menyediakan paket fleksibel yang bisa disesuaikan dengan target dan kemampuan Anda. Minimal streaming yang kami sarankan adalah 2 kali seminggu untuk hasil optimal."
+  },
+  {
+    id: 3,
+    question: "Berapa banyak interaksi yang diperlukan?",
+    answer: "Tingkat interaksi bisa disesuaikan dengan gaya streaming Anda. Streamer kami terlatih untuk membangun engagement yang natural dengan audience, sehingga Anda bisa fokus pada penjualan produk."
+  },
+  {
+    id: 4,
+    question: "Tips menjadi streamer Salda yang baik?",
+    answer: "Kunci menjadi streamer yang baik adalah konsistensi, interaktif dengan audience, dan memahami produk dengan baik. Kami menyediakan pelatihan dan panduan lengkap untuk membantu Anda berkembang sebagai streamer profesional."
+  },
+  {
+    id: 5,
+    question: "Berapa biaya layanan Salda?",
+    answer: "Biaya layanan Salda bervariasi tergantung paket yang Anda pilih. Kami menawarkan paket mulai dari Rp500.000 per sesi. Setiap paket mencakup pendampingan, pelatihan, dan dukungan teknis penuh dari tim kami."
+  }
+];
+
 export default function Home() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [openQuestion, setOpenQuestion] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -198,7 +227,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="aspect-square overflow-hidden rounded-xl mb-4">
                   <Image
-                    src="/images/host1.png"
+                    src="/images/profile1.png"
                     alt="Angela"
                     width={400}
                     height={400}
@@ -213,7 +242,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="aspect-square overflow-hidden rounded-xl mb-4">
                   <Image
-                    src="/images/host2.png"
+                    src="/images/profile2.png"
                     alt="David"
                     width={400}
                     height={400}
@@ -228,7 +257,7 @@ export default function Home() {
               <div className="text-center">
                 <div className="aspect-square overflow-hidden rounded-xl mb-4">
                   <Image
-                    src="/images/host3.png"
+                    src="/images/profile3.png"
                     alt="Sarah"
                     width={400}
                     height={400}
@@ -255,10 +284,10 @@ export default function Home() {
         </section>
 
         {/* Tutorial Salda Section */}
-        <section className="py-24 bg-white">
+        <section className="py-2 bg-white">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+            <div className="text-center mb-1">
+              <h2 className="text-3xl lg:text-4xl font-bold mb-1">
                 Butuh bantuan untuk mulai streaming?
                 <br />
                 Ikuti panduan Salda
@@ -268,23 +297,19 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-12 max-w-6xl mx-auto mb-16">
+            <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto mb-16">
               {/* Streamer 1 */}
               <div>
-                {/* Number */}
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 text-xl font-bold mb-6">
-                  1
-                </div>
-                {/* iPhone Mockup */}
-                <div className="mb-8 flex justify-center">
+                <div className="flex justify-center">
                   <Iphone15Pro
-                    src="/images/step1.png"
-                    width={180}
-                    height={367}
+                    src="/images/18.png"
+                    width={433}
+                    height={882}
+                    className="transform scale-[0.7] -my-16"
                   />
                 </div>
                 {/* Text Content */}
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <h3 className="text-2xl font-bold">Pilih & Verifikasi</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
                     Pilih streamer yang sesuai dengan kebutuhan Anda. Lakukan verifikasi akun melalui Trollife untuk mendapatkan akses penuh ke platform kami.
@@ -308,17 +333,15 @@ export default function Home() {
 
               {/* Streamer 2 */}
               <div>
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 text-xl font-bold mb-6">
-                  2
-                </div>
-                <div className="mb-8 flex justify-center">
+                <div className="flex justify-center">
                   <Iphone15Pro
-                    src="/images/step2.png"
-                    width={180}
-                    height={367}
+                    src="/images/18.png"
+                    width={433}
+                    height={882}
+                    className="transform scale-[0.7] -my-16"
                   />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <h3 className="text-2xl font-bold">Pilih Paket & Jadwal</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
                     Tentukan durasi streaming sesuai kebutuhan Anda. Tersedia pilihan paket per jam atau paket khusus dengan harga kompetitif.
@@ -342,17 +365,15 @@ export default function Home() {
 
               {/* Streamer 3 */}
               <div>
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-100 text-red-600 text-xl font-bold mb-6">
-                  3
-                </div>
-                <div className="mb-8 flex justify-center">
+                <div className="flex justify-center">
                   <Iphone15Pro
-                    src="/images/step3.png"
-                    width={180}
-                    height={367}
+                    src="/images/18.png"
+                    width={433}
+                    height={882}
+                    className="transform scale-[0.7] -my-16"
                   />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <h3 className="text-2xl font-bold">Mulai Streaming</h3>
                   <p className="text-gray-600 text-sm leading-relaxed">
                     Setelah booking dikonfirmasi, streamer akan melakukan sesi live streaming sesuai jadwal. Nikmati layanan profesional dengan jaminan kualitas.
@@ -375,7 +396,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="text-center max-w-3xl mx-auto">
+            <div className="text-center max-w-3xl mx-auto mt-8">
               <p className="text-lg text-gray-600">
                 Kami telah bermitra dengan streamer profesional di seluruh Indonesia. Streamer kami rata-rata menghasilkan
                 <span className="font-semibold"> Rp30.000.000/bulan</span> dengan minimal
@@ -384,6 +405,93 @@ export default function Home() {
               <p className="text-sm text-gray-500 mt-4">
                 *Pendapatan rata-rata berdasarkan data internal Salda periode Jan-Des 2023
               </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Above CTA Section */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-4">
+            {/* Top Content */}
+            <div className="grid md:grid-cols-2 gap-12 max-w-6xl mx-auto mb-16">
+              {/* Left Side - Title */}
+              <div>
+                <h2 className="text-3xl lg:text-4xl font-bold">
+                  Pertanyaan Anda,
+                  <br />
+                  terjawab
+                </h2>
+              </div>
+
+              {/* Right Side - Questions */}
+              <div className="space-y-4">
+                {faqData.map((faq) => (
+                  <div key={faq.id} className="border-b border-gray-200 pb-4 transition-all duration-300 hover:bg-gray-50/50 rounded-lg">
+                    <button 
+                      onClick={() => setOpenQuestion(openQuestion === faq.id ? null : faq.id)}
+                      className="flex items-center justify-between w-full text-left p-4 transition-colors duration-200"
+                    >
+                      <span className="text-lg font-medium transition-colors duration-200 hover:text-red-600">
+                        {faq.question}
+                      </span>
+                      <svg 
+                        className={`w-5 h-5 text-gray-500 transition-all duration-300 ${
+                          openQuestion === faq.id ? 'transform rotate-180 text-red-600' : ''
+                        }`} 
+                        fill="none" 
+                        stroke="currentColor" 
+                        viewBox="0 0 24 24"
+                      >
+                        <path 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          strokeWidth={2} 
+                          d="M19 9l-7 7-7-7" 
+                        />
+                      </svg>
+                    </button>
+                    <div 
+                      className={`overflow-hidden transition-all duration-300 ${
+                        openQuestion === faq.id ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+                      }`}
+                    >
+                      <div className="p-4 text-gray-600 text-base">
+                        {faq.answer}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Content - Image and Text */}
+            <div className="max-w-6xl mx-auto">
+              <div className="grid md:grid-cols-2 gap-12 items-center">
+                {/* Left Side - Image */}
+                <div>
+                  <Image
+                    src="/images/abovecta.png"
+                    alt="Support Team"
+                    width={600}
+                    height={400}
+                    className="w-full rounded-2xl"
+                  />
+                </div>
+
+                {/* Right Side - Centered Text */}
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold mb-2">Masih ada pertanyaan?</h3>
+                  <p className="text-gray-600 mb-6">
+                    Dapatkan jawaban dari streamer berpengalaman di dekat Anda.
+                  </p>
+                  <button className="px-6 py-2 border border-gray-300 rounded-full 
+                    transition-all duration-300 
+                    hover:bg-gray-50 hover:scale-105 hover:shadow-md 
+                    active:scale-95">
+                    Hubungi Streamer
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </section>
