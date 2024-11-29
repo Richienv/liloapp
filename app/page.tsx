@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
-import { ArrowRight, Star, Users, Shield } from "lucide-react";
+import { ArrowRight, Star, Users, Shield, ChevronLeft, ChevronRight } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Iphone15Pro from "@/components/ui/iphone-15-pro";
@@ -14,14 +14,91 @@ interface UserData {
   profile_picture_url: string;
 }
 
-// iPhone Mockup Component - You can reuse this for all sections
+interface TutorialSlide {
+  image: string;
+  title: string;
+  description: string;
+  bullets: string[];
+}
+
+const tutorialSlides: TutorialSlide[] = [
+  {
+    image: "/images/tutor1.png",
+    title: "Pilih & Verifikasi",
+    description: "Pilih streamer yang sesuai dengan kebutuhan Anda. Lakukan verifikasi akun melalui Trollife untuk mendapatkan akses penuh ke platform kami.",
+    bullets: [
+      "Verifikasi cepat dan aman",
+      "Pilihan streamer terverifikasi", 
+      "Profil lengkap dan portofolio"
+    ]
+  },
+  {
+    image: "/images/tutorial2.png",
+    title: "Pilih Paket & Jadwal",
+    description: "Tentukan durasi streaming sesuai kebutuhan Anda. Tersedia pilihan paket per jam atau paket khusus dengan harga kompetitif.",
+    bullets: [
+      "Fleksibel sesuai kebutuhan",
+      "Harga terjangkau",
+      "Jadwal yang fleksibel"
+    ]
+  },
+  {
+    image: "/images/tutorial3.png", 
+    title: "Mulai Streaming",
+    description: "Setelah booking dikonfirmasi, streamer akan melakukan sesi live streaming sesuai jadwal. Nikmati layanan profesional dengan jaminan kualitas.",
+    bullets: [
+      "Platform terpercaya",
+      "Streamer berkualitas",
+      "Dukungan 24/7"
+    ]
+  },
+  {
+    image: "/images/tutorial4.png",
+    title: "Analisis Performa",
+    description: "Pantau performa streaming Anda melalui dashboard analitik yang komprehensif. Dapatkan insight mendalam tentang engagement penonton.",
+    bullets: [
+      "Analitik real-time",
+      "Laporan detail",
+      "Rekomendasi peningkatan"  
+    ]
+  },
+  {
+    image: "/images/tutorial5.png",
+    title: "Kelola Pembayaran",
+    description: "Kelola semua transaksi dengan mudah melalui sistem pembayaran yang terintegrasi. Lacak pendapatan dan pengeluaran dengan detail.",
+    bullets: [
+      "Pembayaran aman",
+      "Sistem terintegrasi", 
+      "Laporan keuangan"
+    ]
+  },
+  {
+    image: "/images/tutorial6.png",
+    title: "Kembangkan Komunitas",
+    description: "Bangun dan kembangkan komunitas Anda. Fitur interaktif memungkinkan Anda terhubung lebih dekat dengan penggemar.",
+    bullets: [
+      "Fitur komunitas",
+      "Interaksi real-time",
+      "Engagement tinggi"
+    ]
+  },
+  {
+    image: "/images/tutorial7.png",
+    title: "Dukungan 24/7",
+    description: "Tim dukungan kami siap membantu Anda 24/7. Dapatkan bantuan teknis dan konsultasi kapan pun Anda butuhkan.",
+    bullets: [
+      "Dukungan teknis",
+      "Konsultasi pribadi",
+      "Respons cepat"
+    ]
+  }
+];
+
 const IPhoneMockup = ({ imageSrc, altText, padding = "p-0" }: { imageSrc: string; altText: string; padding?: string }) => (
   <div className="relative mx-auto w-[300px] h-[600px]">
     <div className="absolute inset-0 bg-black rounded-[3rem] shadow-xl">
       <div className="absolute inset-[8px] bg-white rounded-[2.5rem] overflow-hidden">
-        {/* Notch */}
         <div className="absolute top-0 inset-x-0 h-7 bg-black z-10 rounded-b-3xl" />
-        {/* Screen Content */}
         <div className={`relative w-full h-full ${padding}`}>
           <Image
             src={imageSrc}
@@ -44,7 +121,7 @@ const faqData = [
   },
   {
     id: 2,
-    question: "Apakah saya harus streaming setiap hari?",
+    question: "Apakah saya harus streaming setiap hari?", 
     answer: "Tidak, Anda bisa mengatur jadwal streaming sesuai kebutuhan. Kami menyediakan paket fleksibel yang bisa disesuaikan dengan target dan kemampuan Anda. Minimal streaming yang kami sarankan adalah 2 kali seminggu untuk hasil optimal."
   },
   {
@@ -69,6 +146,7 @@ export default function Home() {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [openQuestion, setOpenQuestion] = useState<number | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -89,7 +167,7 @@ export default function Home() {
     fetchUserData();
   }, []);
 
-  return (
+  const content = (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -284,10 +362,10 @@ export default function Home() {
         </section>
 
         {/* Tutorial Salda Section */}
-        <section className="py-2 bg-white">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-1">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-1">
+        <section className="py-24 bg-white overflow-hidden">
+          <div className="container mx-auto">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
                 Butuh bantuan untuk mulai streaming?
                 <br />
                 Ikuti panduan Salda
@@ -297,114 +375,116 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4 max-w-6xl mx-auto mb-16">
-              {/* Streamer 1 */}
-              <div>
-                <div className="flex justify-center">
-                  <Iphone15Pro
-                    src="/images/18.png"
-                    width={433}
-                    height={882}
-                    className="transform scale-[0.7] -my-16"
-                  />
-                </div>
-                {/* Text Content */}
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">Pilih & Verifikasi</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Pilih streamer yang sesuai dengan kebutuhan Anda. Lakukan verifikasi akun melalui Trollife untuk mendapatkan akses penuh ke platform kami.
-                  </p>
-                  <ul className="space-y-2">
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Verifikasi cepat dan aman</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Pilihan streamer terverifikasi</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Profil lengkap dan portofolio</span>
-                    </li>
-                  </ul>
-                </div>
+            <div className="relative max-w-full mx-auto">
+              {/* Left Mask */}
+              <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white to-transparent z-20" />
+              
+              {/* Right Mask */}
+              <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-20" />
+
+              {/* Carousel Container */}
+              <div className="relative h-[600px] flex items-center justify-center px-0 mx-0">
+                {tutorialSlides.map((_, index) => {
+                  const slides = tutorialSlides.length;
+                  let position = ((index - currentSlide) % slides + slides) % slides;
+                  
+                  if (position > slides / 2) position -= slides;
+                  if (position < -slides / 2) position += slides;
+                  
+                  const isVisible = Math.abs(position) <= 2;
+                  
+                  // Adjust spacing for better distribution
+                  const spacing = position > 0 ? 350 : 350; // Increased spacing further
+                  
+                  return isVisible && (
+                    <div
+                      key={index}
+                      className={`absolute transition-all duration-500 ease-in-out transform-gpu`}
+                      style={{
+                        transform: `
+                          translateX(${position * spacing}px)
+                          scale(${position === 0 ? 0.9 : Math.max(0.5, 0.9 - Math.abs(position) * 0.2)}) 
+                          perspective(1500px) 
+                          rotateY(${position * 20}deg)
+                        `,
+                        zIndex: 20 - Math.abs(position),
+                        opacity: position === 0 ? 1 : Math.max(0.5, 1 - Math.abs(position) * 0.3),
+                        left: '50%',
+                        marginLeft: '-100px',
+                      }}
+                    >
+                      <div className="w-[200px]">
+                        <Iphone15Pro
+                          src={tutorialSlides[index].image} // Use the correct image from the slides array
+                          width={346}
+                          height={705}
+                          className="transform scale-[0.55]"
+                          style={{
+                            objectFit: 'cover', // Changed from contain to cover
+                            width: '100%',
+                            height: '100%'
+                          }}
+                          mockupColor="black"
+                          priority={true} // Add priority loading for images
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
-              {/* Streamer 2 */}
-              <div>
-                <div className="flex justify-center">
-                  <Iphone15Pro
-                    src="/images/18.png"
-                    width={433}
-                    height={882}
-                    className="transform scale-[0.7] -my-16"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">Pilih Paket & Jadwal</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Tentukan durasi streaming sesuai kebutuhan Anda. Tersedia pilihan paket per jam atau paket khusus dengan harga kompetitif.
-                  </p>
-                  <ul className="space-y-2">
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Fleksibel sesuai kebutuhan</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Harga terjangkau</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Jadwal yang fleksibel</span>
-                    </li>
-                  </ul>
+              {/* Update navigation buttons position to account for masks */}
+              <button
+                onClick={() => {
+                  setCurrentSlide(prev => (prev - 1 + tutorialSlides.length) % tutorialSlides.length);
+                }}
+                className="absolute left-8 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white transition-all z-30"
+              >
+                <ChevronLeft className="w-6 h-6 text-gray-800" />
+              </button>
+              <button
+                onClick={() => {
+                  setCurrentSlide(prev => (prev + 1) % tutorialSlides.length);
+                }}
+                className="absolute right-8 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white transition-all z-30"
+              >
+                <ChevronRight className="w-6 h-6 text-gray-800" />
+              </button>
+
+              {/* Content below carousel remains the same */}
+              <div className="text-center mt-12 max-w-xl mx-auto transition-all duration-500">
+                {/* Title with Number */}
+                <h3 className="text-2xl font-bold mb-4 flex items-center justify-center gap-3">
+                  <span className="flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-lg">
+                    {currentSlide + 1}
+                  </span>
+                  {tutorialSlides[currentSlide].title}
+                </h3>
+                
+                {/* Description */}
+                <p className="text-gray-600 text-sm leading-relaxed mb-6 text-center max-w-md mx-auto">
+                  {tutorialSlides[currentSlide].description}
+                </p>
+                
+                {/* Features - Horizontal Layout */}
+                <div className="flex justify-center items-stretch">
+                  {tutorialSlides[currentSlide].bullets.map((bullet, index) => (
+                    <div key={index} className="flex items-center">
+                      {/* Feature Item */}
+                      <div className="px-4 max-w-[200px]">
+                        <span className="text-sm text-gray-600 text-center">
+                          {bullet}
+                        </span>
+                      </div>
+                      
+                      {/* Vertical Divider - Don't show after last item */}
+                      {index < tutorialSlides[currentSlide].bullets.length - 1 && (
+                        <div className="h-12 w-[1px] bg-gray-200" />
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
-
-              {/* Streamer 3 */}
-              <div>
-                <div className="flex justify-center">
-                  <Iphone15Pro
-                    src="/images/18.png"
-                    width={433}
-                    height={882}
-                    className="transform scale-[0.7] -my-16"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-bold">Mulai Streaming</h3>
-                  <p className="text-gray-600 text-sm leading-relaxed">
-                    Setelah booking dikonfirmasi, streamer akan melakukan sesi live streaming sesuai jadwal. Nikmati layanan profesional dengan jaminan kualitas.
-                  </p>
-                  <ul className="space-y-2">
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Platform terpercaya</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Streamer berkualitas</span>
-                    </li>
-                    <li className="flex items-center text-sm text-gray-600">
-                      <div className="w-1.5 h-1.5 rounded-full bg-red-500 mr-2 flex-shrink-0" />
-                      <span>Dukungan 24/7</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-center max-w-3xl mx-auto mt-8">
-              <p className="text-lg text-gray-600">
-                Kami telah bermitra dengan streamer profesional di seluruh Indonesia. Streamer kami rata-rata menghasilkan
-                <span className="font-semibold"> Rp30.000.000/bulan</span> dengan minimal
-                <span className="font-semibold"> 15 sesi live streaming</span>.
-              </p>
-              <p className="text-sm text-gray-500 mt-4">
-                *Pendapatan rata-rata berdasarkan data internal Salda periode Jan-Des 2023
-              </p>
             </div>
           </div>
         </section>
@@ -521,4 +601,6 @@ export default function Home() {
       </main>
     </>
   );
+
+  return content;
 }
