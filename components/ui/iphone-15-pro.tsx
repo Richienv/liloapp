@@ -8,6 +8,7 @@ interface Iphone15ProProps {
   style?: React.CSSProperties;
   mockupColor?: 'black' | 'white';
   priority?: boolean;
+  imageClassName?: string;
 }
 
 const Iphone15Pro = ({ 
@@ -17,7 +18,8 @@ const Iphone15Pro = ({
   className = '', 
   style = {},
   mockupColor = 'black',
-  priority = false
+  priority = false,
+  imageClassName = ''
 }: Iphone15ProProps) => {
   return (
     <div className="relative" style={{ width, height }}>
@@ -26,7 +28,7 @@ const Iphone15Pro = ({
         {/* Inner screen area */}
         <div className="absolute inset-[8px] bg-white rounded-[2.5rem] overflow-hidden">
           {/* Notch area */}
-          <div className="absolute top-0 inset-x-0 h-6 bg-black z-10 rounded-b-3xl" />
+          <div className="absolute top-0 inset-x-20 h-6 bg-black z-20 rounded-b-3xl" />
           
           {/* Image container */}
           <div className="relative w-full h-full pt-6">
@@ -34,7 +36,7 @@ const Iphone15Pro = ({
               src={src}
               alt="Screen content"
               fill
-              className={`object-cover ${className}`}
+              className={`${imageClassName} ${className}`}
               style={style}
               priority={priority}
               sizes="(max-width: 346px) 100vw, 346px"

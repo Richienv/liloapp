@@ -23,7 +23,7 @@ interface TutorialSlide {
 
 const tutorialSlides: TutorialSlide[] = [
   {
-    image: "/images/tutor1.png",
+    image: "/images/1tutor.png",
     title: "Pilih & Verifikasi",
     description: "Pilih streamer yang sesuai dengan kebutuhan Anda. Lakukan verifikasi akun melalui Trollife untuk mendapatkan akses penuh ke platform kami.",
     bullets: [
@@ -183,29 +183,26 @@ export default function Home() {
 
       <main className="flex flex-col min-h-screen bg-white">
         {/* Hero Section */}
-        <section className="min-h-screen flex items-end justify-center bg-gradient-to-bl from-red-800 via-red-500 to-white rounded-3xl mx-4 my-4 pt-16 md:pt-32">
+        <section className="min-h-screen flex items-center justify-center bg-gradient-to-bl from-red-800 via-red-500 to-white rounded-3xl mx-4 my-4 pt-8 md:pt-16">
           <div className="container mx-auto px-4 pb-0">
             <div className="flex flex-col items-center text-center max-w-5xl mx-auto">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold mb-4 text-white px-4 leading-tight">
-                Temukan Streamer
+              <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-[500] mb-4 text-white px-4 leading-[1.2] tracking-[-0.02em]">
+                <i>Temukan Streamer</i>
                 <br />
-                Favoritmu di{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-200 to-white">
-                  Salda
-                </span>
+                Favoritmu di Salda
               </h1>
-              <p className="text-lg md:text-xl text-white mb-8 max-w-2xl px-4">
+              <p className="text-base md:text-lg text-white/80 mb-6 max-w-2xl px-4">
                 Platform yang menghubungkan kamu dengan streamer terbaik untuk pengalaman live streaming yang lebih interaktif.
               </p>
-              <div className="mb-8 w-full max-w-xl px-4">
+              <div className="mb-6 w-full max-w-xl px-4">
                 <button 
                   onClick={() => router.push('/sign-in')}
-                  className="px-8 py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all hover:scale-105 shadow-[0_4px_8px_-2px_rgba(0,0,0,0.2)]"
+                  className="w-full sm:w-auto px-6 sm:px-8 py-3 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all hover:scale-105 shadow-[0_4px_8px_-2px_rgba(0,0,0,0.2)]"
                 >
                   Mulai Sekarang
                 </button>
               </div>
-              <div className="relative w-full max-w-3xl">
+              <div className="relative w-full max-w-3xl mt-4">
                 <Image
                   src="/images/18.png"
                   alt="Hero Image"
@@ -214,18 +211,18 @@ export default function Home() {
                   className="rounded-2xl w-full"
                   priority
                 />
-                <div className="absolute top-[55%] -translate-y-[55%] -left-4 bg-white/95 p-4 rounded-xl max-w-xs backdrop-blur-sm shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12)] hidden md:block">
-                  <p className="text-sm text-red-950">250+ Host Profesional Terverifikasi siap membantu</p>
+                <div className="absolute top-[55%] -translate-y-[55%] -left-4 bg-white/95 p-3 sm:p-4 rounded-xl max-w-[250px] sm:max-w-xs backdrop-blur-sm shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12)] hidden sm:block">
+                  <p className="text-xs sm:text-sm text-red-950">250+ Host Profesional Terverifikasi siap membantu</p>
                   <div className="flex items-center mt-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-200 mr-2"></div>
-                    <span className="text-xs text-gray-700">Tim Salda Professional</span>
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 mr-2"></div>
+                    <span className="text-[10px] sm:text-xs text-gray-700">Tim Salda Professional</span>
                   </div>
                 </div>
-                <div className="absolute top-[40%] -translate-y-[40%] right-4 bg-white/95 p-4 rounded-xl max-w-xs backdrop-blur-sm shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12)] hidden md:block">
-                  <p className="text-sm text-red-950">Tingkatkan penjualan hingga 10x lipat</p>
+                <div className="absolute top-[40%] -translate-y-[40%] right-4 bg-white/95 p-3 sm:p-4 rounded-xl max-w-[250px] sm:max-w-xs backdrop-blur-sm shadow-[0_4px_12px_-2px_rgba(0,0,0,0.12)] hidden sm:block">
+                  <p className="text-xs sm:text-sm text-red-950">Tingkatkan penjualan hingga 10x lipat</p>
                   <div className="flex items-center mt-2">
-                    <div className="w-6 h-6 rounded-full bg-gray-200 mr-2"></div>
-                    <span className="text-xs text-gray-700">Salda Analytics</span>
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-gray-200 mr-2"></div>
+                    <span className="text-[10px] sm:text-xs text-gray-700">Salda Analytics</span>
                   </div>
                 </div>
               </div>
@@ -362,28 +359,28 @@ export default function Home() {
         </section>
 
         {/* Tutorial Salda Section */}
-        <section className="py-24 bg-white overflow-hidden">
+        <section className="py-12 md:py-24 bg-white overflow-hidden">
           <div className="container mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+            <div className="text-center mb-8 md:mb-16 px-4 md:px-0">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 md:mb-4">
                 Butuh bantuan untuk mulai streaming?
-                <br />
+                <br className="hidden sm:block" />
                 Ikuti panduan Salda
               </h2>
-              <p className="text-gray-600 max-w-2xl mx-auto">
+              <p className="text-gray-600 max-w-2xl mx-auto text-sm md:text-base">
                 Kami telah bermitra dengan ratusan streamer profesional di seluruh Indonesia untuk membantu Anda memulai
               </p>
             </div>
 
             <div className="relative max-w-full mx-auto">
               {/* Left Mask */}
-              <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white to-transparent z-20" />
+              <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-white to-transparent z-20" />
               
               {/* Right Mask */}
-              <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-20" />
+              <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-white to-transparent z-20" />
 
               {/* Carousel Container */}
-              <div className="relative h-[600px] flex items-center justify-center px-0 mx-0">
+              <div className="relative h-[500px] md:h-[600px] flex items-center justify-center px-0 mx-0">
                 {tutorialSlides.map((_, index) => {
                   const slides = tutorialSlides.length;
                   let position = ((index - currentSlide) % slides + slides) % slides;
@@ -394,7 +391,7 @@ export default function Home() {
                   const isVisible = Math.abs(position) <= 2;
                   
                   // Adjust spacing for better distribution
-                  const spacing = position > 0 ? 350 : 350; // Increased spacing further
+                  const spacing = position < 0 ? 347 : 350; // Use 347 for left mockup, 350 for right mockup
                   
                   return isVisible && (
                     <div
@@ -409,23 +406,25 @@ export default function Home() {
                         `,
                         zIndex: 20 - Math.abs(position),
                         opacity: position === 0 ? 1 : Math.max(0.5, 1 - Math.abs(position) * 0.3),
-                        left: '50%',
-                        marginLeft: '-100px',
+                        left: '42.5%',
+                        marginLeft: '-80px',
                       }}
                     >
                       <div className="w-[200px]">
                         <Iphone15Pro
-                          src={tutorialSlides[index].image} // Use the correct image from the slides array
+                          src={tutorialSlides[index].image}
                           width={346}
                           height={705}
-                          className="transform scale-[0.55]"
+                          className="transform scale-[0.40]"
                           style={{
-                            objectFit: 'cover', // Changed from contain to cover
+                            objectFit: 'contain',
                             width: '100%',
-                            height: '100%'
+                            height: '100%',
+                            padding: '24px 12px',
                           }}
                           mockupColor="black"
-                          priority={true} // Add priority loading for images
+                          priority={true}
+                          imageClassName="object-contain scale-100"
                         />
                       </div>
                     </div>
@@ -433,57 +432,38 @@ export default function Home() {
                 })}
               </div>
 
-              {/* Update navigation buttons position to account for masks */}
+              {/* Navigation buttons */}
               <button
                 onClick={() => {
                   setCurrentSlide(prev => (prev - 1 + tutorialSlides.length) % tutorialSlides.length);
                 }}
-                className="absolute left-8 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white transition-all z-30"
+                className="absolute left-2 md:left-8 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white transition-all z-30"
               >
-                <ChevronLeft className="w-6 h-6 text-gray-800" />
+                <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-gray-800" />
               </button>
               <button
                 onClick={() => {
                   setCurrentSlide(prev => (prev + 1) % tutorialSlides.length);
                 }}
-                className="absolute right-8 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white transition-all z-30"
+                className="absolute right-2 md:right-8 top-1/2 -translate-y-1/2 bg-white/80 p-2 rounded-full shadow-lg hover:bg-white transition-all z-30"
               >
-                <ChevronRight className="w-6 h-6 text-gray-800" />
+                <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-gray-800" />
               </button>
 
-              {/* Content below carousel remains the same */}
-              <div className="text-center mt-12 max-w-xl mx-auto transition-all duration-500">
+              {/* Content below carousel */}
+              <div className="text-center mt-8 md:mt-12 max-w-xl mx-auto transition-all duration-500 px-4 md:px-0">
                 {/* Title with Number */}
-                <h3 className="text-2xl font-bold mb-4 flex items-center justify-center gap-3">
-                  <span className="flex items-center justify-center w-8 h-8 bg-red-100 text-red-600 rounded-full text-lg">
+                <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4 flex items-center justify-center gap-2 md:gap-3">
+                  <span className="flex items-center justify-center w-6 h-6 md:w-8 md:h-8 bg-red-100 text-red-600 rounded-full text-base md:text-lg">
                     {currentSlide + 1}
                   </span>
                   {tutorialSlides[currentSlide].title}
                 </h3>
                 
                 {/* Description */}
-                <p className="text-gray-600 text-sm leading-relaxed mb-6 text-center max-w-md mx-auto">
+                <p className="text-gray-600 text-xs md:text-sm leading-relaxed mb-4 md:mb-6 text-center max-w-md mx-auto">
                   {tutorialSlides[currentSlide].description}
                 </p>
-                
-                {/* Features - Horizontal Layout */}
-                <div className="flex justify-center items-stretch">
-                  {tutorialSlides[currentSlide].bullets.map((bullet, index) => (
-                    <div key={index} className="flex items-center">
-                      {/* Feature Item */}
-                      <div className="px-4 max-w-[200px]">
-                        <span className="text-sm text-gray-600 text-center">
-                          {bullet}
-                        </span>
-                      </div>
-                      
-                      {/* Vertical Divider - Don't show after last item */}
-                      {index < tutorialSlides[currentSlide].bullets.length - 1 && (
-                        <div className="h-12 w-[1px] bg-gray-200" />
-                      )}
-                    </div>
-                  ))}
-                </div>
               </div>
             </div>
           </div>
