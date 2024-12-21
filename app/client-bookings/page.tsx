@@ -38,7 +38,7 @@ interface Booking {
   items_received?: boolean;
   items_received_at?: string | null;
   final_price?: number;
-  voucher_discount?: number;
+  voucher_discount?: number | null;
 }
 
 interface RatingData {
@@ -661,7 +661,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
     }
   };
 
-  const displayPrice = booking.final_price || booking.price;
+  const displayPrice = booking.final_price ?? booking.price;
 
   return (
     <div className="border rounded-lg shadow-sm p-4 pb-4 mb-4 text-sm hover:shadow-md transition-shadow relative">
@@ -711,7 +711,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
         <div className="flex items-center gap-3 text-sm">
           <DollarSign className="h-4 w-4 text-gray-400" />
           <span>Rp {displayPrice.toLocaleString()}</span>
-          {booking.voucher_discount > 0 && (
+          {booking.voucher_discount && booking.voucher_discount > 0 && (
             <span className="text-green-600 text-xs">
               (Saved Rp {booking.voucher_discount.toLocaleString()})
             </span>
