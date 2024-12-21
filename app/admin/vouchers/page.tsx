@@ -21,7 +21,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 
 interface Voucher {
@@ -39,6 +38,7 @@ export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newVoucher, setNewVoucher] = useState({
     code: '',
     description: '',
@@ -46,6 +46,7 @@ export default function VouchersPage() {
     total_quantity: 0,
     expires_at: ''
   });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     fetchVouchers();
@@ -70,8 +71,31 @@ export default function VouchersPage() {
     }
   };
 
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    if (!newVoucher.code || newVoucher.code.length !== 6) {
+      errors.code = 'Code must be exactly 6 characters';
+    }
+    if (!newVoucher.description) {
+      errors.description = 'Description is required';
+    }
+    if (!newVoucher.discount_amount || newVoucher.discount_amount <= 0) {
+      errors.discount_amount = 'Discount amount must be greater than 0';
+    }
+    if (!newVoucher.total_quantity || newVoucher.total_quantity <= 0) {
+      errors.total_quantity = 'Quantity must be greater than 0';
+    }
+    if (!newVoucher.expires_at) {
+      errors.expires_at = 'Expiry date is required';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCreateVoucher = async () => {
-    if (isCreating) return;
+    if (isCreating || !validateForm()) return;
     
     setIsCreating(true);
     const supabase = createClient();
@@ -80,9 +104,12 @@ export default function VouchersPage() {
       const { data, error } = await supabase
         .from('vouchers')
         .insert({
-          ...newVoucher,
           code: newVoucher.code.toUpperCase(),
+          description: newVoucher.description,
+          discount_amount: newVoucher.discount_amount,
+          total_quantity: newVoucher.total_quantity,
           remaining_quantity: newVoucher.total_quantity,
+          expires_at: new Date(newVoucher.expires_at).toISOString(),
           is_active: true
         })
         .select()
@@ -92,6 +119,8 @@ export default function VouchersPage() {
 
       setVouchers(prev => [data, ...prev]);
       toast.success('Voucher created successfully');
+      
+      // Reset form and close dialog
       setNewVoucher({
         code: '',
         description: '',
@@ -99,9 +128,10 @@ export default function VouchersPage() {
         total_quantity: 0,
         expires_at: ''
       });
-    } catch (error) {
+      setIsDialogOpen(false);
+    } catch (error: any) {
       console.error('Error creating voucher:', error);
-      toast.error('Failed to create voucher');
+      toast.error(error.message || 'Failed to create voucher');
     } finally {
       setIsCreating(false);
     }
@@ -112,88 +142,105 @@ export default function VouchersPage() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Voucher Management</h1>
         
-        <Dialog>
-          <DialogTrigger asChild>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Create Voucher
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Create New Voucher</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Voucher Code (6 characters)</Label>
-                <Input
-                  maxLength={6}
-                  value={newVoucher.code}
-                  onChange={(e) => setNewVoucher(prev => ({
-                    ...prev,
-                    code: e.target.value.toUpperCase()
-                  }))}
-                  className="uppercase"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Description</Label>
-                <Input
-                  value={newVoucher.description}
-                  onChange={(e) => setNewVoucher(prev => ({
-                    ...prev,
-                    description: e.target.value
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Discount Amount (Rp)</Label>
-                <Input
-                  type="number"
-                  value={newVoucher.discount_amount}
-                  onChange={(e) => setNewVoucher(prev => ({
-                    ...prev,
-                    discount_amount: parseInt(e.target.value)
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Quantity</Label>
-                <Input
-                  type="number"
-                  value={newVoucher.total_quantity}
-                  onChange={(e) => setNewVoucher(prev => ({
-                    ...prev,
-                    total_quantity: parseInt(e.target.value)
-                  }))}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Expiry Date</Label>
-                <Input
-                  type="datetime-local"
-                  value={newVoucher.expires_at}
-                  onChange={(e) => setNewVoucher(prev => ({
-                    ...prev,
-                    expires_at: e.target.value
-                  }))}
-                />
-              </div>
-              <Button
-                onClick={handleCreateVoucher}
-                disabled={isCreating}
-                className="w-full"
-              >
-                {isCreating ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Create Voucher'
-                )}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <Button 
+          onClick={() => setIsDialogOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Create Voucher
+        </Button>
       </div>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Voucher</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Voucher Code (6 characters)</Label>
+              <Input
+                maxLength={6}
+                value={newVoucher.code}
+                onChange={(e) => setNewVoucher(prev => ({
+                  ...prev,
+                  code: e.target.value.toUpperCase()
+                }))}
+                className="uppercase"
+              />
+              {formErrors.code && (
+                <p className="text-xs text-red-500">{formErrors.code}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input
+                value={newVoucher.description}
+                onChange={(e) => setNewVoucher(prev => ({
+                  ...prev,
+                  description: e.target.value
+                }))}
+              />
+              {formErrors.description && (
+                <p className="text-xs text-red-500">{formErrors.description}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Discount Amount (Rp)</Label>
+              <Input
+                type="number"
+                value={newVoucher.discount_amount}
+                onChange={(e) => setNewVoucher(prev => ({
+                  ...prev,
+                  discount_amount: parseInt(e.target.value)
+                }))}
+              />
+              {formErrors.discount_amount && (
+                <p className="text-xs text-red-500">{formErrors.discount_amount}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Quantity</Label>
+              <Input
+                type="number"
+                value={newVoucher.total_quantity}
+                onChange={(e) => setNewVoucher(prev => ({
+                  ...prev,
+                  total_quantity: parseInt(e.target.value)
+                }))}
+              />
+              {formErrors.total_quantity && (
+                <p className="text-xs text-red-500">{formErrors.total_quantity}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label>Expiry Date</Label>
+              <Input
+                type="datetime-local"
+                value={newVoucher.expires_at}
+                onChange={(e) => setNewVoucher(prev => ({
+                  ...prev,
+                  expires_at: e.target.value
+                }))}
+              />
+              {formErrors.expires_at && (
+                <p className="text-xs text-red-500">{formErrors.expires_at}</p>
+              )}
+            </div>
+            <Button
+              onClick={handleCreateVoucher}
+              disabled={isCreating}
+              className="w-full"
+            >
+              {isCreating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                'Create Voucher'
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="flex justify-center py-8">

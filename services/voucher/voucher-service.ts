@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { PostgrestError } from "@supabase/supabase-js";
 
 export interface Voucher {
   id: string;
@@ -69,7 +70,8 @@ export const voucherService = {
     const supabase = createClient();
 
     try {
-      // First track the usage
+      // Begin transaction-like operations
+      // 1. First create the usage record
       const { error: usageError } = await supabase
         .from('voucher_usage')
         .insert({
@@ -78,37 +80,52 @@ export const voucherService = {
           user_id: userId,
           discount_applied: discountApplied,
           original_price: originalPrice,
-          final_price: finalPrice,
-          created_at: new Date().toISOString()
+          final_price: finalPrice
         });
 
       if (usageError) throw usageError;
 
-      // Then decrement the quantity
-      const { error: decrementError } = await supabase
-        .rpc('decrement_voucher_quantity', { 
-          voucher_id: voucherId 
+      // 2. Then update the voucher quantity directly
+      const { error: updateError } = await supabase
+        .rpc('decrement_voucher_quantity_safe', {
+          p_voucher_id: voucherId
         });
 
-      if (decrementError) {
-        console.error('Error decrementing voucher quantity:', decrementError);
-        throw decrementError;
-      }
+      if (updateError) throw updateError;
 
-      // Verify the quantity was decremented
+      // 3. Verify the update
       const { data: updatedVoucher, error: verifyError } = await supabase
         .from('vouchers')
-        .select('remaining_quantity')
+        .select('remaining_quantity, total_quantity')
         .eq('id', voucherId)
         .single();
 
-      if (verifyError || !updatedVoucher) {
-        throw new Error('Failed to verify voucher quantity update');
+      if (verifyError) throw verifyError;
+
+      // If quantity wasn't decremented, rollback by deleting the usage record
+      if (!updatedVoucher || updatedVoucher.remaining_quantity >= updatedVoucher.total_quantity) {
+        await supabase
+          .from('voucher_usage')
+          .delete()
+          .eq('voucher_id', voucherId)
+          .eq('booking_id', bookingId);
+        
+        throw new Error('Failed to decrement voucher quantity');
       }
 
       return true;
     } catch (error) {
       console.error('Error tracking voucher usage:', error);
+      // Attempt to rollback if there's an error
+      try {
+        await supabase
+          .from('voucher_usage')
+          .delete()
+          .eq('voucher_id', voucherId)
+          .eq('booking_id', bookingId);
+      } catch (rollbackError) {
+        console.error('Rollback failed:', rollbackError);
+      }
       return false;
     }
   }

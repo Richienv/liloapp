@@ -8,7 +8,7 @@ const snap = new midtransClient.Snap({
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
 });
 
-interface PaymentMetadata {
+export interface PaymentMetadata {
   streamerId: string;
   userId: string;
   startTime: string;
@@ -42,8 +42,8 @@ export async function createPayment(details: PaymentDetails) {
     // Generate Midtrans token first
     const transactionDetails = {
       transaction_details: {
-        order_id: `BOOKING-TEMP-${Date.now()}`, // Temporary order ID
-        gross_amount: details.amount
+        order_id: `BOOKING-TEMP-${Date.now()}`,
+        gross_amount: details.metadata.finalPrice
       },
       customer_details: {
         first_name: details.clientName,
@@ -68,14 +68,12 @@ export async function createPayment(details: PaymentDetails) {
       token: transaction.token,
       metadata: details.metadata
     };
-
   } catch (error) {
     console.error('Payment creation error:', error);
     throw error;
   }
 }
 
-// Update the return type for createBookingAfterPayment
 interface BookingResponse {
   id: number;
   client_id: string;
@@ -83,6 +81,7 @@ interface BookingResponse {
   client_last_name: string;
 }
 
+// Add a new function to create booking after successful payment
 export async function createBookingAfterPayment(
   result: any, 
   metadata: PaymentMetadata
@@ -90,7 +89,7 @@ export async function createBookingAfterPayment(
   const supabase = createClient();
   
   try {
-    // Create booking
+    // Create booking with original price and voucher info
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
       .insert({
@@ -104,6 +103,9 @@ export async function createBookingAfterPayment(
         sub_acc_link: metadata.sub_acc_link,
         sub_acc_pass: metadata.sub_acc_pass,
         price: metadata.price,
+        voucher_id: metadata.voucher?.id || null,
+        voucher_discount: metadata.voucher?.discountAmount || 0,
+        final_price: metadata.finalPrice,
         client_first_name: metadata.firstName,
         client_last_name: metadata.lastName,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
@@ -113,12 +115,12 @@ export async function createBookingAfterPayment(
 
     if (bookingError) throw bookingError;
 
-    // Create payment record with status
+    // Create payment record with final price
     const { error: paymentError } = await supabase
       .from('payments')
       .insert({
         booking_id: bookingData.id,
-        amount: metadata.finalPrice, // Use finalPrice instead of price
+        amount: metadata.finalPrice,
         status: 'success',
         payment_method: 'midtrans',
         transaction_id: result.order_id,
@@ -127,7 +129,28 @@ export async function createBookingAfterPayment(
 
     if (paymentError) throw paymentError;
 
-    return bookingData;
+    // Track voucher usage if voucher was applied
+    if (metadata.voucher) {
+      const { error: voucherError } = await supabase
+        .from('voucher_usage')
+        .insert({
+          voucher_id: metadata.voucher.id,
+          booking_id: bookingData.id,
+          user_id: metadata.userId,
+          discount_applied: metadata.voucher.discountAmount,
+          original_price: metadata.price,
+          final_price: metadata.finalPrice
+        });
+
+      if (voucherError) throw voucherError;
+    }
+
+    return {
+      id: bookingData.id,
+      client_id: bookingData.client_id,
+      client_first_name: bookingData.client_first_name,
+      client_last_name: bookingData.client_last_name
+    };
   } catch (error) {
     console.error('Error creating booking:', error);
     throw error;

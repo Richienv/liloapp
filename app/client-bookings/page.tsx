@@ -37,6 +37,8 @@ interface Booking {
   };
   items_received?: boolean;
   items_received_at?: string | null;
+  final_price?: number;
+  voucher_discount?: number;
 }
 
 interface RatingData {
@@ -659,6 +661,8 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
     }
   };
 
+  const displayPrice = booking.final_price || booking.price;
+
   return (
     <div className="border rounded-lg shadow-sm p-4 pb-4 mb-4 text-sm hover:shadow-md transition-shadow relative">
       {/* Top layer - Status and date position switched */}
@@ -704,9 +708,14 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
       
       {/* Bottom layer - Updated with new buttons */}
       <div className="flex justify-between items-center">
-        <div className="flex items-center">
-          <DollarSign className="w-5 h-5 mr-2 text-green-500" />
-          <span className="font-semibold text-lg">Rp {booking.price.toLocaleString()}</span>
+        <div className="flex items-center gap-3 text-sm">
+          <DollarSign className="h-4 w-4 text-gray-400" />
+          <span>Rp {displayPrice.toLocaleString()}</span>
+          {booking.voucher_discount > 0 && (
+            <span className="text-green-600 text-xs">
+              (Saved Rp {booking.voucher_discount.toLocaleString()})
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
           {booking.status.toLowerCase() === 'completed' && (
