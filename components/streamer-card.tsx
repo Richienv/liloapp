@@ -12,6 +12,7 @@ import { toast } from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import { createOrGetConversation } from '@/services/message-service';
 import { BookingCalendar } from './booking-calendar';
+import { cn } from '@/lib/utils';
 
 // Add this function at the top of your file, outside of the StreamerCard component
 function getYouTubeVideoId(url: string): string | null {
@@ -164,6 +165,31 @@ function formatDiscount(basePrice: number, previousPrice?: number | null, discou
     displayPrice: `Rp ${Math.round(currentPriceWithFee).toLocaleString('id-ID')}` 
   };
 }
+
+// First, add this helper function at the top of the file
+const getTimeSlots = (timeOfDay: 'Morning' | 'Afternoon' | 'Evening' | 'Night'): string[] => {
+  switch (timeOfDay) {
+    case 'Morning':
+      return Array.from({ length: 6 }, (_, i) => `${(6 + i).toString().padStart(2, '0')}:00`);
+    case 'Afternoon':
+      return Array.from({ length: 6 }, (_, i) => `${(12 + i).toString().padStart(2, '0')}:00`);
+    case 'Evening':
+      return Array.from({ length: 6 }, (_, i) => `${(18 + i).toString().padStart(2, '0')}:00`);
+    case 'Night':
+      return Array.from({ length: 6 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+  }
+};
+
+// First, update the timeOptions type and add necessary interfaces
+interface TimeOption {
+  hour: string;
+  available: boolean;
+}
+
+// Add this type guard function
+const isTimeOption = (value: unknown): value is string => {
+  return typeof value === 'string' && /^\d{2}:00$/.test(value);
+};
 
 export function StreamerCard({ streamer }: { streamer: Streamer }) {
   const router = useRouter();
@@ -828,46 +854,48 @@ export function StreamerCard({ streamer }: { streamer: Streamer }) {
           <div className="h-px bg-gray-200" />
 
           {activeSchedule ? (
-            timeOptions.length > 0 ? (
-              <div className="space-y-3 sm:space-y-4">
-                {['Morning', 'Afternoon', 'Evening', 'Night'].map((timeOfDay) => (
+            <div className="space-y-3 sm:space-y-4">
+              {(['Morning', 'Afternoon', 'Evening', 'Night'] as const).map((timeOfDay) => {
+                const slots = getTimeSlots(timeOfDay);
+                const availableSlots = slots.filter(hour => 
+                  Array.isArray(timeOptions) && 
+                  timeOptions.some(option => isTimeOption(option) && option === hour)
+                );
+                
+                // Only show the section if there are available slots
+                if (availableSlots.length === 0) return null;
+
+                return (
                   <div key={timeOfDay}>
                     <h4 className="text-xs sm:text-sm font-semibold mb-2">{timeOfDay}</h4>
-                    <div className="grid grid-cols-4 gap-1 sm:gap-2">
-                      {timeOptions
-                        .filter((hour: string) => {
-                          const hourNum = parseInt(hour.split(':')[0]);
-                          return (
-                            (timeOfDay === 'Night' && (hourNum >= 0 && hourNum < 6)) ||
-                            (timeOfDay === 'Morning' && (hourNum >= 6 && hourNum < 12)) ||
-                            (timeOfDay === 'Afternoon' && (hourNum >= 12 && hourNum < 18)) ||
-                            (timeOfDay === 'Evening' && (hourNum >= 18 && hourNum < 24))
-                          );
-                        })
-                        .map((hour: string) => (
+                    <div className="grid grid-cols-6 gap-1 sm:gap-2">
+                      {slots.map((hour) => {
+                        const isAvailable = Array.isArray(timeOptions) && 
+                          timeOptions.some(option => isTimeOption(option) && option === hour);
+
+                        return (
                           <Button
                             key={hour}
                             variant={isHourSelected(hour) ? "default" : "outline"}
-                            className={`text-[10px] sm:text-sm p-1 sm:p-2 h-auto ${
+                            className={cn(
+                              "text-[10px] sm:text-sm p-1 sm:p-2 h-auto",
                               isHourSelected(hour) 
                                 ? 'bg-gradient-to-r from-[#1e40af] to-[#6b21a8] text-white hover:from-[#1e3a8a] hover:to-[#581c87]' 
-                                : 'hover:bg-blue-50'
-                            }`}
+                                : 'hover:bg-blue-50',
+                              !isAvailable && 'opacity-50 cursor-not-allowed'
+                            )}
                             onClick={() => handleHourSelection(hour)}
-                            disabled={isHourDisabled(hour)}
+                            disabled={isHourDisabled(hour) || !isAvailable}
                           >
                             {hour}
                           </Button>
-                        ))}
+                        );
+                      })}
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center text-xs sm:text-sm text-gray-500">
-                No available slots for this day
-              </div>
-            )
+                );
+              })}
+            </div>
           ) : (
             <div className="text-center py-6">
               <div className="text-sm text-gray-500 mb-2">

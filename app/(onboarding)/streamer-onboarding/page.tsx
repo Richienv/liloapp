@@ -4,63 +4,152 @@ import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Play, CheckCircle2, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Play, CheckCircle2, ArrowLeft, ArrowRight, TrendingUp, Globe, Users, Sparkles, Star, Crown, Trophy, Wallet, Coins, PiggyBank, Banknote, Clock1, Clock4, Clock8, Clock12, Sunrise, Sun, Sunset, Moon } from 'lucide-react';
 import Image from "next/image";
+import { cn } from "@/lib/utils";
+import { Slider } from "@/components/ui/slider";
+
+interface Option {
+  icon?: React.ReactNode;
+  label: string;
+  description?: string;
+  color?: string;
+}
+
+interface TimeLabel {
+  value: number;
+  label: string;
+  emoji: string;
+}
+
+interface InputSelectorProps {
+  type: string;
+  options?: Option[];
+  sliderConfig?: {
+    min: number;
+    max: number;
+    step: number;
+    defaultValue: number[];
+  };
+  timeLabels?: TimeLabel[];
+  selectedOptions: string[];
+  onSelectChange: (newSelection: string[]) => void;
+}
+
+const InputSelector = ({ 
+  type, 
+  options,
+  sliderConfig,
+  timeLabels,
+  selectedOptions,
+  onSelectChange
+}: InputSelectorProps) => {
+  if (type === 'multiSelect' && options) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {options.map((option, index) => (
+          <button
+            key={index}
+            onClick={() => {
+              const newSelected = selectedOptions.includes(option.label)
+                ? selectedOptions.filter(item => item !== option.label)
+                : [...selectedOptions, option.label];
+              onSelectChange(newSelected);
+            }}
+            className={cn(
+              "p-3 rounded-lg border-2 transition-all duration-200",
+              selectedOptions.includes(option.label)
+                ? "border-red-500 bg-red-50"
+                : "border-gray-200 hover:border-red-500 hover:bg-red-50"
+            )}
+          >
+            <div className="flex flex-col items-center gap-2">
+              <div className={cn(
+                "p-2 rounded-lg",
+                selectedOptions.includes(option.label)
+                  ? "bg-red-200 text-red-700"
+                  : "bg-red-100 text-red-600"
+              )}>
+                {option.icon}
+              </div>
+              <div className="text-xs font-medium text-center text-gray-900">{option.label}</div>
+              {option.description && (
+                <div className="text-xs text-gray-500">{option.description}</div>
+              )}
+            </div>
+          </button>
+        ))}
+      </div>
+    );
+  } else if (type === 'slider' && sliderConfig && timeLabels) {
+    return (
+      <div className="space-y-6">
+        <Slider
+          defaultValue={sliderConfig.defaultValue}
+          max={sliderConfig.max}
+          min={sliderConfig.min}
+          step={sliderConfig.step}
+          onValueChange={(value) => onSelectChange([value.toString()])}
+        />
+        <div className="flex justify-between text-sm text-gray-600">
+          {timeLabels.map((label, index) => (
+            <div 
+              key={index}
+              className={cn(
+                "flex flex-col items-center gap-1",
+                Number(selectedOptions[0]) >= label.value && "text-red-500 font-medium"
+              )}
+            >
+              <span className="text-lg">{label.emoji}</span>
+              <span>{label.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
 
 const onboardingSteps = [
   {
     title: "Selamat Bergabung di Salda! 👋",
     description: "Platform yang menghubungkan Anda dengan brand-brand terbaik untuk live shopping.",
-    points: [
-      "Dapatkan akses ke berbagai brand ternama",
-      "Kelola jadwal live shopping dengan mudah",
-      "Terima pembayaran secara aman dan tepat waktu"
+    question: "Apa yang membuat Anda tertarik menjadi host live shopping?",
+    inputType: "multiSelect",
+    options: [
+      {
+        icon: <TrendingUp className="w-4 h-4" />,
+        label: "Penghasilan Tambahan",
+        description: "Target 3-5x lipat"
+      },
+      {
+        icon: <Globe className="w-4 h-4" />,
+        label: "Fleksibilitas Waktu",
+        description: "Atur jadwal sendiri"
+      },
+      {
+        icon: <Users className="w-4 h-4" />,
+        label: "Pengembangan Karir",
+        description: "Jadi host profesional"
+      },
+      {
+        icon: <Sparkles className="w-4 h-4" />,
+        label: "Koneksi Brand",
+        description: "Kerjasama brand ternama"
+      }
     ],
     video: "/videos/s1.mp4"
   },
   {
-    title: "Komunikasi yang Aman 💬",
-    description: "Berkomunikasi dengan client melalui platform Salda yang terpercaya.",
-    points: [
-      "Chat langsung dengan client melalui platform",
-      "Diskusikan detail live shopping dengan aman",
-      "Semua percakapan tercatat dalam sistem"
-    ],
-    video: "/videos/s2.mp4"
-  },
-  {
-    title: "Dukungan Admin 🤝",
-    description: "Tim admin Salda siap membantu melancarkan setiap sesi live shopping Anda.",
-    points: [
-      "Mediasi komunikasi dengan client",
-      "Bantuan teknis selama live shopping",
-      "Penyelesaian masalah dengan cepat"
-    ],
-      video: "/videos/s3.mp4"
-  },
-  {
     title: "Mulai Live dengan Mudah 🎥",
-    description: "Sistem live shopping yang simpel dan mudah digunakan.",
-    points: [
-      "Mulai live streaming dengan satu klik",
-      "Interface yang user-friendly",
-      "Panduan langkah demi langkah"
-    ],
+    description: "Kami akan membantu Anda memulai perjalanan sebagai host live shopping profesional dengan sistem yang mudah dan intuitif.",
     video: "/videos/s4.mp4"
-  },
-  {
-    title: "Sistem Audit Otomatis ⚡",
-    description: "Pantau dan rekam setiap sesi live shopping dengan akurat.",
-    points: [
-      "Pencatatan waktu mulai dan selesai otomatis",
-      "Monitoring status live secara real-time",
-      "Laporan performa setiap sesi"
-    ],
-    video: "/videos/s5.mp4"
   },
   {
     title: "Pembayaran Terjamin 💰",
     description: "Sistem pembayaran yang aman dan transparan.",
+    question: "Keuntungan sistem pembayaran Salda:",
     points: [
       "Pembayaran terlindungi dari penipuan dan fraud",
       "Rincian fee yang jelas dengan struktur komisi yang jelas",
@@ -70,38 +159,63 @@ const onboardingSteps = [
   },
   {
     title: "Kelola Booking dengan Mudah 📅",
-    description: "Terima atau tolak permintaan booking sesuai jadwal Anda.",
-    points: [
-      "Atur harga dan durasi ketesediaan kamu sesuai keinginan",
-      "Dapatkan permintaan langsung dari brand-brand terpercaya",
-      "Kelola sesi live kamu dengan fleksibel"
+    description: "Atur jadwal live shopping Anda dengan fleksibel. Terima permintaan yang sesuai, tolak yang bentrok, semua dalam genggaman Anda.",
+    question: "Berapa jam yang bisa Anda luangkan untuk live shopping per hari? ⏰",
+    inputType: "slider",
+    sliderConfig: {
+      min: 0,
+      max: 12,
+      step: 1,
+      defaultValue: [4]
+    },
+    timeLabels: [
+      { value: 0, label: "0 jam", emoji: "😴" },
+      { value: 3, label: "3 jam", emoji: "🌱" },
+      { value: 6, label: "6 jam", emoji: "⭐" },
+      { value: 9, label: "9 jam", emoji: "🔥" },
+      { value: 12, label: "12 jam", emoji: "🚀" }
     ],
     video: "/videos/s7.mp4"
   },
   {
     title: "Atur Jadwal Fleksibel ⏰",
     description: "Tentukan waktu ketersediaan sesuai kenyamanan Anda.",
+    question: "Kapan waktu terbaik Anda untuk melakukan live shopping?",
+    inputType: "multiSelect",
+    options: [
+      {
+        icon: <Sunrise className="w-4 h-4" />,
+        label: "Pagi",
+        description: "08:00 - 12:00"
+      },
+      {
+        icon: <Sun className="w-4 h-4" />,
+        label: "Siang",
+        description: "12:00 - 16:00"
+      },
+      {
+        icon: <Sunset className="w-4 h-4" />,
+        label: "Sore",
+        description: "16:00 - 20:00"
+      },
+      {
+        icon: <Moon className="w-4 h-4" />,
+        label: "Malam",
+        description: "20:00 - 24:00"
+      }
+    ],
     points: [
       "Set jadwal aktif kamu dengan detail jam ketersediaan kamu",
       "Blokir waktu untuk keperluan pribadi",
       "Semua jadwal kamu dapat dijadwalkan dengan mudah"
     ],
     video: "/videos/s8.mp4"
-  },
-  {
-    title: "⚠️ PENTING ⚠️",
-    description: "Lindungi diri Anda dengan mengikuti protokol keamanan Salda.",
-    points: [
-      "Jangan bagikan data pribadi di luar platform",
-      "Semua transaksi WAJIB melalui Salda",
-      "Laporkan aktivitas mencurigakan ke admin"
-    ],
-    video: ""
   }
 ];
 
 export default function StreamerOnboarding() {
   const [currentStep, setCurrentStep] = useState(0);
+  const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
   const router = useRouter();
 
   const handleNext = () => {
@@ -122,232 +236,172 @@ export default function StreamerOnboarding() {
     }
   };
 
-  const renderSecurityStep = () => {
-    if (currentStep === onboardingSteps.length - 1) {
-      return (
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="relative"
-        >
-          <motion.div
-            animate={{
-              scale: [1, 1.02, 1],
-              opacity: [0.5, 0.8, 0.5],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="absolute inset-0 bg-red-100 rounded-lg lg:rounded-xl"
-          />
-
-          <div className="relative bg-white/95 backdrop-blur-sm rounded-lg lg:rounded-xl border-2 border-red-500 p-4 lg:p-8 space-y-4 lg:space-y-6">
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-3 text-red-600"
-            >
-              <svg
-                className="w-6 h-6 lg:w-8 lg:h-8 animate-pulse"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              <h1 className="text-2xl lg:text-4xl font-bold">
-                {onboardingSteps[currentStep].title}
-              </h1>
-            </motion.div>
-
-            <motion.p
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-base lg:text-lg text-gray-700"
-            >
-              {onboardingSteps[currentStep].description}
-            </motion.p>
-
-            <div className="space-y-3 lg:space-y-4">
-              {onboardingSteps[currentStep].points.map((point, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-3 text-gray-800 bg-red-50 p-3 lg:p-4 rounded-lg border border-red-200"
-                >
-                  <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
-                  </div>
-                  <span className="text-sm lg:text-base font-medium">{point}</span>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="mt-4 lg:mt-6 p-3 lg:p-4 bg-red-50 rounded-lg border border-red-200"
-            >
-              <p className="text-xs lg:text-sm text-red-600 font-medium">
-                Catatan: Salda tidak bertanggung jawab atas kerugian yang timbul akibat
-                transaksi di luar platform atau pembagian informasi pribadi kepada pihak lain.
-              </p>
-            </motion.div>
-          </div>
-        </motion.div>
-      );
-    }
-
-    return (
-      <div className="space-y-6 lg:space-y-8">
-        <h1 className="text-2xl lg:text-4xl font-bold text-gray-900">
-          {onboardingSteps[currentStep].title}
-        </h1>
-        <p className="text-base lg:text-lg text-gray-600">
-          {onboardingSteps[currentStep].description}
-        </p>
-        <div className="space-y-3 lg:space-y-4">
-          {onboardingSteps[currentStep].points.map((point, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ 
-                opacity: 1, 
-                y: 0,
-                transition: { delay: index * 0.2 }
-              }}
-              className="flex items-center gap-3 text-gray-700"
-            >
-              <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center">
-                <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
-              </div>
-              <span className="text-sm lg:text-base">{point}</span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    );
+  const handleSelect = (newSelection: string[]) => {
+    setSelectedOptions(newSelection);
   };
 
   return (
-    <div className="flex flex-col lg:flex-row w-full min-h-screen">
-      {/* Video Section */}
-      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-white order-1 lg:order-2">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentStep}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 flex items-center justify-center"
-          >
-            <video
-              key={onboardingSteps[currentStep].video}
-              src={onboardingSteps[currentStep].video}
-              autoPlay
-              muted
-              loop
-              playsInline
-              className="w-full h-full object-contain"
-            />
-          </motion.div>
-        </AnimatePresence>
-      </div>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* Header Navigation */}
+      <nav className="bg-[#1A1A1A]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            <div className="flex">
+              <div className="flex-shrink-0 flex items-center">
+                <Image
+                  src="/images/icon-salda.png"
+                  alt="Salda Logo"
+                  width={40}
+                  height={40}
+                  className="h-8 w-auto"
+                />
+              </div>
+            </div>
+            <div className="flex items-center">
+              <span className="px-3 py-1 text-sm bg-[#2A2A2A] text-white rounded-full">
+                EN
+              </span>
+            </div>
+          </div>
+        </div>
+      </nav>
 
-      {/* Content Section */}
-      <div className="w-full lg:w-[45%] bg-gradient-to-br from-red-50 via-white to-red-50 p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
-        <div className="w-full max-w-2xl">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="space-y-6 lg:space-y-8"
-            >
-              {/* Progress Bar */}
-              <div className="flex items-center gap-1 lg:gap-2 mb-8 lg:mb-12 px-4 lg:px-0">
-                {onboardingSteps.map((_, index) => (
-                  <div key={index} className="flex-1 relative">
-                    <div 
-                      className={`h-1.5 lg:h-2 rounded-full transition-all duration-500 ${
-                        index <= currentStep ? "bg-red-500" : "bg-gray-200"
-                      }`}
-                    />
-                    {index <= currentStep && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -right-1 -top-1 hidden lg:block"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-red-500" />
-                      </motion.div>
-                    )}
-                  </div>
-                ))}
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center py-6 md:py-12 min-h-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full overflow-y-auto">
+          {/* Progress Indicator */}
+          <div className="mb-8 md:mb-12">
+            <div className="flex items-center justify-center gap-1.5 mb-4">
+              {onboardingSteps.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentStep ? 'w-6 bg-red-600' : 'w-1.5 bg-gray-200'
+                  }`}
+                />
+              ))}
+            </div>
+            <p className="text-center text-sm text-gray-500">
+              Step {currentStep + 1} of {onboardingSteps.length}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-16 items-center">
+            {/* Left Column - Content */}
+            <div className="space-y-6 md:space-y-8 order-2 lg:order-1">
+              <div className="space-y-4">
+                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                  {onboardingSteps[currentStep].title}
+                </h1>
+                <p className="text-base md:text-lg text-gray-600 leading-relaxed">
+                  {onboardingSteps[currentStep].description}
+                </p>
               </div>
 
-              {/* Content */}
-              <div className="px-4 lg:px-0">
-                {renderSecurityStep()}
-              </div>
+              {/* Question Section */}
+              {(onboardingSteps[currentStep].options || onboardingSteps[currentStep].sliderConfig) && (
+                <div className="space-y-4">
+                  <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+                    {onboardingSteps[currentStep].question}
+                  </h2>
+                  <InputSelector
+                    type={onboardingSteps[currentStep].inputType}
+                    options={onboardingSteps[currentStep].options}
+                    sliderConfig={onboardingSteps[currentStep].sliderConfig}
+                    timeLabels={onboardingSteps[currentStep].timeLabels}
+                    selectedOptions={selectedOptions}
+                    onSelectChange={handleSelect}
+                  />
+                </div>
+              )}
+
+              {/* Points Section */}
+              {onboardingSteps[currentStep].points && (
+                <div className="space-y-3 lg:space-y-4">
+                  {onboardingSteps[currentStep].points.map((point, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ 
+                        opacity: 1, 
+                        y: 0,
+                        transition: { delay: index * 0.2 }
+                      }}
+                      className="flex items-center gap-3 text-gray-700"
+                    >
+                      <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center">
+                        <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
+                      </div>
+                      <span className="text-sm lg:text-base">{point}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
 
               {/* Navigation */}
-              <div className="space-y-6 lg:space-y-8 px-4 lg:px-0">
-                <div className="flex gap-3 lg:gap-4">
+              <div className="space-y-3 pt-4">
+                <div className="flex space-x-3">
                   <Button
                     onClick={handlePrevious}
                     variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
+                    className="flex-1 h-10 text-sm font-medium border hover:bg-gray-50"
                     disabled={currentStep === 0}
                   >
-                    <ArrowLeft className="w-4 h-4" />
-                    Kembali
+                    Previous
                   </Button>
                   <Button
                     onClick={handleNext}
-                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
+                    className="flex-1 h-10 text-sm font-medium bg-red-600 hover:bg-red-700 text-white"
                   >
-                    {currentStep === onboardingSteps.length - 1 ? "Mulai" : "Lanjut"}
-                    <ArrowRight className="w-4 h-4" />
+                    {currentStep === onboardingSteps.length - 1 ? 'Finish' : 'Next'}
                   </Button>
                 </div>
+                
+                <button
+                  onClick={handleSkip}
+                  className="w-full text-center text-sm text-gray-500 hover:text-gray-900 py-2"
+                >
+                  Skip onboarding
+                </button>
+              </div>
+            </div>
 
-                {/* Skip button */}
-                <div className="text-center">
-                  <button
-                    onClick={handleSkip}
-                    className="group inline-flex flex-col items-center gap-2"
-                  >
-                    <Image
-                      src="/images/salda-logoB.png"
-                      alt="Salda Logo"
-                      width={40}
-                      height={40}
-                      className="opacity-50 group-hover:opacity-100 transition-opacity lg:w-[60px] lg:h-[60px]"
+            {/* Right Column - Video */}
+            <div className="order-1 lg:order-2">
+              <div className="max-w-[280px] mx-auto">
+                <div className="aspect-[9/16] relative overflow-hidden rounded-2xl bg-gray-100">
+                  {onboardingSteps[currentStep].video && (
+                    <video
+                      key={onboardingSteps[currentStep].video}
+                      src={onboardingSteps[currentStep].video}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      className="w-full h-full object-cover"
                     />
-                    <span className="text-xs lg:text-sm text-gray-500 underline group-hover:text-gray-700">
-                      Lewati semua pengenalan
-                    </span>
-                  </button>
+                  )}
                 </div>
               </div>
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Footer */}
+      <footer className="border-t">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex justify-between items-center text-sm text-gray-500">
+            <div className="flex space-x-6">
+              <a href="mailto:admin@trolive.id" className="hover:text-gray-900">admin@trolive.id</a>
+              <a href="tel:+18558302662" className="hover:text-gray-900">+1 855 830 2662</a>
+            </div>
+            <div>
+              Streamer ID N1198653
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
