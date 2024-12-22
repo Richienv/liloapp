@@ -22,8 +22,25 @@ interface TimeLabel {
   emoji: string;
 }
 
+interface OnboardingStep {
+  title: string;
+  description: string;
+  question?: string;
+  inputType?: 'multiSelect' | 'slider';
+  options?: Option[];
+  sliderConfig?: {
+    min: number;
+    max: number;
+    step: number;
+    defaultValue: number[];
+  };
+  timeLabels?: TimeLabel[];
+  points?: string[];
+  video?: string;
+}
+
 interface InputSelectorProps {
-  type: string;
+  type: 'multiSelect' | 'slider';
   options?: Option[];
   sliderConfig?: {
     min: number;
@@ -111,7 +128,7 @@ const InputSelector = ({
   return null;
 };
 
-const onboardingSteps = [
+const onboardingSteps: OnboardingStep[] = [
   {
     title: "Selamat Bergabung di Salda! 👋",
     description: "Platform yang menghubungkan Anda dengan brand-brand terbaik untuk live shopping.",
@@ -305,7 +322,7 @@ export default function StreamerOnboarding() {
                     {onboardingSteps[currentStep].question}
                   </h2>
                   <InputSelector
-                    type={onboardingSteps[currentStep].inputType}
+                    type={onboardingSteps[currentStep].inputType!}
                     options={onboardingSteps[currentStep].options}
                     sliderConfig={onboardingSteps[currentStep].sliderConfig}
                     timeLabels={onboardingSteps[currentStep].timeLabels}
