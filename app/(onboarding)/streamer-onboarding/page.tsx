@@ -333,27 +333,32 @@ export default function StreamerOnboarding() {
               )}
 
               {/* Points Section */}
-              {onboardingSteps[currentStep].points && Array.isArray(onboardingSteps[currentStep].points) && (
-                <div className="space-y-3 lg:space-y-4">
-                  {onboardingSteps[currentStep].points.map((point, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ 
-                        opacity: 1, 
-                        y: 0,
-                        transition: { delay: index * 0.2 }
-                      }}
-                      className="flex items-center gap-3 text-gray-700"
-                    >
-                      <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center">
-                        <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
-                      </div>
-                      <span className="text-sm lg:text-base">{point}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const points = onboardingSteps[currentStep].points;
+                if (!points || !Array.isArray(points)) return null;
+                
+                return (
+                  <div className="space-y-3 lg:space-y-4">
+                    {points.map((point, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ 
+                          opacity: 1, 
+                          y: 0,
+                          transition: { delay: index * 0.2 }
+                        }}
+                        className="flex items-center gap-3 text-gray-700"
+                      >
+                        <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center">
+                          <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
+                        </div>
+                        <span className="text-sm lg:text-base">{point}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* Navigation */}
               <div className="space-y-3 pt-4">
