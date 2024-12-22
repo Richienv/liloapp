@@ -333,7 +333,7 @@ export default function StreamerOnboarding() {
               )}
 
               {/* Points Section */}
-              {onboardingSteps[currentStep].points && (
+              {onboardingSteps[currentStep].points && Array.isArray(onboardingSteps[currentStep].points) && (
                 <div className="space-y-3 lg:space-y-4">
                   {onboardingSteps[currentStep].points.map((point, index) => (
                     <motion.div
