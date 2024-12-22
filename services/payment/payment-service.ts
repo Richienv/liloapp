@@ -1,11 +1,11 @@
 import { createClient } from "@/utils/supabase/client";
 import midtransClient from 'midtrans-client';
 
-// Initialize Snap client
+// Initialize Snap client with proper error handling
 const snap = new midtransClient.Snap({
   isProduction: false,
-  serverKey: process.env.MIDTRANS_SERVER_KEY!,
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY
+  serverKey: process.env.MIDTRANS_SERVER_KEY || '',
+  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
 });
 
 export interface PaymentMetadata {
@@ -39,10 +39,25 @@ interface PaymentDetails {
 
 export async function createPayment(details: PaymentDetails) {
   try {
-    // Generate Midtrans token first
+    // Validate environment variables
+    if (!process.env.MIDTRANS_SERVER_KEY || !process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY) {
+      throw new Error('Midtrans configuration is missing');
+    }
+
+    console.log('=== Create Payment Start ===');
+    console.log('Payment details:', details);
+
+    // Generate a proper order ID format
+    const orderId = `BOOKING-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+    console.log('Generated order ID:', orderId);
+    
+    // Get site URL with fallback
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    
+    // Generate Midtrans token
     const transactionDetails = {
       transaction_details: {
-        order_id: `BOOKING-TEMP-${Date.now()}`,
+        order_id: orderId,
         gross_amount: details.metadata.finalPrice
       },
       customer_details: {
@@ -54,22 +69,30 @@ export async function createPayment(details: PaymentDetails) {
         secure: true
       },
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_SITE_URL}/client-bookings`
+        finish: `${siteUrl}/client-bookings`
       }
     };
 
+    console.log('Transaction details for Midtrans:', transactionDetails);
+
     const transaction = await snap.createTransaction(transactionDetails);
+    console.log('Midtrans response:', transaction);
 
     if (!transaction || !transaction.token) {
+      console.error('No token in Midtrans response');
       throw new Error('Failed to generate Midtrans token');
     }
 
+    console.log('=== Create Payment Complete ===');
+
     return {
       token: transaction.token,
-      metadata: details.metadata
+      metadata: details.metadata,
+      orderId: orderId
     };
   } catch (error) {
-    console.error('Payment creation error:', error);
+    console.error('=== Create Payment Error ===');
+    console.error('Error details:', error);
     throw error;
   }
 }
@@ -89,70 +112,136 @@ export async function createBookingAfterPayment(
   const supabase = createClient();
   
   try {
-    // Create booking with original price and voucher info
-    const { data: bookingData, error: bookingError } = await supabase
+    const transactionId = result.order_id || result.transaction_id;
+    if (!transactionId) {
+      throw new Error('Missing transaction ID in payment result');
+    }
+
+    // Create booking first
+    const bookingInsert = {
+      client_id: metadata.userId,
+      streamer_id: parseInt(metadata.streamerId),
+      start_time: metadata.startTime,
+      end_time: metadata.endTime,
+      platform: metadata.platform,
+      status: 'pending',
+      special_request: metadata.specialRequest || null,
+      sub_acc_link: metadata.sub_acc_link || null,
+      sub_acc_pass: metadata.sub_acc_pass || null,
+      price: metadata.price, // Original price
+      client_first_name: metadata.firstName,
+      client_last_name: metadata.lastName,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      stream_link: null,
+      items_received: false,
+      items_received_at: null,
+      reason: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    console.log('Inserting booking:', bookingInsert);
+
+    // Insert booking
+    const { data: newBooking, error: bookingError } = await supabase
       .from('bookings')
-      .insert({
-        client_id: metadata.userId,
-        streamer_id: parseInt(metadata.streamerId),
-        start_time: metadata.startTime,
-        end_time: metadata.endTime,
-        platform: metadata.platform,
-        status: 'pending',
-        special_request: metadata.specialRequest,
-        sub_acc_link: metadata.sub_acc_link,
-        sub_acc_pass: metadata.sub_acc_pass,
-        price: metadata.price,
-        voucher_id: metadata.voucher?.id || null,
-        voucher_discount: metadata.voucher?.discountAmount || 0,
-        final_price: metadata.finalPrice,
-        client_first_name: metadata.firstName,
-        client_last_name: metadata.lastName,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
-      })
+      .insert([bookingInsert])
       .select()
       .single();
 
-    if (bookingError) throw bookingError;
+    if (bookingError) {
+      console.error('Booking creation error:', bookingError);
+      throw bookingError;
+    }
 
-    // Create payment record with final price
-    const { error: paymentError } = await supabase
-      .from('payments')
-      .insert({
-        booking_id: bookingData.id,
-        amount: metadata.finalPrice,
-        status: 'success',
-        payment_method: 'midtrans',
-        transaction_id: result.order_id,
-        midtrans_response: result
-      });
-
-    if (paymentError) throw paymentError;
-
-    // Track voucher usage if voucher was applied
+    // Handle voucher if present
     if (metadata.voucher) {
+      // Record voucher usage with final price
       const { error: voucherError } = await supabase
         .from('voucher_usage')
         .insert({
           voucher_id: metadata.voucher.id,
-          booking_id: bookingData.id,
+          booking_id: newBooking.id,
           user_id: metadata.userId,
           discount_applied: metadata.voucher.discountAmount,
           original_price: metadata.price,
-          final_price: metadata.finalPrice
+          final_price: metadata.finalPrice, // Final price goes here
+          used_at: new Date().toISOString()
         });
 
-      if (voucherError) throw voucherError;
+      if (voucherError) {
+        console.error('Voucher usage tracking error:', voucherError);
+        throw voucherError;
+      }
+
+      // Update voucher quantity
+      const { error: updateError } = await supabase
+        .rpc('decrement_voucher_quantity', {
+          voucher_uuid: metadata.voucher.id
+        });
+
+      if (updateError) {
+        console.error('Error updating voucher quantity:', updateError);
+        throw updateError;
+      }
     }
 
-    return {
-      id: bookingData.id,
-      client_id: bookingData.client_id,
-      client_first_name: bookingData.client_first_name,
-      client_last_name: bookingData.client_last_name
+    // Create payment record
+    const paymentInsert = {
+      booking_id: newBooking.id,
+      amount: metadata.finalPrice,
+      status: 'success',
+      payment_method: 'midtrans',
+      transaction_id: transactionId,
+      payment_token: result.token || null,
+      payment_url: result.redirect_url || null,
+      midtrans_response: result,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
+
+    const { error: paymentError } = await supabase
+      .from('payments')
+      .insert([paymentInsert]);
+
+    if (paymentError) {
+      console.error('Payment record creation error:', paymentError);
+      throw paymentError;
+    }
+
+    // Create notifications
+    const notifications = [
+      {
+        user_id: metadata.userId,
+        message: `Booking confirmed with ${metadata.firstName} ${metadata.lastName}. Payment successful.`,
+        type: 'confirmation',
+        booking_id: newBooking.id,
+        streamer_id: parseInt(metadata.streamerId),
+        created_at: new Date().toISOString(),
+        is_read: false
+      },
+      {
+        user_id: newBooking.streamer_id,
+        message: `New booking request from ${metadata.firstName} ${metadata.lastName}. Payment confirmed.`,
+        type: 'confirmation',
+        booking_id: newBooking.id,
+        streamer_id: parseInt(metadata.streamerId),
+        created_at: new Date().toISOString(),
+        is_read: false
+      }
+    ];
+
+    await supabase.from('notifications').insert(notifications);
+
+    return {
+      id: newBooking.id,
+      client_id: newBooking.client_id,
+      client_first_name: newBooking.client_first_name,
+      client_last_name: newBooking.client_last_name
+    };
+
   } catch (error) {
-    console.error('Error creating booking:', error);
+    console.error('Error in createBookingAfterPayment:', error);
     throw error;
   }
 }

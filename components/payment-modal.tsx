@@ -27,7 +27,6 @@ export function PaymentModal({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Load Midtrans script dynamically
     const loadScript = async () => {
       try {
         if (!window.snap && !document.getElementById('midtrans-script')) {
@@ -36,7 +35,6 @@ export function PaymentModal({
           script.src = 'https://app.sandbox.midtrans.com/snap/snap.js';
           script.setAttribute('data-client-key', process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || '');
           
-          // Wait for script to load
           await new Promise((resolve, reject) => {
             script.onload = resolve;
             script.onerror = reject;
@@ -44,27 +42,47 @@ export function PaymentModal({
           });
         }
 
-        // Initialize payment once script is loaded
         if (token && !snapInitialized.current) {
           snapInitialized.current = true;
-          window.snap.pay(token, {
-            onSuccess: (result: any) => {
-              snapInitialized.current = false;
-              onSuccess(result);
+          
+          const midtransCallback = {
+            onSuccess: async (result: any) => {
+              console.log('Midtrans Success:', result);
+              
+              // Format the result
+              const formattedResult = {
+                ...result,
+                transaction_status: 'settlement',
+                status_code: '200',
+                status_message: 'Success, transaction is found',
+                transaction_id: result.transaction_id || result.order_id
+              };
+
+              console.log('Formatted result:', formattedResult);
+              
+              try {
+                await onSuccess(formattedResult);
+              } catch (error) {
+                console.error('Error in success callback:', error);
+              }
             },
             onPending: (result: any) => {
-              snapInitialized.current = false;
+              console.log('Midtrans Pending:', result);
               onPending(result);
             },
             onError: (result: any) => {
-              snapInitialized.current = false;
+              console.error('Midtrans Error:', result);
               onError(result);
             },
             onClose: () => {
+              console.log('Midtrans widget closed');
               snapInitialized.current = false;
               onClose();
             }
-          });
+          };
+
+          // @ts-ignore
+          window.snap.pay(token, midtransCallback);
         }
         setIsLoading(false);
       } catch (error) {
@@ -76,6 +94,7 @@ export function PaymentModal({
     loadScript();
 
     return () => {
+      snapInitialized.current = false;
       const script = document.getElementById('midtrans-script');
       if (script) {
         document.head.removeChild(script);

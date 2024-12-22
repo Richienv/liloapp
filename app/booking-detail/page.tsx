@@ -329,93 +329,63 @@ function BookingDetailContent() {
 
   const handlePaymentSuccess = async (result: any) => {
     try {
+      console.log('=== Payment Success Start ===');
+      console.log('Result from Midtrans:', result);
+      console.log('Payment metadata:', paymentMetadata);
+
       if (!paymentMetadata || !bookingDetails) {
+        console.error('Missing required data:', { paymentMetadata, bookingDetails });
         throw new Error('Missing payment metadata or booking details');
       }
 
-      // Create booking with stored metadata
-      const bookingData = await createBookingAfterPayment(result, paymentMetadata);
-
-      // If there's a voucher, track its usage
-      if (paymentMetadata.voucher) {
-        await voucherService.trackVoucherUsage(
-          paymentMetadata.voucher.id,
-          bookingData.id,
-          paymentMetadata.userId,
-          paymentMetadata.voucher.discountAmount,
-          paymentMetadata.price,
-          paymentMetadata.finalPrice
-        );
-      }
-
-      // Create notifications
-      const supabase = createClient();
-
-      const { data: streamerData, error: streamerError } = await supabase
-        .from('streamers')
-        .select(`
-          id,
-          first_name,
-          last_name,
-          user_id
-        `)
-        .eq('id', parseInt(bookingDetails!.streamerId))
-        .single();
-
-      if (streamerError || !streamerData) {
-        throw new Error('Failed to fetch streamer details');
-      }
-
-      const notifications = [
-        {
-          user_id: streamerData.user_id,
-          streamer_id: streamerData.id,
-          message: `New booking request from ${bookingData.client_first_name} ${bookingData.client_last_name}. Payment confirmed.`,
-          type: 'confirmation',
-          booking_id: bookingData.id,
-          created_at: new Date().toISOString(),
-          is_read: false
+      // Call the payment callback API
+      const response = await fetch('/api/payments/callback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          user_id: bookingData.client_id,
-          message: `Payment confirmed for booking with ${streamerData.first_name} ${streamerData.last_name}. Waiting for acceptance.`,
-          type: 'confirmation',
-          booking_id: bookingData.id,
-          created_at: new Date().toISOString(),
-          is_read: false
-        }
-      ];
+        body: JSON.stringify({
+          result: {
+            ...result,
+            transaction_status: 'settlement',
+            status_code: '200',
+            status_message: 'Success, transaction is found'
+          },
+          metadata: {
+            ...paymentMetadata,
+            streamerId: paymentMetadata.streamerId.toString(),
+            price: Number(paymentMetadata.price),
+            finalPrice: Number(paymentMetadata.finalPrice)
+          }
+        })
+      });
 
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert(notifications);
-
-      if (notificationError) {
-        console.error('Error creating notifications:', notificationError);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Payment callback failed:', errorData);
+        throw new Error(errorData.error || 'Failed to process payment');
       }
 
-      toast.success('Payment successful! Redirecting to bookings...');
+      const bookingData = await response.json();
+      console.log('Booking created:', bookingData);
+
+      toast.success('Payment successful! Booking created.');
       
+      // Add delay before redirect
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Use window.location.href for more reliable redirect
+      window.location.href = '/client-bookings';
+
+    } catch (error) {
+      console.error('=== Payment Success Error ===');
+      console.error('Error details:', error);
+      toast.error('Error occurred. Check console for details.');
+      
+      // Stay on page to see error
       setIsLoading(false);
       setIsProcessing(false);
       setPaymentToken(null);
-
-      setTimeout(async () => {
-        const redirectPath = '/client-bookings';
-        try {
-          await router.push(redirectPath);
-        } catch (error) {
-          window.location.pathname = redirectPath;
-        }
-      }, 1500);
-
-    } catch (error) {
-      console.error('Error handling payment success:', error);
-      toast.error('Payment successful but encountered an error. Please contact support.');
-      
-      setTimeout(() => {
-        window.location.pathname = '/client-bookings';
-      }, 2000);
     }
   };
 

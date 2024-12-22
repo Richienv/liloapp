@@ -37,8 +37,10 @@ interface Booking {
   };
   items_received?: boolean;
   items_received_at?: string | null;
-  final_price?: number;
-  voucher_discount?: number | null;
+  voucher_usage?: Array<{
+    final_price: number;
+    discount_applied: number;
+  }>;
 }
 
 interface RatingData {
@@ -661,7 +663,10 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
     }
   };
 
-  const displayPrice = booking.final_price ?? booking.price;
+  // Update price display logic
+  const displayPrice = booking.voucher_usage?.[0]?.final_price ?? booking.price;
+  const discountAmount = booking.voucher_usage?.[0]?.discount_applied;
+  const hasDiscount = discountAmount && discountAmount > 0;
 
   return (
     <div className="border rounded-lg shadow-sm p-4 pb-4 mb-4 text-sm hover:shadow-md transition-shadow relative">
@@ -710,12 +715,25 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3 text-sm">
           <DollarSign className="h-4 w-4 text-gray-400" />
-          <span>Rp {displayPrice.toLocaleString()}</span>
-          {booking.voucher_discount && booking.voucher_discount > 0 && (
-            <span className="text-green-600 text-xs">
-              (Saved Rp {booking.voucher_discount.toLocaleString()})
-            </span>
-          )}
+          <div className="flex flex-col">
+            {hasDiscount ? (
+              <>
+                <span className="line-through text-gray-400">
+                  Rp {booking.price.toLocaleString()}
+                </span>
+                <span className="font-medium text-green-600">
+                  Rp {displayPrice.toLocaleString()}
+                  <span className="text-xs ml-2">
+                    (Saved Rp {discountAmount.toLocaleString()})
+                  </span>
+                </span>
+              </>
+            ) : (
+              <span className="font-medium">
+                Rp {displayPrice.toLocaleString()}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex gap-2">
           {booking.status.toLowerCase() === 'completed' && (
@@ -843,6 +861,10 @@ export default function ClientBookings() {
             last_name,
             platform,
             image_url
+          ),
+          voucher_usage (
+            final_price,
+            discount_applied
           )
         `)
         .eq('client_id', user.id)

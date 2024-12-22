@@ -1,0 +1,49 @@
+Here’s a structured documentation based on the tables provided for the vouchers and voucher_usage tables in Supabase. This guideline will help your software engineer friends implement voucher-related bookings effectively in their app:
+
+Documentation: Vouchers and Voucher Usage
+
+1. Overview
+
+This guide explains how to manage vouchers and their usage in a booking application. It describes the schema of the two tables—vouchers and voucher_usage—and how they interact during the booking process.
+
+2. Tables
+
+2.1. vouchers Table
+
+This table stores information about the available vouchers in the system.
+
+Column Name	Type	Description
+id	uuid	Unique identifier for each voucher.
+code	character	Voucher code to be applied during a booking (e.g., “DISCOUNT20”).
+description	text	Detailed description of the voucher (e.g., “20% off for new users”).
+discount_amount	numeric	Discount value the voucher provides (e.g., 20 for 20% off).
+total_quantity	integer	Total number of vouchers available for use.
+remaining_quantity	integer	Remaining number of vouchers that can still be redeemed.
+is_active	boolean	Indicates whether the voucher is currently active (true or false).
+created_at	timestamp with time zone	Timestamp when the voucher was created.
+created_by	uuid	ID of the user or admin who created the voucher.
+expires_at	timestamp with time zone	Expiration date and time for the voucher.
+
+Key Notes:
+	•	is_active: Ensure that only active vouchers can be used.
+	•	remaining_quantity: Should decrement every time the voucher is used successfully.
+	•	expires_at: Validate that the current time is before this timestamp.
+
+2.2. voucher_usage Table
+
+This table tracks the usage of vouchers during bookings.
+
+Column Name	Type	Description
+id	uuid	Unique identifier for each voucher usage record.
+voucher_id	uuid	Reference to the ID of the voucher used.
+booking_id	bigint	ID of the booking where the voucher was applied.
+user_id	uuid	ID of the user who redeemed the voucher.
+used_at	timestamp with time zone	Timestamp when the voucher was used.
+discount_applied	numeric	Discount value applied to the booking.
+original_price	numeric	Original price of the booking before discount.
+final_price	numeric	Final price of the booking after applying the voucher discount.
+
+Key Notes:
+	•	voucher_id: This must match an active voucher in the vouchers table.
+	•	discount_applied: Derived from the discount_amount field in the vouchers table.
+	•	final_price: Calculated as original_price - discount_applied.
