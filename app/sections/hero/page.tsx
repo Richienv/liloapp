@@ -2,6 +2,7 @@
 
 import { Star, TrendingUp, Users, ShoppingBag, Shield, Award, MapPin, Clock } from "lucide-react";
 import Image from "next/image";
+import { subtotalWithPlatformFee } from "@/lib/pricing";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -29,7 +30,7 @@ function formatName(firstName: string, lastName: string, index: number): string 
 }
 
 function formatPrice(price: number): string {
-  const priceWithPlatformFee = price * 1.3; // 30% platform fee
+  const priceWithPlatformFee = subtotalWithPlatformFee(price); // base + 30% platform fee
   return `Rp ${Math.round(priceWithPlatformFee).toLocaleString('id-ID')}`;
 }
 

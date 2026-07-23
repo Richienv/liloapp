@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { baseFromTotal } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,7 +90,7 @@ const calculateDuration = (start: Date, end: Date): number => {
 };
 
 const calculateBasePrice = (finalPrice: number): number => {
-  return Math.round(finalPrice / 1.443); // Convert final price back to base price
+  return Math.round(baseFromTotal(finalPrice)); // recover base from tax-inclusive total
 };
 
 // Add this function at the top level of the file
@@ -2650,9 +2651,11 @@ export default function StreamerDashboard() {
               draggable: true,
             });
           } else if (payload.new.status === 'accepted') {
-            // Booking accepted - move to upcoming schedule
+            // Booking accepted - move to upcoming schedule.
+            // Replace any existing row with the same id (an UPDATE should not
+            // append a duplicate alongside the optimistic accept push).
             setPendingBookings(prev => prev.filter(b => b.id !== payload.new.id));
-            setBookings(prev => [...prev, payload.new]);
+            setBookings(prev => [...prev.filter(b => b.id !== payload.new.id), payload.new]);
           } else if (payload.new.status === 'rejected') {
             // Booking rejected - move to rejected list
             setPendingBookings(prev => prev.filter(b => b.id !== payload.new.id));
@@ -2710,9 +2713,10 @@ export default function StreamerDashboard() {
       // Find the booking to be accepted
       const acceptedBooking = pendingBookings.find(b => b.id === bookingId);
       if (acceptedBooking) {
-        // Update states immediately
+        // Update states immediately (de-dup by id so the realtime UPDATE
+        // handler doesn't leave the same booking in `bookings` twice)
         setPendingBookings(prev => prev.filter(b => b.id !== bookingId));
-        setBookings(prev => [...prev, { ...acceptedBooking, status: 'accepted' }]);
+        setBookings(prev => [...prev.filter(b => b.id !== bookingId), { ...acceptedBooking, status: 'accepted' }]);
         toast.success("Booking accepted successfully");
       }
     } else {
@@ -2722,45 +2726,21 @@ export default function StreamerDashboard() {
 
   const handleRejectBooking = async (bookingId: number, reason: string) => {
     try {
-      const supabase = createClient();
-      
-      // Update booking status and rejection reason
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: reason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', bookingId);
+      // Use the server action, which authenticates the caller and verifies the
+      // streamer owns this booking before rejecting (the previous client-side
+      // update had no ownership check and wrote a non-existent column).
+      const result = await rejectBooking(bookingId, reason);
+      if (result?.error) {
+        throw new Error(result.error);
+      }
 
-      if (updateError) throw updateError;
-
-      // Find the booking to be rejected
+      // Optimistic UI update
       const rejectedBooking = pendingBookings.find(b => b.id === bookingId);
       if (rejectedBooking) {
-        // Create notification for client
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: rejectedBooking.client_id,
-            message: `Booking Anda telah ditolak oleh streamer. Alasan: ${reason}`,
-            type: 'booking_rejected',
-            booking_id: bookingId,
-            created_at: new Date().toISOString(),
-            is_read: false,
-            streamer_id: rejectedBooking.streamer_id
-          });
-
-        if (notificationError) {
-          console.error('Notification error:', notificationError);
-        }
-
-        // Update states immediately
         setPendingBookings(prev => prev.filter(b => b.id !== bookingId));
-        setRejectedBookings(prev => [...prev, { ...rejectedBooking, status: 'rejected', rejection_reason: reason }]);
-        toast.success("Booking rejected successfully");
+        setRejectedBookings(prev => [...prev, { ...rejectedBooking, status: 'rejected', reason }]);
       }
+      toast.success("Booking rejected successfully");
     } catch (error) {
       console.error('Error rejecting booking:', error);
       toast.error("Failed to reject booking");

@@ -2,6 +2,7 @@
 
 import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -42,21 +43,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
     const brandDescription = formData.get("brand_description") as string;
     const brandGuidelineFile = formData.get("brand_doc") as File;
 
-    // 1. Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('email')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return {
-        success: false,
-        error: 'Email already registered'
-      };
-    }
-
-    // 2. Create the user
+    // 1. Create the user (auth.signUp already errors on a duplicate email)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -88,7 +75,12 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
         .upload(fileName, brandGuidelineFile);
 
       if (uploadError) {
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        const admin = createAdminClient();
+        if (admin) {
+          await admin.auth.admin.deleteUser(authData.user.id);
+        } else {
+          console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned auth user');
+        }
         return {
           success: false,
           error: 'Failed to upload brand guideline'
@@ -121,7 +113,12 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
 
     if (profileError) {
       // Clean up: delete user and uploaded file if profile creation fails
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      const admin = createAdminClient();
+      if (admin) {
+        await admin.auth.admin.deleteUser(authData.user.id);
+      } else {
+        console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned auth user');
+      }
       return {
         success: false,
         error: 'Failed to create user profile'
@@ -218,7 +215,9 @@ export const signInAsStreamerAction = async (formData: FormData) => {
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const supabase = createClient();
-  const origin = headers().get("origin");
+  // Prefer the configured site URL; fall back to the request Origin header.
+  // A configured value guarantees the redirect target is one Supabase allows.
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || headers().get("origin");
   const callbackUrl = formData.get("callbackUrl")?.toString();
 
   if (!email) {
@@ -226,7 +225,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirect_to=/protected/reset-password`,
+    redirectTo: `${origin}/auth/callback?redirect_to=/reset-password`,
   });
 
   if (error) {
@@ -256,18 +255,31 @@ export const resetPasswordAction = async (formData: FormData) => {
   const confirmPassword = formData.get("confirmPassword") as string;
 
   if (!password || !confirmPassword) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
-      "/protected/reset-password",
+      "/reset-password",
       "Password and confirm password are required",
     );
   }
 
   if (password !== confirmPassword) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
-      "/protected/reset-password",
+      "/reset-password",
       "Passwords do not match",
+    );
+  }
+
+  // A valid (recovery) session is required to update the password. If the link
+  // expired or was opened without a session, send them back to request a new one.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return encodedRedirect(
+      "error",
+      "/forgot-password",
+      "Your reset link has expired. Please request a new one.",
     );
   }
 
@@ -276,14 +288,18 @@ export const resetPasswordAction = async (formData: FormData) => {
   });
 
   if (error) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
-      "/protected/reset-password",
+      "/reset-password",
       "Password update failed",
     );
   }
 
-  encodedRedirect("success", "/protected/reset-password", "Password updated");
+  return encodedRedirect(
+    "success",
+    "/sign-in",
+    "Password updated. Please sign in with your new password.",
+  );
 };
 
 export const signOutAction = async () => {
@@ -405,6 +421,14 @@ export async function updateUserProfile(formData: FormData) {
 }
 
 export async function streamerSignUpAction(formData: FormData): Promise<SignUpResponse> {
+  // Track created resources so a failure after auth.signUp can be rolled back
+  // in the catch block below (best-effort, reverse order).
+  let createdUserId: string | null = null;
+  let profileImagePath: string | null = null;
+  const uploadedGalleryPaths: string[] = [];
+  let usersRowInserted = false;
+  let streamerRowId: string | number | null = null;
+
   try {
     const supabase = createClient();
 
@@ -439,6 +463,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
 
       if (authError || !user) throw authError;
 
+      // Auth user now exists — record it for rollback on any later failure.
+      createdUserId = user.id;
+
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -453,6 +480,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
         console.error('Upload error:', uploadError);
         throw new Error('Failed to upload profile image: ' + uploadError.message);
       }
+
+      // Profile image uploaded — record its path for rollback.
+      profileImagePath = filePath;
 
       const { data: { publicUrl } } = supabase.storage
         .from('profile_picture')
@@ -503,6 +533,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
               order_number: i
             });
 
+            // Record uploaded gallery path for rollback.
+            uploadedGalleryPaths.push(galleryPath);
+
             uploadSuccess = true;
             console.log(`Successfully uploaded gallery image ${i + 1}/${galleryFiles.length}`);
 
@@ -551,6 +584,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
 
       if (userError) throw userError;
 
+      // Users row inserted — record for rollback.
+      usersRowInserted = true;
+
       // Create streamer profile
       const { data: streamerData, error: streamerError } = await supabase
         .from('streamers')
@@ -574,6 +610,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
         .single();
 
       if (streamerError) throw streamerError;
+
+      // Streamers row inserted — record its id for rollback.
+      streamerRowId = streamerData.id;
 
       // Add gallery photos to database with error handling
       if (uploadedGalleryUrls.length > 0) {
@@ -614,6 +653,57 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
     }
   } catch (error) {
     console.error('Streamer sign up error:', error);
+
+    // Best-effort rollback of anything created after auth.signUp, in reverse
+    // order. Each step is isolated so one failure doesn't abort the rest.
+    const admin = createAdminClient();
+    if (!admin) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned streamer signup (auth user, rows, and storage objects may be left behind)');
+    } else {
+      // 1. Delete streamers row (if inserted)
+      if (streamerRowId !== null) {
+        try {
+          await admin.from('streamers').delete().eq('id', streamerRowId);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to delete streamers row', cleanupError);
+        }
+      }
+
+      // 2. Delete users row (if inserted)
+      if (usersRowInserted && createdUserId) {
+        try {
+          await admin.from('users').delete().eq('id', createdUserId);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to delete users row', cleanupError);
+        }
+      }
+
+      // 3. Remove uploaded storage objects
+      if (profileImagePath) {
+        try {
+          await admin.storage.from('profile_picture').remove([profileImagePath]);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to remove profile image', cleanupError);
+        }
+      }
+      if (uploadedGalleryPaths.length > 0) {
+        try {
+          await admin.storage.from('gallery_images').remove(uploadedGalleryPaths);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to remove gallery images', cleanupError);
+        }
+      }
+
+      // 4. Delete the orphaned auth user
+      if (createdUserId) {
+        try {
+          await admin.auth.admin.deleteUser(createdUserId);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to delete auth user', cleanupError);
+        }
+      }
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create account. Please try again.'
@@ -862,11 +952,16 @@ export async function acceptBooking(bookingId: number) {
     // Fetch the booking first
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
+
+    // Authorization: only the streamer who owns this booking may accept it.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { error: 'Unauthorized' };
+    }
 
     // Update booking status
     const { error: updateError } = await supabase
@@ -894,23 +989,35 @@ export async function acceptBooking(bookingId: number) {
   }
 }
 
-export async function rejectBooking(bookingId: number) {
+export async function rejectBooking(bookingId: number, reason?: string) {
   const supabase = createClient();
-  
+
   try {
+    // Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: 'Not authenticated' };
+    }
+
     // Fetch the booking first to get client and streamer details
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
 
-    // Update booking status
+    // Authorization: only the streamer who owns this booking may reject it.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { error: 'Unauthorized' };
+    }
+
+    // Update booking status (store the reason in the standard `reason` column
+    // that the reschedule/cancel flows also use).
     const { error: updateError } = await supabase
       .from('bookings')
-      .update({ status: 'rejected' })
+      .update({ status: 'rejected', reason: reason ?? null })
       .eq('id', bookingId);
 
     if (updateError) throw updateError;
@@ -919,7 +1026,7 @@ export async function rejectBooking(bookingId: number) {
     await createNotification({
       user_id: bookingData.client_id,
       streamer_id: bookingData.streamer_id,
-      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} telah menolak booking Anda untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.`,
+      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} telah menolak booking Anda untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.${reason ? ` Alasan: ${reason}` : ''}`,
       type: 'booking_rejected',
       booking_id: bookingId,
       is_read: false
@@ -1029,15 +1136,26 @@ export async function endStream(bookingId: number) {
   const supabase = createClient();
 
   try {
+    // Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // Fetch booking data first
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
     if (!bookingData) throw new Error('Booking not found');
+
+    // Authorization: only the streamer who owns this booking may end its stream.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { success: false, error: 'Unauthorized' };
+    }
 
     // Update the booking status to 'completed'
     const { error: updateError } = await supabase
@@ -1239,16 +1357,27 @@ export async function acceptItems(bookingId: number) {
 
 export async function requestReschedule(bookingId: number, reason: string) {
   const supabase = createClient();
-  
+
   try {
+    // Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: 'Not authenticated' };
+    }
+
     // Fetch the booking first to get client and streamer details
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
+
+    // Authorization: only the streamer who owns this booking may request a reschedule.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { error: 'Unauthorized' };
+    }
 
     // Update booking status with reason
     const { error: updateError } = await supabase

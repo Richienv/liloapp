@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { createBookingAfterPayment, type PaymentMetadata } from '@/services/payment/payment-service';
+import {
+  createBookingAfterPayment,
+  verifyMidtransTransaction,
+  type PaymentMetadata,
+} from '@/services/payment/payment-service';
 
 // Add these interfaces at the top of the file
 interface Booking {
@@ -64,6 +68,52 @@ export async function POST(request: Request) {
       startTime: b.startTime,
       endTime: b.endTime
     })), null, 2));
+
+    // Verify the payment with Midtrans server-to-server before trusting the
+    // client-supplied `result`/`metadata`. This prevents fabricated callbacks
+    // (a made-up order_id 404s here) and amount tampering (the authoritative
+    // amount comes from Midtrans, not the browser).
+    const orderId: string = result?.order_id || result?.transaction_id;
+    const verified = await verifyMidtransTransaction(orderId);
+
+    if (!verified) {
+      console.error('Payment verification failed — unknown or unverifiable order:', orderId);
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Payment verification failed',
+          details: 'The transaction could not be verified with the payment provider.',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (verified.isFailed) {
+      console.warn('Payment reported as failed by Midtrans:', verified.transactionStatus, orderId);
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Payment not completed',
+          details: `Transaction status is "${verified.transactionStatus}".`,
+        }),
+        { status: 402, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // The amount Midtrans actually processed must match what the client claims.
+    const claimedAmount = Math.round(Number(metadata.finalPrice));
+    if (verified.grossAmount !== claimedAmount) {
+      console.error('Payment amount mismatch:', {
+        midtrans: verified.grossAmount,
+        claimed: claimedAmount,
+        orderId,
+      });
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Payment amount mismatch',
+          details: 'The paid amount does not match the booking amount.',
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
 
     try {
       const bookings = await createBookingAfterPayment(result, metadata);

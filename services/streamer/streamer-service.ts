@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { baseFromTotal } from "@/lib/pricing";
 
 interface Booking {
   price: number;
@@ -121,8 +122,8 @@ export const streamerService = {
       const stats = bookingDate >= currentMonthStart ? currentMonthStats : lastMonthStats;
 
       if (booking.status === 'completed') {
-        // Calculate base price (X) from final price (n) using n = X × 1.443
-        const basePrice = booking.price / 1.443; // This gives us the original price before platform fee and tax
+        // Recover the streamer's base price from the tax-inclusive total.
+        const basePrice = baseFromTotal(booking.price);
         stats.earnings += basePrice;
         stats.lives += 1;
       } else if (booking.status === 'rejected' || booking.status === 'cancelled') {

@@ -2,6 +2,7 @@
 
 import { Suspense } from 'react';
 import { Loader2, X, CheckCircle } from 'lucide-react';
+import { subtotalWithPlatformFee } from '@/lib/pricing';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
@@ -124,7 +125,7 @@ export default function BookingDetailPage() {
 }
 
 function getAdjustedPrice(basePrice: number): number {
-  return basePrice * 1.3; // Add 30% to base price
+  return subtotalWithPlatformFee(basePrice); // base + 30% platform fee
 }
 
 function formatPrice(price: number): string {

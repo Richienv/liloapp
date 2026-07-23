@@ -337,20 +337,30 @@ function RescheduleTimeModal({
 
       if (updateError) throw updateError;
 
-      // Create notification for streamer
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: booking.streamer_id,
-          type: 'reschedule_request',
-          message: `Client has requested to reschedule booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}`,
-          booking_id: booking.id,
-          created_at: new Date().toISOString(),
-          is_read: false
-        });
+      // Look up the streamer's user (auth) uuid — notifications.user_id is a
+      // uuid, not the numeric streamers.id. Skip gracefully if not found.
+      const { data: streamerUser } = await supabase
+        .from('streamers')
+        .select('user_id')
+        .eq('id', booking.streamer_id)
+        .single();
 
-      if (notificationError) {
-        console.error('Error creating notification:', notificationError);
+      if (streamerUser?.user_id) {
+        // Create notification for streamer
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: streamerUser.user_id,
+            type: 'reschedule_request',
+            message: `Client has requested to reschedule booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}`,
+            booking_id: booking.id,
+            created_at: new Date().toISOString(),
+            is_read: false
+          });
+
+        if (notificationError) {
+          console.error('Error creating notification:', notificationError);
+        }
       }
 
       onClose();
@@ -630,7 +640,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
   console.log('Booking status:', booking.status); // Add this line for debugging
 
   // Parse the rating to ensure it's a number
-  const rating = parseFloat(booking.streamer.rating as unknown as string);
+  const rating = parseFloat(booking.streamer?.rating as unknown as string);
 
   // Group bookings by date
   const bookingsByDate = useMemo(() => {
@@ -662,21 +672,31 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
 
       if (updateError) throw updateError;
 
-      // Create notification for streamer
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: booking.streamer_id,
-          type: 'new_booking',
-          message: `Client has rescheduled booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}. Please review and accept/reject.`,
-          booking_id: booking.id,
-          created_at: new Date().toISOString(),
-          is_read: false,
-          streamer_id: booking.streamer_id
-        });
+      // Look up the streamer's user (auth) uuid — notifications.user_id is a
+      // uuid, not the numeric streamers.id. Skip gracefully if not found.
+      const { data: streamerUser } = await supabase
+        .from('streamers')
+        .select('user_id')
+        .eq('id', booking.streamer_id)
+        .single();
 
-      if (notificationError) {
-        console.error('Error creating notification:', notificationError);
+      if (streamerUser?.user_id) {
+        // Create notification for streamer
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: streamerUser.user_id,
+            type: 'booking_request',
+            message: `Client has rescheduled booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}. Please review and accept/reject.`,
+            booking_id: booking.id,
+            created_at: new Date().toISOString(),
+            is_read: false,
+            streamer_id: booking.streamer_id
+          });
+
+        if (notificationError) {
+          console.error('Error creating notification:', notificationError);
+        }
       }
 
       setIsRescheduleModalOpen(false);
@@ -711,20 +731,30 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
 
       if (updateError) throw updateError;
 
-      // Create notification for streamer
-      const { error: notificationError } = await supabase
-        .from('notifications')
-        .insert({
-          user_id: booking.streamer_id,
-          message: `Client telah membatalkan permintaan reschedule dengan alasan: ${reason}`,
-          type: 'reschedule_cancelled',
-          booking_id: booking.id,
-          created_at: new Date().toISOString(),
-          is_read: false
-        });
+      // Look up the streamer's user (auth) uuid — notifications.user_id is a
+      // uuid, not the numeric streamers.id. Skip gracefully if not found.
+      const { data: streamerUser } = await supabase
+        .from('streamers')
+        .select('user_id')
+        .eq('id', booking.streamer_id)
+        .single();
 
-      if (notificationError) {
-        console.error('Error creating notification:', notificationError);
+      if (streamerUser?.user_id) {
+        // Create notification for streamer
+        const { error: notificationError } = await supabase
+          .from('notifications')
+          .insert({
+            user_id: streamerUser.user_id,
+            message: `Client telah membatalkan permintaan reschedule dengan alasan: ${reason}`,
+            type: 'booking_cancelled',
+            booking_id: booking.id,
+            created_at: new Date().toISOString(),
+            is_read: false
+          });
+
+        if (notificationError) {
+          console.error('Error creating notification:', notificationError);
+        }
       }
 
       setIsCancelModalOpen(false);
@@ -887,15 +917,15 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
       </div>
       
       <div className="flex items-start mb-3 pb-3 border-b">
-        <Image 
-          src={booking.streamer.image_url || '/default-avatar.png'}
-          alt={`${booking.streamer.first_name} ${booking.streamer.last_name}`}
+        <Image
+          src={booking.streamer?.image_url || '/default-avatar.png'}
+          alt={`${booking.streamer?.first_name ?? ''} ${booking.streamer?.last_name ?? ''}`}
           width={80}
           height={80}
           className="rounded-full mr-4"
         />
         <div className="flex-grow">
-          <h3 className="font-medium text-base mb-2">{`${booking.streamer.first_name} ${booking.streamer.last_name}`}</h3>
+          <h3 className="font-medium text-base mb-2">{`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}</h3>
           <p className="text-gray-600 mb-2">Livestreaming services on {booking.platform}</p>
           
           {/* Display time blocks grouped by date */}
@@ -931,8 +961,8 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <Image
-                    src={booking.streamer.image_url || '/default-avatar.png'}
-                    alt={`${booking.streamer.first_name} ${booking.streamer.last_name}`}
+                    src={booking.streamer?.image_url || '/default-avatar.png'}
+                    alt={`${booking.streamer?.first_name ?? ''} ${booking.streamer?.last_name ?? ''}`}
                     width={40}
                     height={40}
                     className="object-cover"
@@ -1018,9 +1048,9 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
           isOpen={isRatingModalOpen} 
           onClose={() => setIsRatingModalOpen(false)} 
           bookingId={booking.id}
-          streamerId={booking.streamer.id}
-          streamerName={`${booking.streamer.first_name} ${booking.streamer.last_name}`}
-          streamerImage={booking.streamer.image_url}
+          streamerId={booking.streamer?.id ?? 0}
+          streamerName={`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}
+          streamerImage={booking.streamer?.image_url ?? ''}
           startDate={booking.start_time}
           endDate={booking.end_time}
           onSubmit={onRatingSubmit}
@@ -1031,7 +1061,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
         isOpen={isCancelModalOpen}
         onClose={() => setIsCancelModalOpen(false)}
         bookingId={booking.id}
-        streamer_id={booking.streamer.id}
+        streamer_id={booking.streamer?.id}
         start_time={booking.start_time}
       />
 
@@ -1151,10 +1181,14 @@ export default function ClientBookings(): JSX.Element {
           console.error('Error fetching bookings:', bookingsError);
           toast.error("Failed to fetch bookings");
         } else if (bookingsData) {
-          // Get unique streamer IDs
+          // Get unique streamer IDs. Guard against a null streamer join (a
+          // deleted/unlinked streamer) so one orphaned booking can't throw and
+          // blank out the client's entire bookings list.
           const streamerIds = Array.from(
             new Set(
-              bookingsData.map((booking: any) => booking.streamer.id)
+              bookingsData
+                .map((booking: any) => booking.streamer?.id)
+                .filter((id: any) => id != null)
             )
           );
 
@@ -1180,11 +1214,11 @@ export default function ClientBookings(): JSX.Element {
             // Add ratings to bookings
             const bookingsWithRatings: Booking[] = bookingsData.map((booking: any) => ({
               ...booking,
-              streamer_id: booking.streamer.id,
+              streamer_id: booking.streamer?.id,
               streamer: {
                 ...booking.streamer,
-                rating: averageRatings[booking.streamer.id]
-                  ? (averageRatings[booking.streamer.id].sum / averageRatings[booking.streamer.id].count)
+                rating: averageRatings[booking.streamer?.id]
+                  ? (averageRatings[booking.streamer?.id].sum / averageRatings[booking.streamer?.id].count)
                   : 0
               }
             }));
@@ -1492,15 +1526,15 @@ export default function ClientBookings(): JSX.Element {
                           <div key={booking.id} className="p-4 hover:bg-gray-50 transition-colors">
                             <div className="flex justify-between items-start mb-4">
                               <div className="flex items-center gap-4">
-                                <Image 
-                                  src={booking.streamer.image_url || '/default-avatar.png'}
-                                  alt={`${booking.streamer.first_name} ${booking.streamer.last_name}`}
+                                <Image
+                                  src={booking.streamer?.image_url || '/default-avatar.png'}
+                                  alt={`${booking.streamer?.first_name ?? ''} ${booking.streamer?.last_name ?? ''}`}
                                   width={60}
                                   height={60}
                                   className="rounded-full"
                                 />
                                 <div>
-                                  <h3 className="font-medium text-lg">{`${booking.streamer.first_name} ${booking.streamer.last_name}`}</h3>
+                                  <h3 className="font-medium text-lg">{`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}</h3>
                                   <p className="text-gray-600 text-sm">{booking.platform}</p>
                                 </div>
                               </div>
@@ -1524,7 +1558,7 @@ export default function ClientBookings(): JSX.Element {
                                 <Star className="w-5 h-5 text-yellow-400" />
                                 <div>
                                   <p className="text-sm text-gray-600">Streamer Rating</p>
-                                  <p className="font-medium">{isNaN(parseFloat(booking.streamer.rating as unknown as string)) ? 'N/A' : parseFloat(booking.streamer.rating as unknown as string).toFixed(1)}</p>
+                                  <p className="font-medium">{isNaN(parseFloat(booking.streamer?.rating as unknown as string)) ? 'N/A' : parseFloat(booking.streamer?.rating as unknown as string).toFixed(1)}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">

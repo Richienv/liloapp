@@ -1,0 +1,37 @@
+name: CI
+
+# Type-check and compile the app on every PR and push to main. This is the
+# safety net the project previously lacked: `next build` runs the TypeScript
+# type-checker and compiles every route, so a type error or broken import is
+# caught here instead of only in the Vercel deploy.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    name: Build & type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      # --ignore-scripts skips the `supabase` CLI's postinstall binary download,
+      # which is not needed to build the app and can be flaky.
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      # Placeholder Supabase env vars: the values only need to be present so the
+      # @supabase/ssr client can be constructed during static prerender. No real
+      # secrets are required to type-check and compile.
+      - name: Build (type-check + compile)
+        run: npx next build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key

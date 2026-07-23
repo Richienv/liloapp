@@ -1,19 +1,19 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
-import { headers } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
   try {
-    const headersList = headers();
-    const host = headersList.get('host') || '';
-    const protocol = process?.env?.NODE_ENV === 'production' ? 'https' : 'http';
-    
-    const requestUrl = new URL(`${protocol}://${host}${request.url.split(host)[1]}`);
+    // request.url is already absolute — parse it directly instead of
+    // reconstructing it from the host header (which mis-parsed when the host
+    // appeared more than once and hardcoded the protocol from NODE_ENV).
+    const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get("code");
-    const origin = `${protocol}://${host}`;
     const redirectTo = requestUrl.searchParams.get("redirect_to")?.toString();
+    // Prefer the configured site URL so redirects use the public origin even
+    // behind a proxy; fall back to the request's own origin.
+    const origin = process.env.NEXT_PUBLIC_SITE_URL || requestUrl.origin;
 
     if (!code) {
       console.error("No code provided in auth callback");
