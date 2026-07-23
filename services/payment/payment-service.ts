@@ -12,14 +12,6 @@ const snap = new midtransClient.Snap({
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
 });
 
-// Core API client, used to ask Midtrans directly for a transaction's real
-// status. We must never trust a client-supplied payment result verbatim.
-const coreApi = new midtransClient.CoreApi({
-  isProduction: true,
-  serverKey: process.env.MIDTRANS_SERVER_KEY || '',
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
-});
-
 export interface VerifiedTransaction {
   orderId: string;
   transactionStatus: string;
@@ -36,13 +28,20 @@ export interface VerifiedTransaction {
  * 404 here (returns null), and the real `gross_amount` comes from Midtrans —
  * not from the browser — so a client cannot claim it paid a different amount
  * than it actually did.
+ *
+ * We reuse the Snap client's `transaction` helper: its `status()` call always
+ * targets the Core API `/v2/{orderId}/status` endpoint, so no separate CoreApi
+ * instance is needed.
  */
 export async function verifyMidtransTransaction(
   orderId: string
 ): Promise<VerifiedTransaction | null> {
   if (!orderId) return null;
   try {
-    const status = await coreApi.transaction.status(orderId);
+    // midtrans-client is a plain-JS library; TS's allowJs inference exposes the
+    // Snap class's prototype methods but not the constructor-assigned
+    // `transaction` helper, so we access it through an untyped view.
+    const status = await (snap as any).transaction.status(orderId);
     const transactionStatus: string = status.transaction_status;
     const fraudStatus: string | undefined = status.fraud_status;
     const grossAmount = Math.round(parseFloat(status.gross_amount ?? '0'));
