@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/client";
+import { createAdminClient } from "@/utils/supabase/admin";
 import midtransClient from 'midtrans-client';
 import { createNotification, type NotificationType } from '@/services/notification-service';
 import { format } from 'date-fns';
@@ -169,7 +170,11 @@ export async function createBookingAfterPayment(
   result: any, 
   metadata: PaymentMetadata
 ): Promise<BookingResponse[]> {
-  const supabase = createClient();
+  // This runs server-side with no user session, and it writes to RLS-protected
+  // tables (bookings, payments, voucher_usage, notifications). Use the
+  // service-role client so those writes bypass RLS; fall back to the anon client
+  // only if the service-role key isn't configured (pre-RLS behavior).
+  const supabase = createAdminClient() ?? createClient();
   const startTime = Date.now();
   const isProduction = process.env.NODE_ENV === 'production';
   

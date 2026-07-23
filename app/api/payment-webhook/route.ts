@@ -1,4 +1,5 @@
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { NextResponse } from "next/server";
 import { createNotification } from "@/services/notification-service";
 import { formatInTimeZone } from 'date-fns-tz';
@@ -39,7 +40,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server misconfiguration' }, { status: 500 });
     }
 
-    const supabase = createClient();
+    // Midtrans calls this server-to-server with no user session, and it writes
+    // to RLS-protected tables. Use the service-role client so it bypasses RLS
+    // (fall back to the anon server client only if the key isn't configured).
+    const supabase = createAdminClient() ?? createClient();
     const payload = await request.json();
 
     // Validate the payment notification shape.
