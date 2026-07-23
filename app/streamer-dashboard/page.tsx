@@ -2,6 +2,7 @@
 
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { baseFromTotal } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -89,7 +90,7 @@ const calculateDuration = (start: Date, end: Date): number => {
 };
 
 const calculateBasePrice = (finalPrice: number): number => {
-  return Math.round(finalPrice / 1.443); // Convert final price back to base price
+  return Math.round(baseFromTotal(finalPrice)); // recover base from tax-inclusive total
 };
 
 // Add this function at the top level of the file

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Image from 'next/image';
+import { subtotalWithPlatformFee } from '@/lib/pricing';
 import { Star, StarHalf, MapPin, ChevronLeft, ChevronRight, User, Calendar, Clock, Monitor, DollarSign, X, Mail, Sun, Sunset, Moon, Info, Package } from "lucide-react";
 import { Button } from "./ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "./ui/dialog";
@@ -163,7 +164,7 @@ function RatingStars({ rating }: { rating: number }) {
 
 // Update the formatPrice function to use adjusted price
 function formatPrice(price: number): string {
-  const adjustedPrice = price * 1.3; // Add 30% to base price
+  const adjustedPrice = subtotalWithPlatformFee(price); // base + 30% platform fee
   if (adjustedPrice < 1000) {
     return `Rp ${Math.round(adjustedPrice)}/hour`;
   }
@@ -2510,7 +2511,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                           <p className="text-sm text-gray-600">Estimasi Total</p>
                           <div>
                             <p className="text-lg font-semibold text-gray-900">
-                              Rp {(totalPrice * 1.3).toLocaleString()}
+                              Rp {subtotalWithPlatformFee(totalPrice).toLocaleString()}
                             </p>
                             <p className="text-xs text-gray-500">*harga belum termasuk pajak</p>
                           </div>
