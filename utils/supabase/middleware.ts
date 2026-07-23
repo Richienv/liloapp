@@ -37,7 +37,11 @@ export const updateSession = async (request: NextRequest) => {
     // Protected routes handling. These require an authenticated session at the
     // edge; the admin role itself is additionally enforced in app/admin/layout.tsx.
     const pathname = request.nextUrl.pathname;
-    const isAuthRoute = pathname.startsWith('/auth');
+    // NOTE: exclude /auth/callback — it must run the code exchange even for an
+    // already-authenticated user (e.g. a password-recovery link). Without this,
+    // the "already signed in -> /protected" redirect below would skip it.
+    const isAuthRoute =
+      pathname.startsWith('/auth') && !pathname.startsWith('/auth/callback');
     const PROTECTED_PREFIXES = [
       '/protected',
       '/booking-detail',
