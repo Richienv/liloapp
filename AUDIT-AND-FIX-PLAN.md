@@ -178,6 +178,37 @@ Bring this from "works in the happy path on one developer's live Supabase projec
 
 ---
 
+# PART 3 — BUG-FIX LOG (post-audit)
+
+Beyond the A/B/C plan, a bug-hunt pass (forgot-password, account creation, timezone, booking) found and fixed these. Each was verified with `tsc` + `next build` and deployed green.
+
+### Forgot-password / reset flow — ✅ fixed (`1b1e0ca`)
+- Reset page moved out of `/protected` (middleware was bouncing recovery users to sign-in) → `app/(auth-pages)/reset-password`, now validates the recovery session.
+- Middleware no longer skips the `/auth/callback` code exchange for logged-in users.
+- Added `app/auth/error` (failures used to 404).
+- `resetPasswordAction` gained missing `return`s + a session check; redirect base uses `NEXT_PUBLIC_SITE_URL`.
+- ⚠️ You must: set `NEXT_PUBLIC_SITE_URL` and add `<site>/auth/callback` to Supabase → Auth → Redirect URLs.
+
+### Booking — ✅ fixed (`27c36b3`, `1ba3427`)
+- **Reject** was calling a client-side handler with no ownership check that wrote a non-existent `rejection_reason` column → routed through the hardened `rejectBooking` server action using the real `reason` column.
+- **Per-booking price** now splits proportionally to each slot's hours (was even split → wrong on unequal slots), summing exactly to `finalPrice`.
+- **Reschedule/cancel notifications** now reach streamers (were passing numeric `streamer_id` as UUID `user_id` + invalid enum types).
+- Null-guarded `booking.streamer.*` so an orphaned booking can't blank/crash the list.
+- Accept no longer double-counts a booking in state (optimistic push + realtime both appended).
+
+### Account creation — ✅ partially fixed (`1ba3427`)
+- Added a guarded service-role admin client (`utils/supabase/admin.ts`) and real rollback so a failed signup no longer orphans the auth user. **⚠️ needs `SUPABASE_SERVICE_ROLE_KEY` set to take effect.**
+- Removed the dead anon-client duplicate-email check.
+- ⏳ **Open:** usernames are never captured at signup, so `/[username]` SEO pages can't resolve a streamer. Needs a signup username field + a DB unique index (A9). Product decision pending.
+
+### Timezone — ✅ verified + hardened (`1ba3427`)
+- Indonesian bookings were already correct (Jakarta 14:00 → 07:00Z, verified). Replaced the hardcoded offset table with `date-fns-tz` `fromZonedTime` so DST zones are correct too.
+
+### Database connection (reference)
+- Connects to a hosted Supabase project via `NEXT_PUBLIC_SUPABASE_URL` + `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Vercel env; not in repo). `supabase/config.toml` is local-dev only. Security depends on RLS configured in the dashboard (not in repo — verify bookings/payments/messages have RLS).
+
+---
+
 ## How to use this document
 
 1. Work top-down: **Phase A before B before C.** A1–A4 (payments) and A5–A6 (authz) are the highest real-world risk.
