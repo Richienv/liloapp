@@ -2723,45 +2723,21 @@ export default function StreamerDashboard() {
 
   const handleRejectBooking = async (bookingId: number, reason: string) => {
     try {
-      const supabase = createClient();
-      
-      // Update booking status and rejection reason
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: reason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', bookingId);
+      // Use the server action, which authenticates the caller and verifies the
+      // streamer owns this booking before rejecting (the previous client-side
+      // update had no ownership check and wrote a non-existent column).
+      const result = await rejectBooking(bookingId, reason);
+      if (result?.error) {
+        throw new Error(result.error);
+      }
 
-      if (updateError) throw updateError;
-
-      // Find the booking to be rejected
+      // Optimistic UI update
       const rejectedBooking = pendingBookings.find(b => b.id === bookingId);
       if (rejectedBooking) {
-        // Create notification for client
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: rejectedBooking.client_id,
-            message: `Booking Anda telah ditolak oleh streamer. Alasan: ${reason}`,
-            type: 'booking_rejected',
-            booking_id: bookingId,
-            created_at: new Date().toISOString(),
-            is_read: false,
-            streamer_id: rejectedBooking.streamer_id
-          });
-
-        if (notificationError) {
-          console.error('Notification error:', notificationError);
-        }
-
-        // Update states immediately
         setPendingBookings(prev => prev.filter(b => b.id !== bookingId));
-        setRejectedBookings(prev => [...prev, { ...rejectedBooking, status: 'rejected', rejection_reason: reason }]);
-        toast.success("Booking rejected successfully");
+        setRejectedBookings(prev => [...prev, { ...rejectedBooking, status: 'rejected', reason }]);
       }
+      toast.success("Booking rejected successfully");
     } catch (error) {
       console.error('Error rejecting booking:', error);
       toast.error("Failed to reject booking");

@@ -1151,10 +1151,14 @@ export default function ClientBookings(): JSX.Element {
           console.error('Error fetching bookings:', bookingsError);
           toast.error("Failed to fetch bookings");
         } else if (bookingsData) {
-          // Get unique streamer IDs
+          // Get unique streamer IDs. Guard against a null streamer join (a
+          // deleted/unlinked streamer) so one orphaned booking can't throw and
+          // blank out the client's entire bookings list.
           const streamerIds = Array.from(
             new Set(
-              bookingsData.map((booking: any) => booking.streamer.id)
+              bookingsData
+                .map((booking: any) => booking.streamer?.id)
+                .filter((id: any) => id != null)
             )
           );
 

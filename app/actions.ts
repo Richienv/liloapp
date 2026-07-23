@@ -918,7 +918,7 @@ export async function acceptBooking(bookingId: number) {
   }
 }
 
-export async function rejectBooking(bookingId: number) {
+export async function rejectBooking(bookingId: number, reason?: string) {
   const supabase = createClient();
 
   try {
@@ -942,10 +942,11 @@ export async function rejectBooking(bookingId: number) {
       return { error: 'Unauthorized' };
     }
 
-    // Update booking status
+    // Update booking status (store the reason in the standard `reason` column
+    // that the reschedule/cancel flows also use).
     const { error: updateError } = await supabase
       .from('bookings')
-      .update({ status: 'rejected' })
+      .update({ status: 'rejected', reason: reason ?? null })
       .eq('id', bookingId);
 
     if (updateError) throw updateError;
@@ -954,7 +955,7 @@ export async function rejectBooking(bookingId: number) {
     await createNotification({
       user_id: bookingData.client_id,
       streamer_id: bookingData.streamer_id,
-      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} telah menolak booking Anda untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.`,
+      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} telah menolak booking Anda untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.${reason ? ` Alasan: ${reason}` : ''}`,
       type: 'booking_rejected',
       booking_id: bookingId,
       is_read: false
