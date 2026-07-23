@@ -2,7 +2,7 @@ import { createClient } from "@/utils/supabase/client";
 import midtransClient from 'midtrans-client';
 import { createNotification, type NotificationType } from '@/services/notification-service';
 import { format } from 'date-fns';
-import { formatInTimeZone } from 'date-fns-tz';
+import { formatInTimeZone, fromZonedTime } from 'date-fns-tz';
 import crypto from 'crypto';
 
 // Initialize Snap client with proper error handling
@@ -207,54 +207,30 @@ export async function createBookingAfterPayment(
       return timeBlocks.map(block => {
         // Create dates with proper timezone handling
         const dateStr = booking.date;
-        const startTimeStr = block.start.split('T')[1] || block.start;
-        const endTimeStr = block.end.split('T')[1] || block.end;
+        // Reduce to the naive wall-clock "HH:mm[:ss]" (strip any date prefix,
+        // fractional seconds, trailing 'Z', or numeric offset). This also
+        // prevents a double timezone conversion when a full ISO string is passed.
+        const startTimeStr = (block.start.split('T')[1] || block.start).match(/^\d{2}:\d{2}(:\d{2})?/)?.[0] || block.start;
+        const endTimeStr = (block.end.split('T')[1] || block.end).match(/^\d{2}:\d{2}(:\d{2})?/)?.[0] || block.end;
         
         // Log time details for debugging
         log(`Creating booking with date: ${dateStr}, start: ${startTimeStr}, end: ${endTimeStr}, timezone: ${metadata.timezone}`);
         
-        // Create datetime strings for conversion
-        const startDateTimeStr = `${dateStr}T${startTimeStr}`;
-        const endDateTimeStr = `${dateStr}T${endTimeStr}`;
+        // Convert the user's wall-clock booking time to UTC using the IANA
+        // timezone. date-fns-tz's fromZonedTime handles DST correctly, unlike
+        // the old fixed-offset table (which was off by 1h half the year in
+        // DST zones). For Indonesia (no DST) the result is unchanged.
+        const userTz = metadata.timezone || 'Asia/Jakarta';
 
-        // Parse the dates in user's timezone
-        const userTz = metadata.timezone || 'UTC';
-        
-        log(`Converting time with timezone: ${startDateTimeStr} in ${userTz}`);
-        
-        // IMPROVED: Create Date objects in the local timezone first
-        const localStartDate = new Date(startDateTimeStr);
-        const localEndDate = new Date(endDateTimeStr);
-        
-        log(`Local browser interpreted dates: Start=${localStartDate.toISOString()}, End=${localEndDate.toISOString()}`);
-        
-        // IMPROVED: Get timezone offsets - both in the same convention (minutes EAST of UTC)
-        const userOffsetMinutes = getUserTimezoneOffsetMinutes(userTz); // Minutes EAST of UTC
-        const serverOffsetMinutes = new Date().getTimezoneOffset(); // Minutes WEST of UTC
-        const serverOffsetEast = -serverOffsetMinutes; // Convert to minutes EAST of UTC
-        
-        log(`Time offsets: User=${userOffsetMinutes}min EAST, Server=${serverOffsetEast}min EAST`);
-        
-        // FIXED: Calculate the correct adjustment with consistent sign convention
-        // Both offsets are now in minutes EAST of UTC
-        // The adjustment needed is the difference between user timezone and server timezone
-        const totalAdjustmentMinutes = userOffsetMinutes - serverOffsetEast;
-        
-        log(`Total adjustment: ${totalAdjustmentMinutes} minutes`);
-        
-        // FIXED: Apply adjustment in the CORRECT direction
-        // We need to SUBTRACT the adjustment to get from local time to UTC time
-        const startTimeUTC = new Date(localStartDate.getTime() - (totalAdjustmentMinutes * 60000));
-        const endTimeUTC = new Date(localEndDate.getTime() - (totalAdjustmentMinutes * 60000));
-        
-        log(`Adjusted times: 
-          Original local: ${localStartDate.toString()}
-          Converted UTC: ${startTimeUTC.toISOString()}
+        log(`Converting time with timezone: ${dateStr}T${startTimeStr} in ${userTz}`);
+
+        const startTimeUTC = fromZonedTime(`${dateStr}T${startTimeStr}`, userTz);
+        const endTimeUTC = fromZonedTime(`${dateStr}T${endTimeStr}`, userTz);
+
+        log(`Converted to UTC:
+          Original wall-clock: ${dateStr}T${startTimeStr} - ${endTimeStr}
+          Converted UTC: ${startTimeUTC.toISOString()} - ${endTimeUTC.toISOString()}
           User timezone: ${userTz}
-          User offset: ${userOffsetMinutes} minutes EAST
-          Server offset: ${serverOffsetEast} minutes EAST
-          Adjustment: ${totalAdjustmentMinutes} minutes
-          Direction: SUBTRACT (not add)
         `);
 
         // Create booking record with UTC times
@@ -268,7 +244,13 @@ export async function createBookingAfterPayment(
           special_request: metadata.specialRequest || null,
           sub_acc_link: metadata.sub_acc_link || null,
           sub_acc_pass: metadata.sub_acc_pass || null,
-          price: Math.round(metadata.finalPrice / metadata.bookings.length / (timeBlocks.length || 1)),
+          // FIX 1: split the total proportionally to this block's hours.
+          // Guard against a missing/zero totalHours by falling back to the old
+          // even split. The rounding remainder is reconciled in a second pass
+          // below so the per-row prices sum EXACTLY to finalPrice.
+          price: (metadata.totalHours && metadata.totalHours > 0)
+            ? Math.round(metadata.finalPrice * block.duration / metadata.totalHours)
+            : Math.round(metadata.finalPrice / metadata.bookings.length / (timeBlocks.length || 1)),
           client_first_name: metadata.firstName,
           client_last_name: metadata.lastName,
           timezone: metadata.timezone, // Store the original timezone
@@ -281,6 +263,14 @@ export async function createBookingAfterPayment(
         };
       });
     }).flat();
+
+    // FIX 1 (second pass): when splitting proportionally, per-row Math.round can
+    // make the prices drift from finalPrice by a few IDR. Add the leftover to the
+    // last booking so the rows sum EXACTLY to finalPrice.
+    if (metadata.totalHours && metadata.totalHours > 0 && bookingInserts.length > 0) {
+      const sumRounded = bookingInserts.reduce((acc, b) => acc + b.price, 0);
+      bookingInserts[bookingInserts.length - 1].price += metadata.finalPrice - sumRounded;
+    }
 
     log(`Total bookings to create: ${bookingInserts.length}`);
 
@@ -433,84 +423,6 @@ export async function createBookingAfterPayment(
   }
 }
 
-// IMPROVED: Updated timezone offset helper function to include Indonesia and return minutes instead of hours
-function getUserTimezoneOffsetMinutes(timezone: string): number {
-  // Common timezone offsets (minutes)
-  const timezoneOffsets: Record<string, number> = {
-    // UTC and GMT
-    'UTC': 0,
-    'GMT': 0,
-    
-    // Asia (including Indonesia)
-    'Asia/Jakarta': 7 * 60,     // Indonesia - Western Indonesian Time (WIB)
-    'Asia/Makassar': 8 * 60,    // Indonesia - Central Indonesian Time (WITA)
-    'Asia/Jayapura': 9 * 60,    // Indonesia - Eastern Indonesian Time (WIT)
-    'Asia/Singapore': 8 * 60,
-    'Asia/Kuala_Lumpur': 8 * 60,
-    'Asia/Bangkok': 7 * 60,
-    'Asia/Ho_Chi_Minh': 7 * 60,
-    'Asia/Manila': 8 * 60,
-    'Asia/Tokyo': 9 * 60,
-    'Asia/Seoul': 9 * 60,
-    'Asia/Shanghai': 8 * 60,
-    'Asia/Hong_Kong': 8 * 60,
-    'Asia/Taipei': 8 * 60,
-    'Asia/Kolkata': 5.5 * 60,
-    
-    // Europe
-    'Europe/London': 0,
-    'Europe/Paris': 1 * 60,
-    'Europe/Berlin': 1 * 60,
-    'Europe/Rome': 1 * 60,
-    'Europe/Madrid': 1 * 60,
-    
-    // North America
-    'America/New_York': -5 * 60,    // EST
-    'America/Chicago': -6 * 60,     // CST
-    'America/Denver': -7 * 60,      // MST
-    'America/Los_Angeles': -8 * 60, // PST
-    
-    // Oceania
-    'Australia/Sydney': 10 * 60,
-    'Australia/Melbourne': 10 * 60,
-    'Australia/Brisbane': 10 * 60,
-    'Australia/Perth': 8 * 60,
-    'Pacific/Auckland': 12 * 60
-  };
-  
-  // Extract just the timezone ID if it contains multiple parts (like "Etc/GMT+7")
-  const timezoneId = timezone.split(' ')[0];
-  
-  // Try to match the timezone directly
-  if (timezoneOffsets[timezoneId] !== undefined) {
-    return timezoneOffsets[timezoneId];
-  }
-  
-  // Handle fallback for Indonesian timezones
-  if (timezoneId.includes('Indonesia') || timezoneId.includes('jakarta') || timezoneId.includes('Jakarta')) {
-    console.log('Detected Indonesian timezone, using Asia/Jakarta offset');
-    return 7 * 60; // Jakarta / WIB
-  }
-  
-  // Handle Balikpapan (WITA) specifically
-  if (timezoneId.includes('Balikpapan') || timezoneId.includes('WITA') || timezoneId.includes('Makassar')) {
-    console.log('Detected Balikpapan or WITA timezone, using Asia/Makassar offset');
-    return 8 * 60; // WITA
-  }
-  
-  // Try to guess timezone by offset if provided in format like "GMT+7"
-  if (timezone.match(/GMT[+-]\d+/)) {
-    const offsetMatch = timezone.match(/GMT([+-]\d+)/);
-    if (offsetMatch && offsetMatch[1]) {
-      const offsetHours = parseInt(offsetMatch[1]);
-      return offsetHours * 60;
-    }
-  }
-  
-  console.warn(`Unknown timezone: ${timezone}, defaulting to UTC`);
-  return 0; // Default to UTC if timezone not found
-}
-
 // Helper function to create notifications asynchronously
 async function createNotificationsAsync(
   bookings: any[], 
@@ -585,48 +497,3 @@ async function createNotificationsAsync(
     // Non-blocking - we don't want notification errors to affect booking creation
   }
 }
-
-export async function updatePaymentStatus(orderId: string, status: string, transactionDetails: any) {
-  const supabase = createClient();
-  try {
-    // Extract booking ID from order ID (format: BOOKING-{id}-{timestamp})
-    const bookingId = orderId.split('-')[1];
-    
-    if (!bookingId) throw new Error('Invalid order ID format');
-
-    // Update booking status
-    await supabase
-      .from('bookings')
-      .update({ 
-        status: status === 'settlement' ? 'pending' : 'payment_pending',
-        payment_status: status
-      })
-      .eq('id', parseInt(bookingId));
-
-    // Update payment record
-    const { data: payment } = await supabase
-      .from('payments')
-      .update({
-        status: status,
-        midtrans_response: transactionDetails
-      })
-      .eq('booking_id', parseInt(bookingId))
-      .select()
-      .single();
-
-    if (payment) {
-      // Record status history
-      await supabase
-        .from('payment_status_history')
-        .insert({
-          payment_id: payment.id,
-          new_status: status,
-          midtrans_notification: transactionDetails
-        });
-    }
-
-  } catch (error) {
-    console.error('Payment status update error:', error);
-    throw error;
-  }
-} 

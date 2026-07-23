@@ -2651,9 +2651,11 @@ export default function StreamerDashboard() {
               draggable: true,
             });
           } else if (payload.new.status === 'accepted') {
-            // Booking accepted - move to upcoming schedule
+            // Booking accepted - move to upcoming schedule.
+            // Replace any existing row with the same id (an UPDATE should not
+            // append a duplicate alongside the optimistic accept push).
             setPendingBookings(prev => prev.filter(b => b.id !== payload.new.id));
-            setBookings(prev => [...prev, payload.new]);
+            setBookings(prev => [...prev.filter(b => b.id !== payload.new.id), payload.new]);
           } else if (payload.new.status === 'rejected') {
             // Booking rejected - move to rejected list
             setPendingBookings(prev => prev.filter(b => b.id !== payload.new.id));
@@ -2711,9 +2713,10 @@ export default function StreamerDashboard() {
       // Find the booking to be accepted
       const acceptedBooking = pendingBookings.find(b => b.id === bookingId);
       if (acceptedBooking) {
-        // Update states immediately
+        // Update states immediately (de-dup by id so the realtime UPDATE
+        // handler doesn't leave the same booking in `bookings` twice)
         setPendingBookings(prev => prev.filter(b => b.id !== bookingId));
-        setBookings(prev => [...prev, { ...acceptedBooking, status: 'accepted' }]);
+        setBookings(prev => [...prev.filter(b => b.id !== bookingId), { ...acceptedBooking, status: 'accepted' }]);
         toast.success("Booking accepted successfully");
       }
     } else {

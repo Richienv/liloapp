@@ -2,6 +2,7 @@
 
 import { encodedRedirect } from "@/utils/utils";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -42,21 +43,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
     const brandDescription = formData.get("brand_description") as string;
     const brandGuidelineFile = formData.get("brand_doc") as File;
 
-    // 1. Check if user already exists
-    const { data: existingUser } = await supabase
-      .from('users')
-      .select('email')
-      .eq('email', email)
-      .single();
-
-    if (existingUser) {
-      return {
-        success: false,
-        error: 'Email already registered'
-      };
-    }
-
-    // 2. Create the user
+    // 1. Create the user (auth.signUp already errors on a duplicate email)
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password,
@@ -88,7 +75,12 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
         .upload(fileName, brandGuidelineFile);
 
       if (uploadError) {
-        await supabase.auth.admin.deleteUser(authData.user.id);
+        const admin = createAdminClient();
+        if (admin) {
+          await admin.auth.admin.deleteUser(authData.user.id);
+        } else {
+          console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned auth user');
+        }
         return {
           success: false,
           error: 'Failed to upload brand guideline'
@@ -121,7 +113,12 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
 
     if (profileError) {
       // Clean up: delete user and uploaded file if profile creation fails
-      await supabase.auth.admin.deleteUser(authData.user.id);
+      const admin = createAdminClient();
+      if (admin) {
+        await admin.auth.admin.deleteUser(authData.user.id);
+      } else {
+        console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned auth user');
+      }
       return {
         success: false,
         error: 'Failed to create user profile'
@@ -424,6 +421,14 @@ export async function updateUserProfile(formData: FormData) {
 }
 
 export async function streamerSignUpAction(formData: FormData): Promise<SignUpResponse> {
+  // Track created resources so a failure after auth.signUp can be rolled back
+  // in the catch block below (best-effort, reverse order).
+  let createdUserId: string | null = null;
+  let profileImagePath: string | null = null;
+  const uploadedGalleryPaths: string[] = [];
+  let usersRowInserted = false;
+  let streamerRowId: string | number | null = null;
+
   try {
     const supabase = createClient();
 
@@ -458,6 +463,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
 
       if (authError || !user) throw authError;
 
+      // Auth user now exists — record it for rollback on any later failure.
+      createdUserId = user.id;
+
       const filePath = `${user.id}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
@@ -472,6 +480,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
         console.error('Upload error:', uploadError);
         throw new Error('Failed to upload profile image: ' + uploadError.message);
       }
+
+      // Profile image uploaded — record its path for rollback.
+      profileImagePath = filePath;
 
       const { data: { publicUrl } } = supabase.storage
         .from('profile_picture')
@@ -522,6 +533,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
               order_number: i
             });
 
+            // Record uploaded gallery path for rollback.
+            uploadedGalleryPaths.push(galleryPath);
+
             uploadSuccess = true;
             console.log(`Successfully uploaded gallery image ${i + 1}/${galleryFiles.length}`);
 
@@ -570,6 +584,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
 
       if (userError) throw userError;
 
+      // Users row inserted — record for rollback.
+      usersRowInserted = true;
+
       // Create streamer profile
       const { data: streamerData, error: streamerError } = await supabase
         .from('streamers')
@@ -593,6 +610,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
         .single();
 
       if (streamerError) throw streamerError;
+
+      // Streamers row inserted — record its id for rollback.
+      streamerRowId = streamerData.id;
 
       // Add gallery photos to database with error handling
       if (uploadedGalleryUrls.length > 0) {
@@ -633,6 +653,57 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
     }
   } catch (error) {
     console.error('Streamer sign up error:', error);
+
+    // Best-effort rollback of anything created after auth.signUp, in reverse
+    // order. Each step is isolated so one failure doesn't abort the rest.
+    const admin = createAdminClient();
+    if (!admin) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned streamer signup (auth user, rows, and storage objects may be left behind)');
+    } else {
+      // 1. Delete streamers row (if inserted)
+      if (streamerRowId !== null) {
+        try {
+          await admin.from('streamers').delete().eq('id', streamerRowId);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to delete streamers row', cleanupError);
+        }
+      }
+
+      // 2. Delete users row (if inserted)
+      if (usersRowInserted && createdUserId) {
+        try {
+          await admin.from('users').delete().eq('id', createdUserId);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to delete users row', cleanupError);
+        }
+      }
+
+      // 3. Remove uploaded storage objects
+      if (profileImagePath) {
+        try {
+          await admin.storage.from('profile_picture').remove([profileImagePath]);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to remove profile image', cleanupError);
+        }
+      }
+      if (uploadedGalleryPaths.length > 0) {
+        try {
+          await admin.storage.from('gallery_images').remove(uploadedGalleryPaths);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to remove gallery images', cleanupError);
+        }
+      }
+
+      // 4. Delete the orphaned auth user
+      if (createdUserId) {
+        try {
+          await admin.auth.admin.deleteUser(createdUserId);
+        } catch (cleanupError) {
+          console.error('Rollback: failed to delete auth user', cleanupError);
+        }
+      }
+    }
+
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create account. Please try again.'
