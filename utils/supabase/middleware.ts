@@ -34,10 +34,21 @@ export const updateSession = async (request: NextRequest) => {
       console.error('Session error:', sessionError);
     }
 
-    // Protected routes handling
-    const isAuthRoute = request.nextUrl.pathname.startsWith('/auth');
-    const isProtectedRoute = request.nextUrl.pathname.startsWith('/protected') || 
-                            request.nextUrl.pathname.startsWith('/booking-detail');
+    // Protected routes handling. These require an authenticated session at the
+    // edge; the admin role itself is additionally enforced in app/admin/layout.tsx.
+    const pathname = request.nextUrl.pathname;
+    const isAuthRoute = pathname.startsWith('/auth');
+    const PROTECTED_PREFIXES = [
+      '/protected',
+      '/booking-detail',
+      '/admin',
+      '/streamer-dashboard',
+      '/client-bookings',
+      '/settings',
+      '/messages',
+      '/notifications',
+    ];
+    const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
 
     if (isProtectedRoute && !session) {
       const redirectUrl = new URL('/sign-in', request.url);

@@ -862,11 +862,16 @@ export async function acceptBooking(bookingId: number) {
     // Fetch the booking first
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
+
+    // Authorization: only the streamer who owns this booking may accept it.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { error: 'Unauthorized' };
+    }
 
     // Update booking status
     const { error: updateError } = await supabase
@@ -896,16 +901,27 @@ export async function acceptBooking(bookingId: number) {
 
 export async function rejectBooking(bookingId: number) {
   const supabase = createClient();
-  
+
   try {
+    // Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: 'Not authenticated' };
+    }
+
     // Fetch the booking first to get client and streamer details
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
+
+    // Authorization: only the streamer who owns this booking may reject it.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { error: 'Unauthorized' };
+    }
 
     // Update booking status
     const { error: updateError } = await supabase
@@ -1029,15 +1045,26 @@ export async function endStream(bookingId: number) {
   const supabase = createClient();
 
   try {
+    // Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
     // Fetch booking data first
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
     if (!bookingData) throw new Error('Booking not found');
+
+    // Authorization: only the streamer who owns this booking may end its stream.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { success: false, error: 'Unauthorized' };
+    }
 
     // Update the booking status to 'completed'
     const { error: updateError } = await supabase
@@ -1239,16 +1266,27 @@ export async function acceptItems(bookingId: number) {
 
 export async function requestReschedule(bookingId: number, reason: string) {
   const supabase = createClient();
-  
+
   try {
+    // Authentication
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return { error: 'Not authenticated' };
+    }
+
     // Fetch the booking first to get client and streamer details
     const { data: bookingData, error: bookingFetchError } = await supabase
       .from('bookings')
-      .select('*, streamers(first_name, last_name)')
+      .select('*, streamers(first_name, last_name, user_id)')
       .eq('id', bookingId)
       .single();
 
     if (bookingFetchError) throw bookingFetchError;
+
+    // Authorization: only the streamer who owns this booking may request a reschedule.
+    if (bookingData.streamers?.user_id !== user.id) {
+      return { error: 'Unauthorized' };
+    }
 
     // Update booking status with reason
     const { error: updateError } = await supabase

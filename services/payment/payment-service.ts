@@ -12,6 +12,52 @@ const snap = new midtransClient.Snap({
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
 });
 
+// Core API client, used to ask Midtrans directly for a transaction's real
+// status. We must never trust a client-supplied payment result verbatim.
+const coreApi = new midtransClient.CoreApi({
+  isProduction: true,
+  serverKey: process.env.MIDTRANS_SERVER_KEY || '',
+  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY || ''
+});
+
+export interface VerifiedTransaction {
+  orderId: string;
+  transactionStatus: string;
+  fraudStatus?: string;
+  grossAmount: number; // rounded to the nearest integer (IDR has no minor units in use here)
+  isPaid: boolean;     // settlement, or capture+accept
+  isFailed: boolean;   // deny / cancel / expire / failure
+}
+
+/**
+ * Ask Midtrans directly for the authoritative status of a transaction.
+ *
+ * This is the server-to-server source of truth. A fabricated `order_id` will
+ * 404 here (returns null), and the real `gross_amount` comes from Midtrans —
+ * not from the browser — so a client cannot claim it paid a different amount
+ * than it actually did.
+ */
+export async function verifyMidtransTransaction(
+  orderId: string
+): Promise<VerifiedTransaction | null> {
+  if (!orderId) return null;
+  try {
+    const status = await coreApi.transaction.status(orderId);
+    const transactionStatus: string = status.transaction_status;
+    const fraudStatus: string | undefined = status.fraud_status;
+    const grossAmount = Math.round(parseFloat(status.gross_amount ?? '0'));
+    const isPaid =
+      transactionStatus === 'settlement' ||
+      (transactionStatus === 'capture' && fraudStatus === 'accept');
+    const isFailed = ['deny', 'cancel', 'expire', 'failure'].includes(transactionStatus);
+    return { orderId, transactionStatus, fraudStatus, grossAmount, isPaid, isFailed };
+  } catch (error: any) {
+    // Midtrans throws for a non-existent order id (HTTP 404) — treat as unverified.
+    console.error('Midtrans verification failed for order', orderId, error?.message || error);
+    return null;
+  }
+}
+
 export interface PaymentMetadata {
   streamerId: string;
   userId: string;
