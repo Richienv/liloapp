@@ -6,6 +6,8 @@ import crypto from 'crypto';
 
 // Midtrans transaction_status values that mean the money is actually captured.
 const PAID_STATUSES = new Set(['settlement', 'capture']);
+// Values that mean the payment will never complete.
+const FAILED_STATUSES = new Set(['deny', 'cancel', 'expire', 'failure']);
 
 /**
  * Verify the Midtrans notification signature.
@@ -60,6 +62,7 @@ export async function POST(request: Request) {
     const isPaid =
       PAID_STATUSES.has(transactionStatus) &&
       (transactionStatus !== 'capture' || fraudStatus === 'accept');
+    const isFailed = FAILED_STATUSES.has(transactionStatus);
 
     // 2. Match the payment by its stored transaction_id (== Midtrans order_id).
     //    This is the correct join key: createBookingAfterPayment stores the
@@ -83,12 +86,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, note: 'payment not yet recorded' });
     }
 
-    // 3. Idempotency: if we've already recorded this payment as paid and the
-    //    incoming notification is also paid, do nothing (Midtrans retries the
-    //    same settlement notification until it gets a 200).
+    // 3. Idempotency: if we've already recorded this payment's terminal state
+    //    and the incoming notification repeats it, do nothing (Midtrans retries
+    //    the same notification until it gets a 200).
     const alreadyPaid =
       PAID_STATUSES.has(payment.status) || PAID_STATUSES.has(payment.payment_status);
-    if (alreadyPaid && isPaid) {
+    const alreadyFailed =
+      FAILED_STATUSES.has(payment.status) || FAILED_STATUSES.has(payment.payment_status);
+    if ((isPaid && alreadyPaid) || (isFailed && alreadyFailed)) {
       return NextResponse.json({ received: true, note: 'already processed' });
     }
 
@@ -145,6 +150,40 @@ export async function POST(request: Request) {
             is_read: false,
           });
         }
+      }
+    } else if (isFailed && !alreadyFailed) {
+      // Payment failed / was cancelled / expired. Cancel the bookings that are
+      // still waiting on payment (don't touch ones a streamer already acted on)
+      // and let the client know.
+      const { data: bookings, error: bookingError } = await supabase
+        .from('bookings')
+        .select('*, streamers(first_name, last_name)')
+        .eq('payment_group_id', payment.id);
+
+      if (bookingError) throw bookingError;
+
+      const { error: cancelError } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+        .eq('payment_group_id', payment.id)
+        .in('status', ['pending', 'payment_pending']);
+
+      if (cancelError) throw cancelError;
+
+      for (const booking of bookings ?? []) {
+        const when = formatInTimeZone(
+          new Date(booking.start_time),
+          booking.timezone || 'Asia/Jakarta',
+          'dd MMMM HH:mm'
+        );
+        await createNotification({
+          user_id: booking.client_id,
+          streamer_id: booking.streamer_id,
+          message: `Your payment for the booking on ${when} could not be completed (${transactionStatus}). The booking has been cancelled.`,
+          type: 'booking_cancelled',
+          booking_id: booking.id,
+          is_read: false,
+        });
       }
     }
 
