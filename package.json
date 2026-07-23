@@ -31,7 +31,6 @@
     "@sentry/nextjs": "^8.47.0",
     "@splinetool/react-spline": "^4.0.0",
     "@stitches/react": "^1.2.8",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
     "@supabase/ssr": "latest",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-virtual": "^3.13.2",
