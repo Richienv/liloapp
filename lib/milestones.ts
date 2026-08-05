@@ -41,8 +41,12 @@ export interface PublishableProfile {
    * shipping a physical product to the host is the premise of the marketplace,
    * and without this the brand's shipping panel is empty *after* they have paid.
    *
-   * `undefined` means "the caller did not select this column" — see
-   * {@link isProfilePublishable} for why that is not the same as "missing".
+   * Every caller selects this column. It was briefly tolerated as `undefined`
+   * (meaning "not selected") while `readAccountState` still used a column list
+   * that predated the field; treating a missing column as a missing value there
+   * would have routed every streamer to setup on sign-in, including ones who
+   * already had an address and so could never satisfy the check — a permanent
+   * redirect loop. That gap is closed, so absent now honestly means absent.
    */
   full_address?: string | null;
 }
@@ -58,29 +62,6 @@ function present(value: unknown): boolean {
   if (typeof value === "string") return value.trim().length > 0;
   if (typeof value === "number") return Number.isFinite(value) && value > 0;
   return true;
-}
-
-/**
- * `full_address` is required — but only when the caller actually selected the
- * column.
- *
- * The distinction is deliberate and load-bearing. `undefined` means "this query
- * did not ask for full_address", which is not the same claim as `null` / `""`
- * ("we asked, and the host has not given one"). `readAccountState` in
- * app/types/auth.ts still reads the pre-address column list and feeds the result
- * to `nextPathFor`, which sends an unpublished streamer to /streamer-setup. If a
- * missing *column* counted as a missing *value*, every streamer would be routed
- * to setup on sign-in — including one who already has an address, who could
- * never satisfy the check because the value never reaches it. That is a
- * permanent redirect loop, not a nudge.
- *
- * Callers that own the field (the setup form, `saveStreamerProfile`, the setup
- * hub) always pass the key, so the requirement is fully enforced where it is
- * collected. Remove this tolerance once every caller selects the column.
- */
-function addressSatisfied(profile: PublishableProfile): boolean {
-  if (profile.full_address === undefined) return true;
-  return present(profile.full_address);
 }
 
 /**
@@ -114,7 +95,7 @@ export function isProfilePublishable(profile: PublishableProfile | null): boolea
     present(profile.platform) &&
     present(price) &&
     present(profile.bio) &&
-    addressSatisfied(profile)
+    present(profile.full_address)
   );
 }
 
@@ -126,7 +107,7 @@ export function missingPublishFields(profile: PublishableProfile | null): string
     ["city", "Kota", present(profile?.city_slug) || present(profile?.location)],
     // Right after the city, because the two are one thought: which city, then
     // where in it. Same tolerance for an unselected column as above.
-    ["full_address", "Alamat lengkap", profile ? addressSatisfied(profile) : false],
+    ["full_address", "Alamat lengkap", present(profile?.full_address)],
     ["category", "Kategori", present(profile?.category)],
     ["platform", "Platform", present(profile?.platform)],
     ["price", "Harga per jam", present(

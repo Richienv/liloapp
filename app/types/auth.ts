@@ -68,7 +68,7 @@ export function isRoleChoice(value: unknown): value is RoleChoice {
  * different conclusions about the same account.
  */
 const STREAMER_STATE_COLUMNS =
-  "id, username, image_url, city_slug, location, category, platform, price, bio, verification_status";
+  "id, username, image_url, city_slug, location, full_address, category, platform, price, bio, verification_status";
 
 /**
  * Read everything `nextPathFor` needs about an account.
@@ -141,6 +141,7 @@ export async function readAccountState(
         image_url: row.image_url as string | null,
         city_slug: row.city_slug as string | null,
         location: row.location as string | null,
+        full_address: row.full_address as string | null,
         category: row.category as string | null,
         platform: row.platform as string | null,
         price: row.price as number | string | null,

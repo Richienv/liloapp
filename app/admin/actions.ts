@@ -79,7 +79,7 @@ async function loadPublishableProfile(
 ): Promise<{ profile: PublishableProfile | null; failed: boolean }> {
   const { data, error } = await db
     .from("streamers")
-    .select("username, image_url, city_slug, location, category, platform, price, bio")
+    .select("username, image_url, city_slug, location, full_address, category, platform, price, bio")
     .eq("id", streamerId)
     .maybeSingle();
 
