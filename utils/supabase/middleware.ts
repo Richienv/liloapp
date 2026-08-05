@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
+import { readAccountState } from "@/app/types/auth";
+import { nextPathFor } from "@/lib/auth-redirect";
+
 // Routes that require an authenticated user at the edge. The admin *role* is
 // additionally enforced in app/admin/layout.tsx — this list only answers
 // "is anyone signed in at all?".
@@ -21,10 +24,30 @@ const PROTECTED_PREFIXES = [
   // before any of that ships to the browser.
   "/client-onboarding",
   "/streamer-onboarding",
+  // The account-first flow. Both read and write the signed-in user's own row —
+  // the role picker decides what `users.user_type` becomes, and setup fills in
+  // the public profile — so neither means anything without a session.
+  "/pilih-peran",
+  "/streamer-setup",
 ];
 
 const isProtectedPath = (pathname: string) =>
   PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+// Auth pages an already-signed-in user should be moved off.
+//
+// /auth/callback is deliberately excluded: it must run the code exchange even
+// for an already-authenticated user (e.g. a password-recovery link), and it
+// sets its own cookies, so the middleware has nothing to add there.
+const isAuthPath = (pathname: string) =>
+  pathname.startsWith("/auth") && !pathname.startsWith("/auth/callback");
+
+const passThrough = (request: NextRequest) =>
+  NextResponse.next({
+    request: {
+      headers: request.headers,
+    },
+  });
 
 // Bounce to /sign-in, remembering where the user was headed so they land back
 // there after authenticating. Includes the query string so deep links (e.g.
@@ -42,13 +65,24 @@ const redirectToSignIn = (request: NextRequest) => {
 export const updateSession = async (request: NextRequest) => {
   const pathname = request.nextUrl.pathname;
   const isProtectedRoute = isProtectedPath(pathname);
+  const isAuthRoute = isAuthPath(pathname);
+
+  // Nothing below this point branches on `user` for any other path. The
+  // marketplace home, /locations, /location/<slug>, the public /[username]
+  // profiles and sitemap.xml all render identically signed in or out — but they
+  // were still waiting on getUser(), which is a network round trip to the auth
+  // server, on every single request. Answering a question nobody reads is the
+  // most expensive thing this middleware did.
+  //
+  // The cost of skipping it is that a session is no longer refreshed as a side
+  // effect of browsing public pages only; the routes that actually gate on a
+  // session still refresh it below, which is where an expiring token matters.
+  if (!isProtectedRoute && !isAuthRoute) {
+    return passThrough(request);
+  }
 
   try {
-    let response = NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    let response = passThrough(request);
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -97,19 +131,20 @@ export const updateSession = async (request: NextRequest) => {
       }
     }
 
-    // NOTE: exclude /auth/callback — it must run the code exchange even for an
-    // already-authenticated user (e.g. a password-recovery link). Without this,
-    // the "already signed in -> /protected" redirect below would skip it.
-    const isAuthRoute =
-      pathname.startsWith('/auth') && !pathname.startsWith('/auth/callback');
-
     if (isProtectedRoute && !user) {
       return redirectToSignIn(request);
     }
 
-    // Redirect from auth pages if already authenticated
+    // Already authenticated and looking at an auth page. Where they belong is
+    // not a guess the middleware gets to make on its own — nextPathFor decides
+    // it here exactly as it does in the sign-in action and the OAuth callback,
+    // so an account that has not picked a role lands on the picker rather than
+    // on a brand dashboard it cannot use. This costs a couple of queries, but
+    // only on /auth/*, which a signed-in user reaches essentially never.
     if (isAuthRoute && user) {
-      return NextResponse.redirect(new URL('/protected', request.url));
+      const state = await readAccountState(supabase, user.id);
+      const target = nextPathFor(state ?? { userType: null, streamer: null });
+      return NextResponse.redirect(new URL(target, request.url));
     }
 
     return response;
@@ -124,10 +159,6 @@ export const updateSession = async (request: NextRequest) => {
       return redirectToSignIn(request);
     }
 
-    return NextResponse.next({
-      request: {
-        headers: request.headers,
-      },
-    });
+    return passThrough(request);
   }
 };

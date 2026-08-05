@@ -8,12 +8,20 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { cookies } from 'next/headers';
 import { v4 as uuidv4 } from 'uuid';
-import { SignUpResponse } from "@/app/types/auth";
+import {
+  isRoleChoice,
+  readAccountState,
+  type AuthActionResponse,
+  type OAuthStartResponse,
+  type RoleChoice,
+  type SignUpResponse,
+} from "@/app/types/auth";
 import { format } from 'date-fns';
 import { createNotification, createStreamNotifications, createItemReceivedNotification, type NotificationType } from '@/services/notification-service';
 import { suggestUsername, validateUsername, withSuffix } from "@/lib/username";
 import { normalizePhone, PHONE_INVALID_MESSAGE } from "@/lib/phone";
 import { resolveCity } from "@/lib/cities";
+import { nextPathFor, ROLE_PICKER_PATH } from "@/lib/auth-redirect";
 
 // Add this helper function at the top of the file
 function sanitizeFileName(fileName: string): string {
@@ -159,6 +167,442 @@ export interface StreamerProfileResponse {
   error?: string;
 }
 
+/**
+ * Account creations currently running, keyed by lowercased email.
+ *
+ * A double-submitted form (or a client that retries on a slow network) used to
+ * fire two `auth.signUp` calls a few milliseconds apart. One wins; the other
+ * comes back "email already registered" *after* the first has already created
+ * the auth user but possibly before its profile row landed — so the user is
+ * shown a failure for an account that exists, and whichever half-created state
+ * the loser left behind stays. Coalescing on the email means the second submit
+ * simply waits for the first and gets the same answer.
+ *
+ * This is per-server-instance, which is why it is only half the guard: the
+ * profile row is written with ON CONFLICT DO NOTHING on the primary key, so
+ * even a retry that reaches a different instance cannot produce a second row.
+ */
+const accountCreationsInFlight = new Map<string, Promise<AuthActionResponse>>();
+
+function coalesceAccountCreation(
+  email: string,
+  run: () => Promise<AuthActionResponse>,
+): Promise<AuthActionResponse> {
+  const key = email.trim().toLowerCase();
+  const existing = accountCreationsInFlight.get(key);
+  if (existing) return existing;
+
+  const pending = run().finally(() => {
+    accountCreationsInFlight.delete(key);
+  });
+  accountCreationsInFlight.set(key, pending);
+  return pending;
+}
+
+/**
+ * Write the `public.users` row for a freshly created auth user.
+ *
+ * `ignoreDuplicates` makes this ON CONFLICT DO NOTHING keyed on the primary
+ * key: a retry can only ever produce one row, and — importantly — it never
+ * overwrites a profile that has already picked a role.
+ *
+ * The service-role fallback exists because `auth.signUp` returns a user but no
+ * session when email confirmation is enabled, and RLS will not let an
+ * unauthenticated caller insert its own row. Without the fallback, turning
+ * confirmation on in the Supabase dashboard would silently start rolling back
+ * every signup.
+ */
+async function insertUserProfileRow(
+  supabase: ReturnType<typeof createClient>,
+  row: Record<string, unknown>,
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("users")
+    .upsert(row, { onConflict: "id", ignoreDuplicates: true });
+
+  if (!error) return true;
+
+  console.error("Profile insert failed as the signed-up user:", error);
+
+  const admin = createAdminClient();
+  if (!admin) {
+    console.error(
+      "SUPABASE_SERVICE_ROLE_KEY not set — cannot write the profile row without a session",
+    );
+    return false;
+  }
+
+  const { error: adminError } = await admin
+    .from("users")
+    .upsert(row, { onConflict: "id", ignoreDuplicates: true });
+
+  if (adminError) {
+    console.error("Profile insert failed via service role too:", adminError);
+    return false;
+  }
+
+  return true;
+}
+
+/** Best-effort removal of an auth user whose profile row could not be written. */
+async function deleteOrphanedAuthUser(userId: string) {
+  const admin = createAdminClient();
+  if (!admin) {
+    console.error(
+      "SUPABASE_SERVICE_ROLE_KEY not set — cannot roll back orphaned auth user",
+    );
+    return;
+  }
+  try {
+    await admin.auth.admin.deleteUser(userId);
+  } catch (cleanupError) {
+    console.error("Rollback: failed to delete auth user", cleanupError);
+  }
+}
+
+/**
+ * Create an account and nothing else.
+ *
+ * This is the account-first entry point: email, password, name and WhatsApp
+ * number, no role, no files, no marketplace profile. The old forms asked for
+ * ~19 fields and a set of uploads before an account existed, so anyone who
+ * stopped halfway left us nothing at all — not even a way to email them. Here
+ * the account exists after about thirty seconds, and everything else is
+ * something they can come back and finish.
+ *
+ * `user_type` is deliberately left NULL. The role picker is the next screen and
+ * `nextPathFor` treats a NULL role as "cannot do anything yet", so an
+ * abandoned signup resumes exactly where it stopped instead of guessing.
+ *
+ * FormData: email, password, first_name, last_name, phone.
+ */
+export async function createAccountAction(
+  formData: FormData,
+): Promise<AuthActionResponse> {
+  const email = ((formData.get("email") as string | null) ?? "").trim();
+  const password = (formData.get("password") as string | null) ?? "";
+  const firstName = ((formData.get("first_name") as string | null) ?? "").trim();
+  const lastName = ((formData.get("last_name") as string | null) ?? "").trim();
+
+  // Validate everything that can be rejected without touching the database
+  // first: every failure after auth.signUp costs a rollback.
+  if (!email) {
+    return { success: false, error: "Email wajib diisi." };
+  }
+  if (!firstName) {
+    return { success: false, error: "Nama depan wajib diisi." };
+  }
+  if (password.length < 6) {
+    return { success: false, error: "Kata sandi minimal 6 karakter." };
+  }
+
+  // WhatsApp is how Salda actually reaches a user and how a brand and a
+  // streamer coordinate around a booking, so it is required and stored in one
+  // canonical shape regardless of how it was typed.
+  const phone = normalizePhone(formData.get("phone") as string | null);
+  if (!phone) {
+    return { success: false, error: PHONE_INVALID_MESSAGE };
+  }
+
+  return coalesceAccountCreation(email, async () => {
+    const supabase = createClient();
+
+    try {
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            phone,
+          },
+        },
+      });
+
+      if (authError || !authData.user) {
+        console.error("Create account auth error:", authError);
+        return { success: false, error: translateAuthError(authError) };
+      }
+
+      // With email confirmation enabled, Supabase answers a signup for an
+      // existing address with a success-shaped response carrying no identities
+      // rather than an error, to avoid confirming that the address is
+      // registered. Treating that as success would drop the user on the role
+      // picker with no session.
+      if (authData.user.identities && authData.user.identities.length === 0) {
+        return {
+          success: false,
+          error: "Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.",
+        };
+      }
+
+      const now = new Date().toISOString();
+      const written = await insertUserProfileRow(supabase, {
+        id: authData.user.id,
+        email: authData.user.email,
+        first_name: firstName,
+        last_name: lastName,
+        // NULL until the role picker: see the note above.
+        user_type: null,
+        phone,
+        created_at: now,
+        updated_at: now,
+      });
+
+      if (!written) {
+        // No files and no second table are involved any more, so rolling back
+        // is exactly one delete rather than the multi-step unwind the old
+        // streamer signup needed.
+        await deleteOrphanedAuthUser(authData.user.id);
+        return { success: false, error: "Gagal membuat akun. Silakan coba lagi." };
+      }
+
+      return { success: true, redirectTo: ROLE_PICKER_PATH };
+    } catch (error) {
+      console.error("Create account error:", error);
+      return { success: false, error: toFriendlyError(error) };
+    }
+  });
+}
+
+/** Copy for someone trying to change a role that is already decided. */
+function roleAlreadySetMessage(existing: RoleChoice): string {
+  const asWhat =
+    existing === "streamer" ? "host live" : "brand";
+  return `Akun ini sudah terdaftar sebagai ${asWhat}. Peran akun tidak bisa diubah sendiri — hubungi dukungan Salda lewat WhatsApp kalau kamu perlu mengubahnya.`;
+}
+
+/**
+ * Create the minimal `public.streamers` row a new host starts from.
+ *
+ * Only identity and a username: everything a listing needs is collected later
+ * by the setup flow, and the row exists so that work has somewhere to land.
+ * Idempotent by design — the role picker is a screen people re-submit, and two
+ * streamer rows for one user would give them two public profiles.
+ */
+async function ensureStreamerRow(
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  firstName: string,
+  lastName: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const { data: existing, error: readError } = await supabase
+    .from("streamers")
+    .select("id")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (readError) {
+    console.error("Select role: could not check for an existing streamer row", readError);
+    return { ok: false, error: GENERIC_ERROR_MESSAGE };
+  }
+  if (existing) return { ok: true };
+
+  // `suggestUsername` always returns a well-formed stem, but a name that
+  // slugifies onto the reserved list ("Admin") still has to be moved off it; a
+  // numeric suffix does that and the insert below keeps bumping it on collision.
+  const suggested = suggestUsername(firstName, lastName);
+  const check = validateUsername(suggested);
+  const baseUsername = check.ok ? check.username : withSuffix(suggested, 1);
+
+  try {
+    await insertStreamerWithUniqueUsername(
+      supabase,
+      {
+        user_id: userId,
+        first_name: firstName,
+        last_name: lastName,
+      },
+      baseUsername,
+    );
+    return { ok: true };
+  } catch (error) {
+    // A unique violation on user_id means a concurrent submit already created
+    // the row. That is the outcome we wanted, not a failure.
+    const pgError = error as { code?: string; message?: string; details?: string };
+    const isDuplicateStreamer =
+      pgError?.code === UNIQUE_VIOLATION &&
+      /user_id/i.test(`${pgError.message ?? ""} ${pgError.details ?? ""}`);
+    if (isDuplicateStreamer) return { ok: true };
+
+    console.error("Select role: could not create the streamer row", error);
+    return { ok: false, error: toFriendlyError(error) };
+  }
+}
+
+/**
+ * Record what the signed-in account came here to do.
+ *
+ * Two properties matter more than anything else here:
+ *
+ * - It is idempotent. Re-submitting the picker must not create a second
+ *   streamer profile, so the role is set with a compare-and-set on NULL and the
+ *   streamer row is created only when there isn't one.
+ * - It refuses to *change* a settled role. `user_type` is read as a permission
+ *   all over the app — a brand quietly becoming a host would move their
+ *   bookings, their dashboard and their payouts onto the wrong side of the
+ *   marketplace. Changing it is a support action, not a form submit.
+ *
+ * FormData: role ("client" | "streamer").
+ */
+export async function selectRoleAction(
+  formData: FormData,
+): Promise<AuthActionResponse> {
+  const requestedRole = formData.get("role");
+  if (!isRoleChoice(requestedRole)) {
+    return { success: false, error: "Pilih salah satu peran untuk melanjutkan." };
+  }
+  const role: RoleChoice = requestedRole;
+
+  const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      error: "Sesi kamu sudah berakhir. Silakan masuk lagi untuk melanjutkan.",
+    };
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from("users")
+    .select("user_type, first_name, last_name")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) {
+    console.error("Select role: could not read the users row", profileError);
+    return { success: false, error: GENERIC_ERROR_MESSAGE };
+  }
+  if (!profile) {
+    return {
+      success: false,
+      error: "Data akun kamu belum lengkap. Hubungi dukungan Salda lewat WhatsApp.",
+    };
+  }
+
+  const currentRole = (profile.user_type as RoleChoice | null) ?? null;
+
+  if (currentRole && currentRole !== role) {
+    return { success: false, error: roleAlreadySetMessage(currentRole) };
+  }
+
+  if (!currentRole) {
+    // Compare-and-set rather than a plain update: two picker submits racing
+    // each other must not be able to land on different roles, and the database
+    // is the only place that can settle that.
+    const now = new Date().toISOString();
+    const { data: updated, error: updateError } = await supabase
+      .from("users")
+      .update({ user_type: role, role_selected_at: now, updated_at: now })
+      .eq("id", user.id)
+      .is("user_type", null)
+      .select("user_type");
+
+    if (updateError) {
+      console.error("Select role: could not set user_type", updateError);
+      return { success: false, error: GENERIC_ERROR_MESSAGE };
+    }
+
+    if (!updated || updated.length === 0) {
+      // Somebody else set it between our read and our write. Whatever they
+      // chose stands; we only have to say so if it wasn't the same choice.
+      const { data: settledRow } = await supabase
+        .from("users")
+        .select("user_type")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const settled = (settledRow?.user_type as RoleChoice | null) ?? null;
+      if (settled && settled !== role) {
+        return { success: false, error: roleAlreadySetMessage(settled) };
+      }
+      if (!settled) {
+        console.error("Select role: user_type is still null after a successful update");
+        return { success: false, error: GENERIC_ERROR_MESSAGE };
+      }
+    }
+  }
+
+  if (role === "streamer") {
+    const created = await ensureStreamerRow(
+      supabase,
+      user.id,
+      (profile.first_name as string | null) ?? "",
+      (profile.last_name as string | null) ?? "",
+    );
+    if (!created.ok) {
+      return { success: false, error: created.error };
+    }
+  }
+
+  const state = await readAccountState(supabase, user.id);
+  return {
+    success: true,
+    redirectTo: nextPathFor(state ?? { userType: role, streamer: null }),
+  };
+}
+
+/**
+ * Hand off to Google.
+ *
+ * Nothing is written here — `signInWithOAuth` only builds the consent URL and
+ * stores the PKCE verifier in a cookie. Everything that makes the account
+ * usable (the `public.users` row Google cannot give us, and the routing
+ * decision) happens in `app/auth/callback/route.ts` once the code comes back.
+ *
+ * The provider URL is returned rather than redirected to. Google's consent
+ * screen is another origin, and the button that calls this is a plain
+ * `<button>` sitting next to the email form rather than its own `<form>` — a
+ * nested form would be invalid HTML — so the caller navigates. Returning also
+ * means a provider that is misconfigured produces a message on the page
+ * instead of a bounce through /sign-in.
+ *
+ * `formData` is optional: the button calls this with no arguments. When it is
+ * present, `redirect_to` is carried through the round trip so a deep link
+ * survives signing in with Google.
+ */
+export async function signInWithGoogleAction(
+  formData?: FormData,
+): Promise<OAuthStartResponse> {
+  const supabase = createClient();
+  // Prefer the configured site URL so the callback uses the public origin even
+  // behind a proxy; a configured value is also what Supabase has allowlisted.
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || headers().get("origin");
+  const requestedPath = safeRedirectPath(formData?.get("redirect_to") ?? null);
+
+  if (!origin) {
+    console.error("Google sign-in: no NEXT_PUBLIC_SITE_URL and no Origin header");
+    return { error: GENERIC_ERROR_MESSAGE };
+  }
+
+  const callbackUrl = requestedPath
+    ? `${origin}/auth/callback?redirect_to=${encodeURIComponent(requestedPath)}`
+    : `${origin}/auth/callback`;
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: callbackUrl },
+  });
+
+  if (error || !data?.url) {
+    console.error("Google sign-in error:", error);
+    return { error: translateAuthError(error) };
+  }
+
+  return { url: data.url };
+}
+
+/**
+ * LEGACY brand signup: account, brand profile and brand-guideline upload in one
+ * transaction. Superseded by `createAccountAction` + `selectRoleAction` + the
+ * brand setup flow, and kept working only so links and in-flight sessions
+ * pointing at the old form do not 500.
+ */
 export async function signUpAction(formData: FormData): Promise<SignUpResponse> {
   const supabase = createClient();
   
@@ -248,6 +692,9 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
         first_name: firstName,
         last_name: lastName,
         user_type: 'client',
+        // This form *is* the role picker for the legacy path, so the role is
+        // decided the moment the row is written.
+        role_selected_at: new Date().toISOString(),
         brand_name: brandName,
         brand_description: brandDescription,
         brand_guidelines_url: brandGuidelineUrl,
@@ -276,11 +723,20 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
     }
 
     // Onboarding, not /protected: a brand that lands straight on the dashboard
-    // has no brand profile to book with yet.
-    return {
-      success: true,
-      redirectTo: '/client-onboarding'
-    };
+    // has no brand profile to book with yet. It still goes through nextPathFor,
+    // which honours that deep link only if the account is ready for it — the
+    // same rule sign-in and the OAuth callback follow. Wrapped because this runs
+    // inside the rollback try: a failed *routing* lookup must not report an
+    // account that was created successfully as a failure.
+    let redirectTo = '/client-onboarding';
+    try {
+      const state = await readAccountState(supabase, authData.user.id);
+      if (state) redirectTo = nextPathFor(state, '/client-onboarding');
+    } catch (routingError) {
+      console.error('Sign up: could not resolve the post-signup destination', routingError);
+    }
+
+    return { success: true, redirectTo };
 
   } catch (error) {
     console.error('Sign up error:', error);
@@ -329,16 +785,11 @@ async function signInWithPassword(formData: FormData) {
     return encodedRedirect("error", "/sign-in", GENERIC_ERROR_MESSAGE, retryParams);
   }
 
-  const { data: userData, error: userError } = await supabase
-    .from("users")
-    .select("user_type")
-    .eq("id", data.user.id)
-    .single();
+  const state = await readAccountState(supabase, data.user.id);
 
   // The session itself is valid — only the profile row is missing — so keep the
   // user signed in and point them at support instead of dropping the session.
-  if (userError || !userData) {
-    console.error("Sign-in: could not read user_type", userError);
+  if (!state) {
     return encodedRedirect(
       "error",
       "/sign-in",
@@ -346,18 +797,14 @@ async function signInWithPassword(formData: FormData) {
     );
   }
 
-  const home = userData.user_type === "streamer" ? "/streamer-dashboard" : "/protected";
-  return redirect(requestedPath ?? home);
+  // One function decides this, here and in the OAuth callback and the
+  // middleware, so a half-finished account can never be sent somewhere it
+  // cannot act. It also declines the deep link when the account is not ready
+  // for one, which is why `requestedPath` is passed in rather than preferred.
+  return redirect(nextPathFor(state, requestedPath));
 }
 
 export const signInAction = async (formData: FormData) => signInWithPassword(formData);
-
-/**
- * Kept as its own export because the sign-in page still renders a separate
- * streamer form; both now run the same logic, so the two entry points can never
- * disagree about where a user belongs.
- */
-export const signInAsStreamerAction = async (formData: FormData) => signInWithPassword(formData);
 
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
@@ -663,6 +1110,14 @@ async function insertStreamerWithUniqueUsername(
   throw signupError('Username ini sudah dipakai. Silakan pilih username lain.');
 }
 
+/**
+ * LEGACY streamer signup: ~19 fields, a profile photo and five gallery uploads,
+ * all of which must succeed together or be unwound. The rollback machinery
+ * below is the whole cost of entangling account creation with file uploads —
+ * `createAccountAction` + `selectRoleAction` + the setup flow replace it, and
+ * this is kept working only so links and in-flight sessions pointing at the old
+ * form do not 500.
+ */
 export async function streamerSignUpAction(formData: FormData): Promise<SignUpResponse> {
   // Track created resources so a failure after auth.signUp can be rolled back
   // in the catch block below (best-effort, reverse order).
@@ -853,6 +1308,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
           first_name: firstName,
           last_name: lastName,
           user_type: 'streamer',
+          // This form *is* the role picker for the legacy path, so the role is
+          // decided the moment the row is written.
+          role_selected_at: new Date().toISOString(),
           location: cityName,
           city_slug: citySlug,
           phone,
@@ -926,11 +1384,20 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
       }
 
       // Onboarding, not the dashboard: a streamer is still 'pending' at this
-      // point and the onboarding flow is where that gets explained.
-      return {
-        success: true,
-        redirectTo: '/streamer-onboarding'
-      };
+      // point and the onboarding flow is where that gets explained. nextPathFor
+      // makes the final call — a profile that did not come out publishable has
+      // something to finish before a tour is worth anyone's time. Wrapped
+      // because this runs inside the rollback try: a failed *routing* lookup
+      // must not unwind an account that was created successfully.
+      let redirectTo = '/streamer-onboarding';
+      try {
+        const state = await readAccountState(supabase, user.id);
+        if (state) redirectTo = nextPathFor(state, '/streamer-onboarding');
+      } catch (routingError) {
+        console.error('Streamer sign up: could not resolve the post-signup destination', routingError);
+      }
+
+      return { success: true, redirectTo };
     } else {
       throw signupError('Foto profil wajib diunggah.');
     }

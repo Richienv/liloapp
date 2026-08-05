@@ -31,11 +31,15 @@ export function normalizePhone(raw: string | null | undefined): E164Phone | null
   let digits = raw.replace(/\D/g, "");
   if (!digits) return null;
 
+  // Strip the country code and the trunk zero independently, not as
+  // alternatives. People routinely write both at once — "+62 0812-3456-789" is
+  // one of the most common shapes in Indonesia — and treating them as an
+  // either/or left "0812…" behind after the 62 came off, which then failed the
+  // mobile test and rejected a perfectly valid number.
   if (digits.startsWith("62")) {
     digits = digits.slice(2);
-  } else if (digits.startsWith("0")) {
-    digits = digits.replace(/^0+/, "");
   }
+  digits = digits.replace(/^0+/, "");
 
   if (!MOBILE_NATIONAL.test(digits)) return null;
 

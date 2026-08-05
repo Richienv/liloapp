@@ -9,6 +9,7 @@ import {
   FileText,
   Ticket,
   ShieldCheck,
+  TrendingDown,
 } from 'lucide-react';
 
 interface NavItem {
@@ -51,6 +52,13 @@ const navItems: NavItem[] = [
     title: "Vouchers",
     href: "/admin/vouchers",
     icon: <Ticket className="w-5 h-5" />,
+  },
+  {
+    // Answers the question the product could not answer at all before: of the
+    // people who start signing up, where exactly do they stop?
+    title: "Funnel",
+    href: "/admin/funnel",
+    icon: <TrendingDown className="w-5 h-5" />,
   },
 ];
 

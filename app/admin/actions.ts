@@ -3,45 +3,24 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { getAdmin } from "@/lib/admin";
+import { ONBOARDING_EVENTS, trackEvent } from "@/lib/analytics";
 
 const QUEUE_PATH = "/admin/verificationstreamer";
 
 /**
- * Admin allowlist, identical to the gate in app/admin/layout.tsx: there is no
- * admin role in the data model, so access is an ADMIN_EMAILS env allowlist.
+ * Every action in this file re-checks admin identity with `getAdmin()` before
+ * it writes, even though `app/admin/layout.tsx` already gates the page these
+ * forms were rendered from. A server action is a POST endpoint that anyone who
+ * knows its action id can invoke directly; the layout never runs on that
+ * request, so the layout alone is not a security boundary.
  *
- * This is duplicated here on purpose. A server action is a POST endpoint that
- * anyone who knows its action id can invoke directly — the layout never runs on
- * that request, so the layout alone is not a security boundary. Every action in
- * this file re-checks before it writes.
+ * The check itself (and the ADMIN_EMAILS parse behind it) lives in
+ * `lib/admin.ts` — it used to be copy-pasted here, in the layout and in the
+ * verification queue, and the copies had already drifted. Failure is uniform
+ * with those surfaces: redirect to `/`.
  */
-function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-async function requireAdmin() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) return null;
-
-  const adminEmails = getAdminEmails();
-  const email = user.email?.toLowerCase();
-
-  // Fail closed: an unset or empty ADMIN_EMAILS grants nobody anything.
-  if (!email || adminEmails.length === 0 || !adminEmails.includes(email)) {
-    return null;
-  }
-
-  return { supabase, user };
-}
 
 /**
  * Client used for the privileged writes. Approving somebody else's streamer row
@@ -81,7 +60,7 @@ async function loadSubmission(db: SupabaseClient, submissionId: string) {
 }
 
 export async function approveStreamerVerification(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await getAdmin();
   if (!admin) redirect("/");
 
   const submissionId = String(formData.get("submissionId") || "").trim();
@@ -102,7 +81,7 @@ export async function approveStreamerVerification(formData: FormData) {
     .update({
       verification_status: "approved",
       verified_at: new Date().toISOString(),
-      verified_by: admin.user.id,
+      verified_by: admin.userId,
       // Clear any reason left over from an earlier rejection so the profile
       // does not keep showing a stale explanation.
     })
@@ -120,7 +99,7 @@ export async function approveStreamerVerification(formData: FormData) {
     .from("streamer_verification_submissions")
     .update({
       status: "approved",
-      reviewed_by: admin.user.id,
+      reviewed_by: admin.userId,
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", submission.id);
@@ -131,6 +110,17 @@ export async function approveStreamerVerification(formData: FormData) {
     });
   }
 
+  // Attributed to the streamer, not to the reviewing admin: the funnel counts
+  // how far each *streamer* got, and an approval is the last stage they reach.
+  // Awaited on purpose — `backToQueue` throws NEXT_REDIRECT on the next line
+  // and a serverless request can be torn down before an unawaited insert
+  // lands. `trackEvent` never rejects, so this cannot fail the approval.
+  await trackEvent(
+    ONBOARDING_EVENTS.VERIFICATION_APPROVED,
+    { submission_id: submission.id, streamer_id: submission.streamer_id },
+    submission.user_id ?? undefined,
+  );
+
   revalidatePath(QUEUE_PATH);
   // The streamer has just become public inventory — drop the cached listings.
   revalidatePath("/streamers");
@@ -140,7 +130,7 @@ export async function approveStreamerVerification(formData: FormData) {
 }
 
 export async function rejectStreamerVerification(formData: FormData) {
-  const admin = await requireAdmin();
+  const admin = await getAdmin();
   if (!admin) redirect("/");
 
   const submissionId = String(formData.get("submissionId") || "").trim();
@@ -184,7 +174,7 @@ export async function rejectStreamerVerification(formData: FormData) {
     .update({
       status: "rejected",
       notes: rejectionReason,
-      reviewed_by: admin.user.id,
+      reviewed_by: admin.userId,
       reviewed_at: new Date().toISOString(),
     })
     .eq("id", submission.id);
@@ -194,6 +184,14 @@ export async function rejectStreamerVerification(formData: FormData) {
       error: "Streamer ditolak, tetapi status pengajuan gagal diperbarui.",
     });
   }
+
+  // The rejection reason is deliberately NOT logged: it is free text about a
+  // named person. Only the ids go into analytics.
+  await trackEvent(
+    ONBOARDING_EVENTS.VERIFICATION_REJECTED,
+    { submission_id: submission.id, streamer_id: submission.streamer_id },
+    submission.user_id ?? undefined,
+  );
 
   revalidatePath(QUEUE_PATH);
   revalidatePath("/streamers");

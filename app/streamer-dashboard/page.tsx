@@ -11,8 +11,15 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { format, isToday, isThisWeek, isThisMonth, parseISO, differenceInHours, addHours, parse } from 'date-fns';
-import { Calendar, Clock, Monitor, DollarSign, MessageSquare, Link as LinkIcon, AlertTriangle, MapPin, Users, XCircle, Video, Settings, Loader2, Info, ExternalLink, ChevronRight, CheckCircle, Radio, Package, CheckSquare, Circle, X } from 'lucide-react';
+import { Calendar, Clock, Monitor, DollarSign, MessageSquare, Link as LinkIcon, AlertTriangle, MapPin, Users, XCircle, Video, Settings, Loader2, Info, ExternalLink, ChevronRight, CheckCircle, Radio, Package, CheckSquare, Circle, X, ArrowRight, BadgeCheck, Store, Wallet } from 'lucide-react';
 import Link from 'next/link';
+import {
+  milestoneProgress,
+  streamerMilestones,
+  type Milestone,
+  type MilestoneId,
+  type PublishableProfile,
+} from "@/lib/milestones";
 import {
   Dialog,
   DialogContent,
@@ -2453,6 +2460,156 @@ function LoadingScreen() {
   );
 }
 
+/**
+ * `lib/milestones` points the `publish` milestone at the setup hub, which is the
+ * right destination for a caller with no other context. From here we already
+ * know the host is mid-setup, so deep-link straight to the form and save them a
+ * hop.
+ */
+function milestoneActionHref(milestone: Milestone): string {
+  return milestone.id === 'publish' ? '/streamer-setup/profil' : milestone.href;
+}
+
+const MILESTONE_ICONS: Record<MilestoneId, typeof Store> = {
+  publish: Store,
+  verify: BadgeCheck,
+  payout: Wallet,
+};
+
+/**
+ * Compact milestone tracker. Replaces the old single verification banner, which
+ * could only ever say one thing ("you are not verified") and had no way to tell
+ * a host whose profile was still missing a price that verification was not
+ * actually their next problem.
+ *
+ * Shows progress plus exactly one action — the `current` milestone — because
+ * this sits on top of a dashboard that has its own job to do.
+ */
+function SetupTracker({
+  profile,
+  verificationStatus,
+  hasPayoutAccount,
+}: {
+  profile: PublishableProfile | null;
+  verificationStatus: string | null;
+  hasPayoutAccount: boolean;
+}) {
+  // A suspended account is not a checklist item — nothing the host does in
+  // setup lifts it, so keep the old warning rather than telling them to
+  // "continue".
+  if (verificationStatus === 'suspended') {
+    return (
+      <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4">
+        <p className="flex items-center gap-2 font-semibold text-gray-900">
+          <AlertTriangle className="h-4 w-4 text-orange-600" />
+          Akun kamu sedang ditangguhkan
+        </p>
+        <p className="mt-1 text-sm text-gray-600">
+          Hubungi dukungan Salda untuk mengetahui langkah selanjutnya.
+        </p>
+      </div>
+    );
+  }
+
+  const milestones = streamerMilestones({
+    profile,
+    verificationStatus,
+    hasPayoutAccount,
+  });
+
+  const current = milestones.find((milestone) => milestone.current);
+
+  // Everything done: the tracker has nothing left to say and gets out of the way.
+  if (!current) return null;
+
+  const progress = milestoneProgress(milestones);
+  const finished = milestones.filter((milestone) => milestone.done).length;
+  const Icon = MILESTONE_ICONS[current.id];
+
+  return (
+    <div className="mb-6 rounded-xl border border-blue-100 bg-white p-4 sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-medium text-gray-700">
+          Setup host: {finished} dari {milestones.length} langkah selesai
+        </p>
+        <Link
+          href="/streamer-setup"
+          className="hidden shrink-0 items-center gap-1 text-sm font-medium text-blue-700 hover:underline sm:inline-flex"
+        >
+          Lihat semua
+          <ChevronRight className="h-4 w-4" />
+        </Link>
+      </div>
+
+      <div
+        className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-gray-100"
+        role="progressbar"
+        aria-valuenow={progress}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Progres setup host"
+      >
+        <div
+          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      {/* Milestone dots, so the two finished steps stay visible as evidence that
+          the remaining one is genuinely the last stretch. */}
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+        {milestones.map((milestone) => (
+          <span
+            key={milestone.id}
+            className={`inline-flex items-center gap-1.5 text-xs ${
+              milestone.done
+                ? 'text-green-700'
+                : milestone.current
+                  ? 'font-medium text-blue-700'
+                  : 'text-gray-400'
+            }`}
+          >
+            {milestone.done ? (
+              <CheckCircle className="h-3.5 w-3.5" />
+            ) : (
+              <Circle className="h-3.5 w-3.5" />
+            )}
+            {milestone.title}
+          </span>
+        ))}
+      </div>
+
+      <div className="mt-4 sm:flex sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-start gap-3">
+          <span
+            aria-hidden="true"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-semibold text-gray-900">{current.title}</p>
+            <p className="mt-0.5 text-sm text-gray-600">{current.description}</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
+              <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+              Membuka: <span className="font-medium text-gray-700">{current.unlocks}</span>
+            </p>
+          </div>
+        </div>
+
+        <Link
+          href={milestoneActionHref(current)}
+          className="mt-3 inline-flex h-10 shrink-0 items-center justify-center rounded-xl
+            bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-medium text-white
+            transition-all hover:from-blue-700 hover:to-indigo-700 sm:mt-0"
+        >
+          Lanjutkan
+        </Link>
+      </div>
+    </div>
+  );
+}
+
 export default function StreamerDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -2465,10 +2622,15 @@ export default function StreamerDashboard() {
   const [galleryPhotos, setGalleryPhotos] = useState<StreamerGalleryPhoto[]>([]);
   // Add state for status filter
   const [scheduleFilter, setScheduleFilter] = useState<string>('Semua');
-  // Drives the verification banner. A host who skipped the onboarding tour has
-  // no other route to the KYC form, and while they sit at 'pending' they are
-  // invisible to brands — so the dashboard has to keep saying so.
+  // Drives the setup tracker. A host who skipped the onboarding tour has no
+  // other route back into setup, and while any milestone is unfinished they are
+  // invisible to brands or unable to be paid — so the dashboard has to keep
+  // saying which one is next.
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
+  // The profile row itself, so milestone 1 is recomputed from the same fields
+  // lib/milestones checks rather than from a flag that could drift.
+  const [streamerProfile, setStreamerProfile] = useState<PublishableProfile | null>(null);
+  const [hasPayoutAccount, setHasPayoutAccount] = useState(false);
 
   // Define fetchData first
   const fetchData = useCallback(async () => {
@@ -2494,13 +2656,24 @@ export default function StreamerDashboard() {
       if (streamerError) throw streamerError;
 
       setVerificationStatus(streamerData?.verification_status ?? null);
+      setStreamerProfile(streamerData ?? null);
 
       if (streamerData) {
         try {
           // Fetch additional streamer data
           const stats = await streamerService.getStreamerStats(streamerData.id);
           const gallery = await streamerService.getStreamerGallery(streamerData.id);
-          
+
+          // The one milestone fact the streamers row does not carry. Head-only:
+          // bank details must never be pulled into the browser, and the tracker
+          // only needs to know whether a row exists. A failure here is not fatal
+          // — the tracker just shows the step as unfinished.
+          const { count: payoutAccountCount } = await supabase
+            .from('streamer_payout_accounts')
+            .select('id', { count: 'exact', head: true })
+            .eq('streamer_id', streamerData.id);
+          setHasPayoutAccount((payoutAccountCount ?? 0) > 0);
+
           setStreamerStats(stats);
           setGalleryPhotos(gallery);
           setUserData({ 
@@ -2779,41 +2952,14 @@ export default function StreamerDashboard() {
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
         <ToastContainer />
 
-        {/* Verification banner: the only persistent entry point to the KYC form
-            for a host who skipped onboarding. Hidden once approved. */}
-        {verificationStatus && verificationStatus !== 'approved' && (
-          <div
-            className={`mb-6 rounded-xl border p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 ${
-              verificationStatus === 'rejected'
-                ? 'border-red-200 bg-red-50'
-                : 'border-yellow-200 bg-yellow-50'
-            }`}
-          >
-            <div>
-              <p className="font-semibold text-gray-900">
-                {verificationStatus === 'rejected'
-                  ? 'Verifikasi kamu belum disetujui'
-                  : verificationStatus === 'suspended'
-                    ? 'Akun kamu sedang ditangguhkan'
-                    : 'Akun kamu belum terverifikasi'}
-              </p>
-              <p className="mt-1 text-sm text-gray-600">
-                {verificationStatus === 'suspended'
-                  ? 'Hubungi dukungan Salda untuk mengetahui langkah selanjutnya.'
-                  : 'Profil kamu belum tampil untuk brand sampai verifikasi selesai. Prosesnya sekitar 5 menit.'}
-              </p>
-            </div>
-            {verificationStatus !== 'suspended' && (
-              <Link
-                href="/streamer-verification"
-                className="mt-3 inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600
-                  px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:mt-0"
-              >
-                {verificationStatus === 'rejected' ? 'Kirim ulang' : 'Verifikasi sekarang'}
-              </Link>
-            )}
-          </div>
-        )}
+        {/* Setup tracker: the only persistent entry point back into setup for a
+            host who skipped onboarding. Renders nothing once all three
+            milestones are done. */}
+        <SetupTracker
+          profile={streamerProfile}
+          verificationStatus={verificationStatus}
+          hasPayoutAccount={hasPayoutAccount}
+        />
 
         {/* ID Card */}
         {userData && streamerStats && (
