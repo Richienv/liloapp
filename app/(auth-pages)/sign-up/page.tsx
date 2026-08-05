@@ -1,6 +1,7 @@
 "use client";
 
 import { createAccountAction } from "@/app/actions";
+import type { AuthActionResponse } from "@/app/types/auth";
 import { FormMessage, type MessageLike } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
 import { GoogleButton } from "@/components/ui/google-button";
@@ -51,12 +52,6 @@ type SignUpSearchParams = {
   /** Preserved by the server on a failed attempt so the field isn't blanked. */
   email?: string;
 };
-
-/** Contract with createAccountAction (app/actions.ts). */
-type CreateAccountResult =
-  | { success: true; redirectTo?: string }
-  | { success: false; error?: string }
-  | undefined;
 
 /**
  * A `redirect()` inside a server action arrives on the client as a thrown error
@@ -164,9 +159,7 @@ export default function SignUp({
 
     setIsSubmitting(true);
     try {
-      const result = (await createAccountAction(
-        formData,
-      )) as unknown as CreateAccountResult;
+      const result: AuthActionResponse = await createAccountAction(formData);
 
       if (result?.success) {
         submittedRef.current = true;
@@ -176,10 +169,7 @@ export default function SignUp({
         return;
       }
 
-      setError(
-        (result && "error" in result ? result.error : null) ??
-          "Terjadi kesalahan. Silakan coba lagi.",
-      );
+      setError(result?.error ?? "Terjadi kesalahan. Silakan coba lagi.");
     } catch (err) {
       if (isRedirectError(err)) throw err;
       console.error("Create account error:", err);

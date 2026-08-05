@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, Loader2, Lock, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, Lock, ShieldCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -96,7 +96,11 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
                   : "bg-yellow-50 text-yellow-800"
               }`}
             >
-              <CheckCircle2 className="h-3.5 w-3.5" />
+              {existingAccount.verified ? (
+                <CheckCircle2 className="h-3.5 w-3.5" />
+              ) : (
+                <Clock className="h-3.5 w-3.5" />
+              )}
               {existingAccount.verified ? "Terverifikasi" : "Menunggu pengecekan"}
             </span>
           </div>

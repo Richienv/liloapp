@@ -1,7 +1,7 @@
 "use client";
 
 import { selectRoleAction } from "@/app/actions";
-import { readAccountState } from "@/app/types/auth";
+import { readAccountState, type AuthActionResponse } from "@/app/types/auth";
 import { FormMessage } from "@/components/form-message";
 import { nextPathFor, ROLE_PICKER_PATH, type UserRole } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/client";
@@ -24,12 +24,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
  * duplicated in app/(auth-pages)/sign-up/page.tsx; both must match.
  */
 const ROLE_INTENT_STORAGE_KEY = "salda:role-intent";
-
-/** Contract with selectRoleAction (app/actions.ts). */
-type SelectRoleResult =
-  | { success: true; redirectTo?: string }
-  | { success: false; error?: string }
-  | undefined;
 
 type GateStatus = "checking" | "ready" | "leaving";
 
@@ -145,12 +139,12 @@ export default function RolePicker() {
     setPendingRole(role);
 
     try {
-      const result = (await selectRoleAction(
-        formData,
-      )) as unknown as SelectRoleResult;
+      const result: AuthActionResponse = await selectRoleAction(formData);
 
-      if (result && result.success === false) {
-        setError(result.error ?? GENERIC_ERROR);
+      if (!result?.success) {
+        // Includes the deliberate refusal to *change* a settled role, which
+        // reads as a plain explanation rather than a failure.
+        setError(result?.error ?? GENERIC_ERROR);
         return;
       }
 
@@ -167,7 +161,7 @@ export default function RolePicker() {
       // A full page load, not router.push: user_type just changed server-side
       // and every gate downstream reads it fresh.
       window.location.href =
-        result?.redirectTo ?? nextPathFor({ userType: role, streamer: null });
+        result.redirectTo ?? nextPathFor({ userType: role, streamer: null });
     } catch (err) {
       if (isRedirectError(err)) throw err;
       console.error("Select role error:", err);

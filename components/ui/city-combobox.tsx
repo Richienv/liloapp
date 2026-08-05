@@ -73,6 +73,20 @@ function decodeHeader(value: string | null | undefined): string {
 }
 
 /**
+ * The geo database names cities in English, so the ones Indonesians split by
+ * direction come through as "South Jakarta" / "South Tangerang" rather than
+ * "Jakarta Selatan" / "Tangerang Selatan" (which lib/cities already aliases).
+ * Dropping the direction word lands them on the right registry entry.
+ */
+function resolveEnglishCityName(name: string): City | null {
+  const stripped = name.replace(
+    /^(north|south|east|west|central)\s+/i,
+    "",
+  );
+  return stripped === name ? null : resolveCity(stripped);
+}
+
+/**
  * Turn a Vercel geo hint into a city slug, or undefined when we cannot tell.
  *
  * City comes first because it is specific; the region code is only consulted

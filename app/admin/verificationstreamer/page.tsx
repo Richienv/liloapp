@@ -135,15 +135,19 @@ function queueHref(params: {
 }
 
 /**
- * Build the `ilike` pattern for a user-typed term.
+ * Build the `ilike` pattern for a user-typed term, or null if there is nothing
+ * left to search for.
  *
  * `%` and `_` are `ilike` wildcards and `,`/`(`/`)`/`"` are structural in
  * PostgREST's `or=(...)` grammar, so they are stripped rather than escaped:
  * none of them belong in a name, username, email or platform handle, and
- * stripping keeps the generated filter unambiguous.
+ * stripping keeps the generated filter unambiguous. A term made only of those
+ * characters would collapse to `%%` and quietly match every row, so it is
+ * treated as no search at all.
  */
-function likePattern(query: string): string {
-  return `%${query.replace(/[,()%_\\"]/g, " ").trim()}%`;
+function likePattern(query: string): string | null {
+  const cleaned = query.replace(/[,()%_\\"]/g, " ").trim();
+  return cleaned ? `%${cleaned}%` : null;
 }
 
 /**
@@ -325,8 +329,8 @@ export default async function StreamerVerificationPage({
     submissionsQuery = submissionsQuery.eq("status", status);
   }
 
-  if (query) {
-    const pattern = likePattern(query);
+  const pattern = query ? likePattern(query) : null;
+  if (pattern) {
     const { streamerIds, userIds } = await findMatchingIds(db, pattern);
 
     const orParts = [`platform_handle.ilike.${pattern}`];

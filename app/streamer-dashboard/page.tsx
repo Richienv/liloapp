@@ -2961,7 +2961,6 @@ export default function StreamerDashboard() {
           hasPayoutAccount={hasPayoutAccount}
         />
 
-
         {/* ID Card */}
         {userData && streamerStats && (
           <IDCard

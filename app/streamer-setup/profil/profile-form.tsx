@@ -63,6 +63,26 @@ const TIMEZONE_LABEL: Record<Timezone, string> = {
   "Asia/Jayapura": "WIT",
 };
 
+/**
+ * Keystroke-safe username normalisation.
+ *
+ * `slugifyUsername` also trims separators off both ends, which is correct for a
+ * finished value but destructive mid-typing: "rizky-" would collapse back to
+ * "rizky" and the next character would land as "rizkyp". So while the field has
+ * focus we only enforce the character set and strip leading separators, and run
+ * the full slugify on blur and on submit.
+ */
+function normalizeUsernameInput(raw: string): string {
+  return raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^[_-]+/, "")
+    .slice(0, USERNAME_MAX);
+}
+
 /** "150000" -> "150.000", matching how rupiah is typed everywhere else. */
 function formatPriceInput(value: string): string {
   const digits = value.replace(/\D/g, "");
@@ -144,10 +164,10 @@ export function ProfileForm({
   const missing = missingPublishFields(draft);
 
   const handleUsernameChange = (value: string) => {
-    // Slugify as they type: the field is a URL, and letting someone type
+    // Normalise as they type: the field is a URL, and letting someone type
     // "Rizky Pratama" only to be told it is invalid on submit is a wasted round
     // trip. Spaces become hyphens in front of them instead.
-    setUsername(slugifyUsername(value));
+    setUsername(normalizeUsernameInput(value));
   };
 
   const handleCategoryChange = (value: string) => {
@@ -217,10 +237,16 @@ export function ProfileForm({
     setError(null);
 
     try {
+      // Finish the slug now rather than relying on the field having been
+      // blurred: submitting with Enter would otherwise send a trailing hyphen
+      // the server correctly refuses.
+      const finalUsername = slugifyUsername(username);
+      if (finalUsername !== username) setUsername(finalUsername);
+
       // Built by hand rather than from the DOM: the city combobox, the platform
       // toggles and the formatted price all live in React state.
       const formData = new FormData();
-      formData.append("username", username);
+      formData.append("username", finalUsername);
       formData.append("city_slug", citySlug);
       formData.append("category", category);
       formData.append("platform", platforms.join(","));
@@ -335,6 +361,7 @@ export function ProfileForm({
             type="text"
             value={username}
             onChange={(event) => handleUsernameChange(event.target.value)}
+            onBlur={() => setUsername((current) => slugifyUsername(current))}
             maxLength={USERNAME_MAX}
             autoComplete="username"
             autoCapitalize="none"

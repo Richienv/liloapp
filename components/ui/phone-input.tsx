@@ -145,11 +145,15 @@ export function PhoneInput({
           🇮🇩 +62
         </span>
         <input
+          ref={inputRef}
           id={id}
           type="tel"
           inputMode="numeric"
           autoComplete="tel-national"
-          value={value}
+          autoCapitalize="off"
+          autoCorrect="off"
+          spellCheck={false}
+          value={national}
           disabled={disabled}
           required={required}
           placeholder={placeholder}
@@ -159,6 +163,10 @@ export function PhoneInput({
               .filter(Boolean)
               .join(" ") || undefined
           }
+          // Deliberately no maxLength: it applies to pasted text too, so
+          // pasting "+62 812-3456-7890" (18 characters) would be truncated
+          // before toNationalDigits() ever saw the country code. The cap lives
+          // in toNationalDigits() instead, after the noise is removed.
           onChange={(e) => onChange(toNationalDigits(e.target.value))}
           onBlur={() => setTouched(true)}
           className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none placeholder:text-gray-400 disabled:cursor-not-allowed"
@@ -167,23 +175,38 @@ export function PhoneInput({
 
       {/* Carries the canonical E.164 value for native form submissions. */}
       {name && (
-        <input type="hidden" name={name} value={normalizePhone(value) ?? ""} />
+        <input
+          type="hidden"
+          name={name}
+          value={normalizePhone(national) ?? ""}
+        />
       )}
 
       {showError || showEmptyError ? (
-        <p id={errorId} className="flex items-center gap-2 text-sm text-red-600">
+        <p
+          id={errorId}
+          role="alert"
+          className="flex items-center gap-2 text-sm text-red-600"
+        >
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
           {PHONE_INVALID_MESSAGE}
         </p>
       ) : valid ? (
-        <p id={hintId} className="flex items-center gap-2 text-sm text-green-600">
+        // aria-live so the confirmation is announced: the "+62" affix is
+        // decorative markup a screen reader skips, and this line is the only
+        // place the full stored number is read back.
+        <p
+          id={hintId}
+          aria-live="polite"
+          className="flex items-center gap-2 text-sm text-green-600"
+        >
           <Check className="h-4 w-4 flex-shrink-0" />
-          Nomor tersimpan sebagai {formatPhoneLocal(normalizePhone(value))}
+          Nomor tersimpan sebagai {formatPhoneLocal(normalizePhone(national))}
         </p>
       ) : (
         <p id={hintId} className="text-sm text-gray-500">
-          Nomor WhatsApp aktif — dipakai admin Salda dan pihak brand untuk
-          menghubungi kamu soal booking.
+          Nomor WhatsApp aktif, tulis tanpa awalan +62 atau 0 — dipakai admin
+          Salda dan pihak brand untuk menghubungi kamu soal booking.
         </p>
       )}
     </div>
