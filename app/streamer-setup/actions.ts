@@ -5,6 +5,9 @@ import { createClient } from "@/utils/supabase/server";
 import { getCityBySlug } from "@/lib/cities";
 import { PRICE_BANDS } from "@/lib/pricing-suggestions";
 import {
+  buildDefaultWeeklySchedule,
+  DEFAULT_SCHEDULE_END_TIME,
+  DEFAULT_SCHEDULE_START_TIME,
   isProfilePublishable,
   missingPublishFields,
   type PublishableProfile,
@@ -44,6 +47,14 @@ const MAX_PRICE = 50_000_000;
 
 const BIO_MIN = 20;
 const BIO_MAX = 1_000;
+
+/**
+ * A shipping address a courier can actually find is a street, a number and a
+ * kelurahan/kecamatan; "rumah saya" is not one. 15 characters is the shortest
+ * plausible real address ("Jl Mawar 5 Bogor" is 16) and rejects the shrugs.
+ */
+const ADDRESS_MIN = 15;
+const ADDRESS_MAX = 500;
 
 /** The only two places Salda brands actually stream. Stored comma-joined. */
 const PLATFORMS = ["TikTok", "Shopee"];
@@ -123,7 +134,7 @@ function fileExtension(file: File): string {
  * rather than silently as a missing field.
  */
 const PROFILE_COLUMNS =
-  "id, username, image_url, city_slug, location, category, platform, price, bio, profile_published_at";
+  "id, username, image_url, city_slug, location, full_address, category, platform, price, bio, profile_published_at";
 
 interface StreamerRow extends PublishableProfile {
   id: number;
@@ -156,6 +167,116 @@ async function requireStreamerContext() {
 }
 
 // ---------------------------------------------------------------------------
+// Starting schedule
+// ---------------------------------------------------------------------------
+
+/**
+ * Give a newly-published host a calendar a brand can actually click on.
+ *
+ * WHY THIS RATHER THAN A FOURTH MILESTONE. A fourth step would only produce a
+ * schedule for the hosts who finish it — and a host who stops before it is
+ * approved by an admin all the same, lands in the marketplace, and shows the
+ * brand an entirely red calendar. That is the bug we are fixing, renamed. It
+ * also re-adds a decision to a flow whose whole purpose was removing them, and
+ * duplicates the write path /streamer-schedule already owns. Seeding at publish
+ * time makes the invariant unconditional: finish setup, get a bookable calendar,
+ * without knowing that /streamer-schedule exists.
+ *
+ * The safety properties that make a default acceptable:
+ *
+ *   - It never overwrites anything. A host with an active-schedule row already
+ *     answered this question — including the host who deliberately turned every
+ *     day off, whose row exists with empty slots.
+ *   - Where the per-day rows exist but the JSON row is missing (an interrupted
+ *     save in /streamer-schedule), the JSON is rebuilt from those rows rather
+ *     than replaced by the default, so their real hours win.
+ *   - A default is an offer, not a commitment: bookings arrive as `pending` and
+ *     the host accepts or rejects each one.
+ *
+ * Best-effort by design — the return value says whether the host now has a
+ * calendar, and the caller reports rather than fails on it. Losing a saved bio
+ * because a secondary write failed would be the worse trade.
+ */
+async function ensureBookableSchedule(
+  supabase: ReturnType<typeof createClient>,
+  streamerId: number,
+): Promise<boolean> {
+  try {
+    // Does the calendar already have an answer? Head-only: we need a boolean,
+    // not the JSON.
+    const { count: activeCount, error: activeError } = await supabase
+      .from("streamer_active_schedules")
+      .select("id", { count: "exact", head: true })
+      .eq("streamer_id", streamerId);
+
+    if (activeError) {
+      console.error("Streamer setup: could not check the active schedule", activeError);
+      return false;
+    }
+    if ((activeCount ?? 0) > 0) return true;
+
+    // No JSON row. Prefer whatever the host already set in /streamer-schedule.
+    const { data: existingDays, error: daysError } = await supabase
+      .from("streamer_schedule")
+      .select("day_of_week, start_time, end_time, is_available")
+      .eq("streamer_id", streamerId);
+
+    if (daysError) {
+      console.error("Streamer setup: could not read the weekly schedule", daysError);
+      return false;
+    }
+
+    const hasOwnHours = (existingDays ?? []).length > 0;
+
+    if (!hasOwnHours) {
+      // Seed the per-day rows too, not just the JSON. /streamer-schedule reads
+      // these rows to draw its switches: seeding only the JSON would show the
+      // host every day switched off, and their first save there would then wipe
+      // the calendar we just gave them.
+      const { error: seedError } = await supabase.from("streamer_schedule").insert(
+        Array.from({ length: 7 }, (_, day) => ({
+          streamer_id: streamerId,
+          day_of_week: day,
+          start_time: DEFAULT_SCHEDULE_START_TIME,
+          end_time: DEFAULT_SCHEDULE_END_TIME,
+          is_available: true,
+        })),
+      );
+
+      if (seedError) {
+        console.error("Streamer setup: could not seed the weekly schedule", seedError);
+        return false;
+      }
+    }
+
+    // Same shape /streamer-schedule writes: one entry per day, in day order,
+    // because streamer-card indexes the array by `date.getDay()`.
+    const schedule = hasOwnHours
+      ? Array.from({ length: 7 }, (_, day) => ({
+          day,
+          slots: (existingDays ?? [])
+            .filter((slot) => slot.day_of_week === day && slot.is_available)
+            .map((slot) => ({ start: slot.start_time, end: slot.end_time })),
+        }))
+      : buildDefaultWeeklySchedule();
+
+    const { error: upsertError } = await supabase
+      .from("streamer_active_schedules")
+      .upsert({ streamer_id: streamerId, schedule }, { onConflict: "streamer_id" });
+
+    if (upsertError) {
+      console.error("Streamer setup: could not write the active schedule", upsertError);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error("Streamer setup: seeding the schedule threw", error);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Milestone 1 — publish the profile
 // ---------------------------------------------------------------------------
 
@@ -165,15 +286,21 @@ const KNOWN_CATEGORIES = new Set(
 );
 
 /**
- * Save the seven fields `isProfilePublishable` requires, and nothing else.
+ * Save the eight fields `isProfilePublishable` requires, and nothing else.
  *
  * Gallery photos and the intro video are portfolio polish and are deliberately
  * not collected here — requiring them is exactly what made the old signup
- * unfinishable.
+ * unfinishable. `full_address` is not in that category: the brand ships a
+ * physical product to the host, so a profile without an address produces a paid
+ * booking nobody can fulfil.
+ *
+ * Publishing also seeds a starting weekly schedule, because a listed host with
+ * no `streamer_active_schedules` row has a calendar on which every date is
+ * greyed out — see `ensureBookableSchedule`.
  *
  * Expected FormData fields:
- *   username, city_slug, category, platform (comma-joined), price, bio,
- *   image (File, optional once a photo is already on file)
+ *   username, city_slug, full_address, category, platform (comma-joined),
+ *   price, bio, image (File, optional once a photo is already on file)
  */
 export async function saveStreamerProfile(
   formData: FormData,
@@ -195,6 +322,28 @@ export async function saveStreamerProfile(
   const city = getCityBySlug(text(formData, "city_slug"));
   if (!city) {
     return { success: false, error: "Pilih kota kamu dari daftar." };
+  }
+
+  // Validated here and not only in the browser: this address is what a brand
+  // pays a courier against, and a client-side check is a suggestion, not a rule.
+  // Newlines are kept — an Indonesian address is naturally multi-line — but runs
+  // of blank space are collapsed so a field of spaces cannot pass the length
+  // test.
+  const fullAddress = text(formData, "full_address")
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n");
+  if (fullAddress.length < ADDRESS_MIN) {
+    return {
+      success: false,
+      error:
+        "Alamat lengkap belum cukup jelas. Tulis nama jalan, nomor rumah, kelurahan, kecamatan, dan kode pos.",
+    };
+  }
+  if (fullAddress.length > ADDRESS_MAX) {
+    return {
+      success: false,
+      error: `Alamat lengkap maksimal ${ADDRESS_MAX} karakter.`,
+    };
   }
 
   const category = text(formData, "category");
@@ -304,6 +453,9 @@ export async function saveStreamerProfile(
     // Letting them drift is what made city search miss real hosts.
     location: city.name,
     city_slug: city.slug,
+    // Where the courier actually goes. `location`/`city_slug` decide shipping
+    // lead time and city search; only this decides whether the parcel arrives.
+    full_address: fullAddress,
     category,
     platform: platforms.join(","),
     price,
@@ -323,6 +475,9 @@ export async function saveStreamerProfile(
   // ---- Write. ----
   let writeError: { code?: string; message?: string; details?: string } | null =
     null;
+  // Needed after the write to seed the schedule; on the insert branch the row
+  // does not have an id until Postgres assigns one.
+  let streamerId: number | null = streamer?.id ?? null;
 
   if (streamer) {
     const { error } = await supabase
@@ -341,13 +496,18 @@ export async function saveStreamerProfile(
       .eq("id", user.id)
       .maybeSingle();
 
-    const { error } = await supabase.from("streamers").insert({
-      ...payload,
-      user_id: user.id,
-      first_name: profile?.first_name ?? null,
-      last_name: profile?.last_name ?? null,
-    });
+    const { data: created, error } = await supabase
+      .from("streamers")
+      .insert({
+        ...payload,
+        user_id: user.id,
+        first_name: profile?.first_name ?? null,
+        last_name: profile?.last_name ?? null,
+      })
+      .select("id")
+      .single();
     writeError = error;
+    streamerId = created?.id ?? null;
   }
 
   if (writeError) {
@@ -371,6 +531,17 @@ export async function saveStreamerProfile(
     return { success: false, error: "Gagal menyimpan profil. Coba lagi sebentar lagi." };
   }
 
+  // ---- A published profile must come with a calendar. ----
+  //
+  // Run on every save that leaves the profile publishable, not only on the
+  // first: a host who published before this existed, or whose seeding failed
+  // once, gets a calendar the next time they touch their profile. It is a no-op
+  // when they already have one.
+  let scheduleReady = true;
+  if (streamerId !== null && isProfilePublishable(nextProfile)) {
+    scheduleReady = await ensureBookableSchedule(supabase, streamerId);
+  }
+
   revalidatePath("/streamer-setup");
   revalidatePath("/streamer-setup/profil");
   revalidatePath("/streamer-dashboard");
@@ -390,6 +561,17 @@ export async function saveStreamerProfile(
     return {
       success: false,
       error: `Masih ada yang kurang: ${stillMissing.join(", ")}.`,
+    };
+  }
+
+  // The profile is saved either way — this is a warning, not a rollback. Say it
+  // out loud rather than letting the host find out from a brand who could not
+  // book them, and point at the page that fixes it.
+  if (!scheduleReady) {
+    return {
+      success: false,
+      error:
+        "Profil sudah tersimpan, tapi jadwal live-mu belum bisa dibuat otomatis. Buka menu Jadwal untuk mengatur jam siapmu, supaya brand bisa memesan.",
     };
   }
 

@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Clock, Info, Loader2, Sparkles, X } from "lucide-react";
+import { Camera, Clock, Info, Loader2, Package, Sparkles, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,12 +10,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { getCityBySlug, type Timezone } from "@/lib/cities";
 import { formatRupiah, priceBandFor, priceHint } from "@/lib/pricing-suggestions";
-import { isProfilePublishable, missingPublishFields } from "@/lib/milestones";
+import {
+  DEFAULT_SCHEDULE_LABEL,
+  isProfilePublishable,
+  missingPublishFields,
+} from "@/lib/milestones";
 import { slugifyUsername, USERNAME_MAX } from "@/lib/username";
 import { saveStreamerProfile } from "../actions";
 
 /**
- * Milestone 1: the seven fields a listing actually renders.
+ * Milestone 1: the eight fields a listing renders and a booking needs.
  *
  * The design principle for this screen is that every field arrives with an
  * answer already in it wherever an answer can be guessed. The old signup made a
@@ -29,6 +33,9 @@ const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const BIO_MIN = 20;
 const BIO_MAX = 1_000;
+/** Mirrors ADDRESS_MIN / ADDRESS_MAX in ../actions.ts, which is authoritative. */
+const ADDRESS_MIN = 15;
+const ADDRESS_MAX = 500;
 
 const PLATFORM_OPTIONS = [
   { value: "TikTok", label: "TikTok Live" },
@@ -98,6 +105,7 @@ export interface ProfileFormProps {
   defaultUsername: string;
   currentImageUrl: string | null;
   defaultCitySlug: string;
+  defaultFullAddress: string;
   defaultCategory: string;
   defaultPlatforms: string[];
   defaultPrice: number | null;
@@ -108,6 +116,7 @@ export function ProfileForm({
   defaultUsername,
   currentImageUrl,
   defaultCitySlug,
+  defaultFullAddress,
   defaultCategory,
   defaultPlatforms,
   defaultPrice,
@@ -118,6 +127,7 @@ export function ProfileForm({
 
   const [username, setUsername] = useState(defaultUsername);
   const [citySlug, setCitySlug] = useState(defaultCitySlug);
+  const [fullAddress, setFullAddress] = useState(defaultFullAddress);
   const [category, setCategory] = useState(defaultCategory);
   const [platforms, setPlatforms] = useState<string[]>(defaultPlatforms);
   const [price, setPrice] = useState(
@@ -155,6 +165,10 @@ export function ProfileForm({
     username,
     image_url: effectiveImageUrl,
     city_slug: citySlug,
+    // Length is checked here as well as on the server, so "Alamat lengkap"
+    // stays in the missing list until the value is actually usable rather than
+    // clearing the moment a single character is typed.
+    full_address: fullAddress.trim().length >= ADDRESS_MIN ? fullAddress : "",
     category,
     platform: platforms.join(","),
     price: parsePriceInput(price),
@@ -248,6 +262,7 @@ export function ProfileForm({
       const formData = new FormData();
       formData.append("username", finalUsername);
       formData.append("city_slug", citySlug);
+      formData.append("full_address", fullAddress);
       formData.append("category", category);
       formData.append("platform", platforms.join(","));
       formData.append("price", String(parsePriceInput(price)));
@@ -404,6 +419,38 @@ export function ProfileForm({
         </p>
       </div>
 
+      {/* Shipping address. Not portfolio polish: the brand posts a physical
+          product to this address, and a booking without one is a booking the
+          brand has already paid for and cannot fulfil. */}
+      <div className="space-y-2">
+        <Label htmlFor="full_address" className="text-sm font-medium text-gray-700">
+          Alamat lengkap
+        </Label>
+        <Textarea
+          id="full_address"
+          name="full_address"
+          value={fullAddress}
+          onChange={(event) => setFullAddress(event.target.value)}
+          maxLength={ADDRESS_MAX}
+          rows={3}
+          placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan, kode pos"
+          aria-describedby="full_address-help"
+          className="min-h-[96px] resize-none rounded-xl border-gray-200 bg-gray-50/50 text-base
+            focus:bg-white"
+          style={{ fontSize: "16px" }}
+        />
+        <p
+          id="full_address-help"
+          className="flex items-start gap-1.5 text-xs text-gray-500"
+        >
+          <Package className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
+          <span>
+            Diperlukan untuk pengiriman produk dari brand. Hanya dilihat admin dan brand
+            yang sudah membooking kamu — tidak pernah tampil di profil publik.
+          </span>
+        </p>
+      </div>
+
       {/* Category — the input the price suggestion is derived from. */}
       <div className="space-y-2">
         <Label htmlFor="category" className="text-sm font-medium text-gray-700">
@@ -537,7 +584,11 @@ export function ProfileForm({
           <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <span>
             {ready
-              ? "Semua lengkap. Setelah disimpan, profil kamu siap tayang di Salda."
+              ? // Honest: saving does not put the profile on Salda. Listing also
+                // needs an approved verification, which only an admin can give.
+                `Semua lengkap. Setelah disimpan, profil kamu siap ditinjau tim Salda — dan kami
+                 langsung menyiapkan jadwal awal ${DEFAULT_SCHEDULE_LABEL} yang bisa kamu ubah
+                 kapan saja di menu Jadwal.`
               : `Tinggal lengkapi: ${missing.join(", ")}.`}
           </span>
         </p>

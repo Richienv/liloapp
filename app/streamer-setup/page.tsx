@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import {
   ArrowRight,
   BadgeCheck,
+  CalendarClock,
   Check,
   Sparkles,
   Store,
@@ -69,7 +70,7 @@ export default async function StreamerSetupHubPage() {
   const { data: streamer } = await supabase
     .from("streamers")
     .select(
-      "id, username, image_url, city_slug, location, category, platform, price, bio, verification_status",
+      "id, username, image_url, city_slug, location, full_address, category, platform, price, bio, verification_status",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -111,12 +112,24 @@ export default async function StreamerSetupHubPage() {
   // Bank details must never be read with the public browser key, so this is a
   // head-only existence check — the hub needs a boolean, not the account.
   let hasPayoutAccount = false;
+  // Publishing seeds a starting week (see saveStreamerProfile), but that write
+  // is best-effort: if it ever failed, the host would be listed with a calendar
+  // on which every date is greyed out and would have no way of knowing. Checking
+  // here is what turns a silent dead end into something they can fix.
+  let hasSchedule = true;
   if (streamer) {
     const { count } = await supabase
       .from("streamer_payout_accounts")
       .select("id", { count: "exact", head: true })
       .eq("streamer_id", streamer.id);
     hasPayoutAccount = (count ?? 0) > 0;
+
+    const { count: scheduleCount, error: scheduleError } = await supabase
+      .from("streamer_active_schedules")
+      .select("id", { count: "exact", head: true })
+      .eq("streamer_id", streamer.id);
+    // A failed read is not evidence of a missing schedule; do not cry wolf.
+    hasSchedule = scheduleError ? true : (scheduleCount ?? 0) > 0;
   }
 
   const profile: PublishableProfile | null = streamer ?? null;
@@ -131,6 +144,10 @@ export default async function StreamerSetupHubPage() {
   const finished = milestones.filter((m) => m.done).length;
   const allDone = finished === milestones.length;
   const missing = missingPublishFields(profile);
+
+  // Only worth saying once the profile is publishable: before that the host has
+  // a more pressing thing to do, and the seeding has not been attempted yet.
+  const showScheduleWarning = milestones[0].done && !hasSchedule;
 
   return (
     <Shell>
@@ -279,6 +296,35 @@ export default async function StreamerSetupHubPage() {
           );
         })}
       </ol>
+
+      {showScheduleWarning && (
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+          <div className="flex items-start gap-4">
+            <span
+              aria-hidden="true"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
+            >
+              <CalendarClock className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <h2 className="font-semibold text-amber-900">Jadwal live belum aktif</h2>
+              <p className="mt-1 text-sm text-amber-800">
+                Brand hanya bisa memilih tanggal yang kamu tandai siap. Selama jadwalmu
+                kosong, kalender di profilmu tertutup semua dan kamu tidak bisa dipesan.
+              </p>
+              <Link
+                href="/streamer-schedule"
+                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-xl
+                  border-2 border-amber-300 bg-white px-4 text-sm font-medium text-amber-900
+                  transition-colors hover:bg-amber-50"
+              >
+                Atur jadwal
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <p className="mt-6 text-center text-sm text-gray-500">
         Sudah selesai untuk sekarang?{" "}

@@ -6,6 +6,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getAdmin } from "@/lib/admin";
 import { ONBOARDING_EVENTS, trackEvent } from "@/lib/analytics";
+import {
+  isProfilePublishable,
+  missingPublishFields,
+  type PublishableProfile,
+} from "@/lib/milestones";
 
 const QUEUE_PATH = "/admin/verificationstreamer";
 
@@ -59,6 +64,29 @@ async function loadSubmission(db: SupabaseClient, submissionId: string) {
   };
 }
 
+/**
+ * Re-read the profile columns straight from the row we are about to approve.
+ * The queue's rendered submission is a snapshot from page load, and the fields
+ * that matter here live on `streamers`, not on the submission.
+ *
+ * A read failure is reported separately from an empty profile: telling a
+ * reviewer the host has not finished their profile, when really our database
+ * was unreachable, sends them to chase the wrong person.
+ */
+async function loadPublishableProfile(
+  db: SupabaseClient,
+  streamerId: number,
+): Promise<{ profile: PublishableProfile | null; failed: boolean }> {
+  const { data, error } = await db
+    .from("streamers")
+    .select("username, image_url, city_slug, location, category, platform, price, bio")
+    .eq("id", streamerId)
+    .maybeSingle();
+
+  if (error) return { profile: null, failed: true };
+  return { profile: (data as PublishableProfile | null) ?? null, failed: false };
+}
+
 export async function approveStreamerVerification(formData: FormData) {
   const admin = await getAdmin();
   if (!admin) redirect("/");
@@ -74,16 +102,43 @@ export async function approveStreamerVerification(formData: FormData) {
     backToQueue({ error: "Pengajuan tidak ditemukan." });
   }
 
+  // Approval is what puts a row in front of brands, and since the account-first
+  // signup a `streamers` row starts out nearly empty — the role picker creates
+  // it, the host fills it in later. Approving one of those publishes a card with
+  // no photo, no price and no platform. `isProfilePublishable` is the same
+  // predicate the database trigger uses, so the queue and the DB agree on what
+  // "ready" means.
+  const { profile, failed } = await loadPublishableProfile(db, submission.streamer_id);
+  if (failed) {
+    backToQueue({
+      error:
+        "Gagal membaca profil streamer. Periksa koneksi database atau izin service role.",
+    });
+  }
+  if (!profile) {
+    backToQueue({ error: "Data streamer untuk pengajuan ini tidak ditemukan." });
+  }
+  if (!isProfilePublishable(profile)) {
+    const missing = missingPublishFields(profile);
+    backToQueue({
+      error: missing.length
+        ? `Host ini belum selesai melengkapi profilnya, jadi belum bisa disetujui. Masih kosong: ${missing.join(", ")}.`
+        : "Host ini belum selesai melengkapi profilnya, jadi belum bisa disetujui.",
+    });
+  }
+
   // The streamer row is what actually gates listing and booking; the submission
   // row is the audit trail. Both have to move together.
+  //
+  // Nothing clears a rejection reason here: `streamers.rejection_reason` was
+  // dropped. The explanation for a rejection lives in the submission row's
+  // `notes`, and a fresh submission supersedes the one that carried it.
   const { data: updatedStreamer, error: streamerError } = await db
     .from("streamers")
     .update({
       verification_status: "approved",
       verified_at: new Date().toISOString(),
       verified_by: admin.userId,
-      // Clear any reason left over from an earlier rejection so the profile
-      // does not keep showing a stale explanation.
     })
     .eq("id", submission.streamer_id)
     .select("id");

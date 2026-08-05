@@ -3,9 +3,10 @@
 import { selectRoleAction } from "@/app/actions";
 import { readAccountState, type AuthActionResponse } from "@/app/types/auth";
 import { FormMessage } from "@/components/form-message";
+import { CityCombobox } from "@/components/ui/city-combobox";
 import { nextPathFor, ROLE_PICKER_PATH, type UserRole } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowRight, Loader2, Radio, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Radio, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -13,9 +14,20 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
  * "Saya ingin…" — the one question signup no longer asks up front.
  *
  * The account already exists by the time anyone sees this page, which is the
- * whole point: an abandonment here costs us a profile, not a person. Nothing on
- * this screen is typed, only chosen, and the choice decides which setup flow
- * runs next.
+ * whole point: an abandonment here costs us a profile, not a person. The role
+ * itself is chosen, never typed.
+ *
+ * A brand then answers exactly one more question — which city they are in — on
+ * a second screen. It is the only field here, and it is here because leaving it
+ * out is not free: `components/streamer-card` reads `users.location` /
+ * `users.city_slug` to work out how long shipping a product to the host takes,
+ * and with no city on file every brand is quietly charged the out-of-town
+ * 3-day lead time, even for a host in their own city. One picker beats two
+ * silently wasted days on every booking.
+ *
+ * It is a second step rather than a field inside the brand card because each
+ * card is itself the submit button, and a combobox is a button too — nesting
+ * one inside the other is invalid HTML and unusable with a keyboard.
  */
 
 /**
@@ -48,6 +60,14 @@ export default function RolePicker() {
   const [intentRole, setIntentRole] = useState<UserRole | null>(null);
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * "choose" is the two cards; "client-city" is the brand's one follow-up
+   * question. A host never sees the second screen — their city is part of the
+   * profile they are about to build, and asking twice would be the kind of
+   * duplicate the revamp existed to remove.
+   */
+  const [step, setStep] = useState<"choose" | "client-city">("choose");
+  const [citySlug, setCitySlug] = useState("");
   /**
    * Set once a role has been recorded. The pending flag clears in `finally`,
    * before the navigation lands, so this is what stops a second submission.

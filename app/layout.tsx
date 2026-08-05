@@ -5,23 +5,25 @@ import { Navbar } from "@/components/ui/navbar";
 import { Toaster } from "@/components/ui/toaster";
 import "react-datepicker/dist/react-datepicker.css";
 import { CSSProperties } from 'react';
+import { SITE_URL } from "@/lib/site";
 
 const inter = Inter({ subsets: ['latin'] })
-const playfair = Playfair_Display({ 
+const playfair = Playfair_Display({
   subsets: ['latin'],
   variable: '--font-playfair'
 })
 
-const defaultUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://salda.id';
-
 export const metadata = {
-  metadataBase: new URL(defaultUrl),
+  metadataBase: new URL(SITE_URL),
   title: "Salda by TROLIVE - Platform Live Selling Shopee & TikTok Terbaik di Indonesia",
   description: "Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online Anda dengan host live streaming berpengalaman.",
   keywords: "salda, trolive, live selling, live streaming, shopee live, tiktok live, host live streaming, jasa live streaming, live commerce indonesia, live seller, live shopping, penyedia jasa live streaming, livestreaming marketplace, umkm digital, platform live selling terbaik, jasa live selling terpercaya, host tiktok shop, host shopee live",
-  alternates: {
-    canonical: "https://salda.id",
-  },
+  // NOTE: no `alternates.canonical` here, deliberately. Next merges metadata
+  // layout -> page, so a canonical declared on the ROOT layout is inherited
+  // verbatim by every page that does not override it — /terms, /privacy-notice,
+  // /streamers, /tutorial/video-guide and the /sections/* routes were all
+  // telling Google "I am a duplicate of the homepage". A canonical is a
+  // per-page statement about that page's own URL; it belongs on the page.
   icons: {
     icon: [
       {
@@ -56,7 +58,7 @@ export const metadata = {
     type: 'website',
     title: 'Salda by TROLIVE - Platform Live Selling Shopee & TikTok Terbaik di Indonesia',
     description: 'Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online Anda dengan host live streaming berpengalaman.',
-    url: process.env.NEXT_PUBLIC_SITE_URL || "https://salda.id",
+    url: SITE_URL,
     siteName: 'Salda by TROLIVE',
     locale: 'id_ID',
     images: [

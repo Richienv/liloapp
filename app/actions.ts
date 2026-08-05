@@ -444,7 +444,14 @@ async function ensureStreamerRow(
  *   bookings, their dashboard and their payouts onto the wrong side of the
  *   marketplace. Changing it is a support action, not a form submit.
  *
- * FormData: role ("client" | "streamer").
+ * A brand also gives their city here, and only a brand. It is the one extra
+ * field the picker asks for, and it earns its place: `components/streamer-card`
+ * reads `users.location` / `users.city_slug` to decide the shipping lead time,
+ * so an empty city is not a cosmetic gap — it silently charges every brand the
+ * out-of-town 3-day wait, even for a host on the next street. The old one-shot
+ * signup collected it; the account-first split dropped it.
+ *
+ * FormData: role ("client" | "streamer"), city_slug (clients only).
  */
 export async function selectRoleAction(
   formData: FormData,
@@ -470,7 +477,7 @@ export async function selectRoleAction(
 
   const { data: profile, error: profileError } = await supabase
     .from("users")
-    .select("user_type, first_name, last_name")
+    .select("user_type, first_name, last_name, location, city_slug")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -491,6 +498,32 @@ export async function selectRoleAction(
     return { success: false, error: roleAlreadySetMessage(currentRole) };
   }
 
+  // ---- The brand's city. Validated here, not only in the picker. ----
+  //
+  // The combobox emits a canonical slug, so anything `resolveCity` cannot place
+  // is rejected rather than passed through: an unresolvable value would leave
+  // `city_slug` null, which is exactly the state that produces the wrong
+  // shipping estimate. An account that somehow already has a city on file is
+  // not asked again and never overwritten — a re-submitted picker must not be
+  // able to move a brand to a different city.
+  const hasCityOnFile =
+    Boolean((profile.city_slug as string | null)?.trim()) ||
+    Boolean((profile.location as string | null)?.trim());
+
+  let cityUpdate: { location: string | null; city_slug: string | null } | null = null;
+
+  if (role === "client" && !hasCityOnFile) {
+    const submittedCity = ((formData.get("city_slug") as string | null) ?? "").trim();
+    if (!resolveCity(submittedCity)) {
+      return { success: false, error: "Pilih kota brand kamu dari daftar." };
+    }
+    // The same helper the signup forms use, so `location` gets the display name
+    // and `city_slug` the slug — writing the slug into `location` would publish
+    // "bandar-lampung" and break the city filter.
+    const { location, citySlug } = cityFields(submittedCity);
+    cityUpdate = { location, city_slug: citySlug };
+  }
+
   if (!currentRole) {
     // Compare-and-set rather than a plain update: two picker submits racing
     // each other must not be able to land on different roles, and the database
@@ -498,7 +531,12 @@ export async function selectRoleAction(
     const now = new Date().toISOString();
     const { data: updated, error: updateError } = await supabase
       .from("users")
-      .update({ user_type: role, role_selected_at: now, updated_at: now })
+      .update({
+        user_type: role,
+        role_selected_at: now,
+        updated_at: now,
+        ...(cityUpdate ?? {}),
+      })
       .eq("id", user.id)
       .is("user_type", null)
       .select("user_type");
@@ -525,6 +563,25 @@ export async function selectRoleAction(
         console.error("Select role: user_type is still null after a successful update");
         return { success: false, error: GENERIC_ERROR_MESSAGE };
       }
+    }
+  } else if (cityUpdate) {
+    // The role was already 'client' — a re-submitted picker, or an account that
+    // got its role before this asked for a city. The compare-and-set above was
+    // skipped, so the city still needs writing.
+    //
+    // No `.is(..., null)` guard on the columns: a legacy row can hold "" rather
+    // than NULL, and the guard would then silently refuse to fill it. `cityUpdate`
+    // is only built when both columns read as blank, which is the same
+    // protection one read earlier, and the only writer racing us here is this
+    // same user re-submitting their own picker.
+    const { error: cityError } = await supabase
+      .from("users")
+      .update({ ...cityUpdate, updated_at: new Date().toISOString() })
+      .eq("id", user.id);
+
+    if (cityError) {
+      console.error("Select role: could not save the brand's city", cityError);
+      return { success: false, error: GENERIC_ERROR_MESSAGE };
     }
   }
 

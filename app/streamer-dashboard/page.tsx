@@ -608,7 +608,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
     setIsStarting(true);
     try {
       if (!newStreamLink) {
-        throw new Error('Stream link is required');
+        throw new Error('Link stream wajib diisi');
       }
 
       const result = await startStream(booking.id, newStreamLink);
@@ -629,11 +629,11 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
       setIsStartLiveModalOpen(false);
       setIsLiveStreamModalOpen(true);
       onStreamStart();
-      toast.success('Live stream started successfully');
+      toast.success('Live stream berhasil dimulai');
 
     } catch (error) {
       console.error('Error starting stream:', error);
-      toast.error('Failed to start stream: ' + (error instanceof Error ? error.message : String(error)));
+      toast.error('Gagal memulai live stream: ' + (error instanceof Error ? error.message : String(error)));
     } finally {
       setIsStarting(false);
     }
@@ -656,7 +656,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
       console.log("API call result:", result);
       
       if (!result.success) {
-        throw new Error(result.error || 'Failed to accept items');
+        throw new Error(result.error || 'Gagal mengkonfirmasi penerimaan barang');
       }
 
       // Update local state
@@ -718,10 +718,10 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
 
       setIsLiveStreamModalOpen(false);
       onStreamEnd();
-      toast.success('Live stream ended successfully');
+      toast.success('Live stream berhasil diakhiri');
     } catch (error) {
       console.error('Error ending stream:', error);
-      toast.error('Failed to end stream: ' + (error instanceof Error ? error.message : String(error)));
+      toast.error('Gagal mengakhiri live stream: ' + (error instanceof Error ? error.message : String(error)));
     }
   };
 
@@ -2092,7 +2092,7 @@ function StartLiveModal({
 
   const handleSubmit = () => {
     if (!streamLink.trim()) {
-      setError('Stream link is required');
+      setError('Link stream wajib diisi');
       return;
     }
 
@@ -2101,7 +2101,7 @@ function StartLiveModal({
       new URL(streamLink);
       onConfirm(streamLink);
     } catch {
-      setError('Please enter a valid URL');
+      setError('Masukkan URL yang valid');
     }
   };
 
@@ -2610,6 +2610,46 @@ function SetupTracker({
   );
 }
 
+const NOTICE_PRIMARY_ACTION =
+  `inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600
+   to-indigo-600 px-5 font-medium text-white transition-all hover:from-blue-700
+   hover:to-indigo-700`;
+
+const NOTICE_SECONDARY_ACTION =
+  `inline-flex h-11 items-center justify-center rounded-xl border-2 border-gray-200 px-5
+   font-medium text-gray-700 transition-colors hover:bg-gray-50`;
+
+/**
+ * Full-page notice for the states where the dashboard has nothing to render.
+ *
+ * All of them used to end at one red box reading "Error: Failed to load data" —
+ * English, on an Indonesian product, with no navigation and no way forward. The
+ * Navbar matters as much as the copy here: without it the page is a dead end,
+ * and every one of these states has somewhere useful to go next.
+ */
+function DashboardNotice({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="min-h-screen bg-[#faf9f6]">
+      <Navbar />
+      <main className="mx-auto w-full max-w-2xl px-4 py-10">
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] sm:p-8">
+          <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
+          <p className="mt-2 text-gray-600">{description}</p>
+          {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
+        </div>
+      </main>
+    </div>
+  );
+}
+
 export default function StreamerDashboard() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -2631,6 +2671,15 @@ export default function StreamerDashboard() {
   // lib/milestones checks rather than from a flag that could drift.
   const [streamerProfile, setStreamerProfile] = useState<PublishableProfile | null>(null);
   const [hasPayoutAccount, setHasPayoutAccount] = useState(false);
+  // A signed-in account with no `streamers` row is not a failure. It is either a
+  // brand — which has no host dashboard at all — or a host whose row was never
+  // created. `.single()` raised PGRST116 for both and the catch below turned it
+  // into a dead end, so the two cases are now told apart and answered separately.
+  const [isBrandAccount, setIsBrandAccount] = useState(false);
+  // Set before every router.push: `finally` clears isLoading immediately, and
+  // without this the page would flash a fallback while the navigation is still
+  // in flight.
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Define fetchData first
   const fetchData = useCallback(async () => {
@@ -2642,99 +2691,126 @@ export default function StreamerDashboard() {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        router.push('/login');
+        // There is no `/login` route in this app — the sign-in page is
+        // `/sign-in`, and it carries the caller back afterwards via
+        // `redirect_to`. Pushing `/login` was a guaranteed 404 on any
+        // client-side session loss.
+        setIsRedirecting(true);
+        router.push('/sign-in?redirect_to=/streamer-dashboard');
         return;
       }
 
-      // Get streamer data
+      // Get streamer data. `.maybeSingle()`, not `.single()`: "no row" is an
+      // expected state for a brand or an unfinished host, and `.single()`
+      // reported it as a PGRST116 error that landed in the catch below.
       const { data: streamerData, error: streamerError } = await supabase
         .from('streamers')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (streamerError) throw streamerError;
 
-      setVerificationStatus(streamerData?.verification_status ?? null);
-      setStreamerProfile(streamerData ?? null);
+      if (!streamerData) {
+        // Without a streamers row we cannot tell a brand from a host whose row
+        // is missing, and the two need different answers — the same distinction
+        // `/streamer-setup` makes.
+        const { data: profile } = await supabase
+          .from('users')
+          .select('user_type')
+          .eq('id', user.id)
+          .maybeSingle();
 
-      if (streamerData) {
-        try {
-          // Fetch additional streamer data
-          const stats = await streamerService.getStreamerStats(streamerData.id);
-          const gallery = await streamerService.getStreamerGallery(streamerData.id);
-
-          // The one milestone fact the streamers row does not carry. Head-only:
-          // bank details must never be pulled into the browser, and the tracker
-          // only needs to know whether a row exists. A failure here is not fatal
-          // — the tracker just shows the step as unfinished.
-          const { count: payoutAccountCount } = await supabase
-            .from('streamer_payout_accounts')
-            .select('id', { count: 'exact', head: true })
-            .eq('streamer_id', streamerData.id);
-          setHasPayoutAccount((payoutAccountCount ?? 0) > 0);
-
-          setStreamerStats(stats);
-          setGalleryPhotos(gallery);
-          setUserData({ 
-            user_type: 'streamer', 
-            first_name: streamerData.first_name,
-            user_id: user.id,
-            streamer_id: streamerData.id
-          });
-
-          // Fetch all bookings with different statuses and include voucher usage
-          const { data: allBookings, error: bookingsError } = await supabase
-            .from('bookings')
-            .select(`
-              *,
-              client_first_name,
-              client_last_name,
-              sub_acc_link,
-              sub_acc_pass,
-              voucher_usage (
-                id,
-                voucher_id,
-                discount_applied,
-                original_price,
-                final_price,
-                used_at
-              )
-            `)
-            .eq('streamer_id', streamerData.id)
-            .order('start_time', { ascending: true });
-
-          if (bookingsError) throw bookingsError;
-
-          // Filter bookings based on status
-          const upcomingBookings = (allBookings || []).filter(booking => 
-            // Include all statuses that are relevant for the schedule view
-            ['accepted', 'live', 'pending', 'completed'].includes(booking.status.toLowerCase())
-          );
-
-          // Set pending bookings (including those that just completed payment)
-          const pendingBookings = (allBookings || []).filter(booking => 
-            booking.status === 'pending' || booking.status === 'payment_pending'
-          );
-
-          // Set rejected bookings
-          const rejectedBookings = (allBookings || []).filter(booking => 
-            booking.status === 'rejected'
-          );
-
-          // Update all states
-          setBookings(upcomingBookings);
-          setPendingBookings(pendingBookings);
-          setRejectedBookings(rejectedBookings);
-
-        } catch (err) {
-          console.error("Error fetching streamer data:", err);
-          throw err;
+        if (profile?.user_type === 'client') {
+          setIsBrandAccount(true);
+          return;
         }
+
+        // A host who never finished setup: send them to the place that can
+        // actually move them forward rather than showing an error.
+        setIsRedirecting(true);
+        router.push('/streamer-setup');
+        return;
+      }
+
+      setVerificationStatus(streamerData.verification_status ?? null);
+      setStreamerProfile(streamerData);
+
+      try {
+        // Fetch additional streamer data
+        const stats = await streamerService.getStreamerStats(streamerData.id);
+        const gallery = await streamerService.getStreamerGallery(streamerData.id);
+
+        // The one milestone fact the streamers row does not carry. Head-only:
+        // bank details must never be pulled into the browser, and the tracker
+        // only needs to know whether a row exists. A failure here is not fatal
+        // — the tracker just shows the step as unfinished.
+        const { count: payoutAccountCount } = await supabase
+          .from('streamer_payout_accounts')
+          .select('id', { count: 'exact', head: true })
+          .eq('streamer_id', streamerData.id);
+        setHasPayoutAccount((payoutAccountCount ?? 0) > 0);
+
+        setStreamerStats(stats);
+        setGalleryPhotos(gallery);
+        setUserData({
+          user_type: 'streamer',
+          first_name: streamerData.first_name,
+          user_id: user.id,
+          streamer_id: streamerData.id
+        });
+
+        // Fetch all bookings with different statuses and include voucher usage
+        const { data: allBookings, error: bookingsError } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            client_first_name,
+            client_last_name,
+            sub_acc_link,
+            sub_acc_pass,
+            voucher_usage (
+              id,
+              voucher_id,
+              discount_applied,
+              original_price,
+              final_price,
+              used_at
+            )
+          `)
+          .eq('streamer_id', streamerData.id)
+          .order('start_time', { ascending: true });
+
+        if (bookingsError) throw bookingsError;
+
+        // Filter bookings based on status
+        const upcomingBookings = (allBookings || []).filter(booking =>
+          // Include all statuses that are relevant for the schedule view
+          ['accepted', 'live', 'pending', 'completed'].includes(booking.status.toLowerCase())
+        );
+
+        // Set pending bookings (including those that just completed payment)
+        const pendingBookings = (allBookings || []).filter(booking =>
+          booking.status === 'pending' || booking.status === 'payment_pending'
+        );
+
+        // Set rejected bookings
+        const rejectedBookings = (allBookings || []).filter(booking =>
+          booking.status === 'rejected'
+        );
+
+        // Update all states
+        setBookings(upcomingBookings);
+        setPendingBookings(pendingBookings);
+        setRejectedBookings(rejectedBookings);
+
+      } catch (err) {
+        console.error("Error fetching streamer data:", err);
+        throw err;
       }
     } catch (error) {
       console.error('Error:', error);
-      setError('Failed to load data');
+      setError('Gagal memuat data dashboard. Periksa koneksi internet kamu, lalu coba lagi.');
     } finally {
       setIsLoading(false);
     }
@@ -2794,11 +2870,14 @@ export default function StreamerDashboard() {
         
         // Check if the new booking is for this streamer
         const { data: { user } } = await supabase.auth.getUser();
+        // `.maybeSingle()` for the same reason as the initial load: an account
+        // with no streamers row is a normal case, and `.single()` logged a
+        // PGRST116 for it on every booking event in the whole table.
         const { data: streamerData } = await supabase
           .from('streamers')
           .select('id')
           .eq('user_id', user?.id)
-          .single();
+          .maybeSingle();
 
         if (streamerData && payload.new && payload.new.streamer_id === streamerData.id) {
           // Handle different booking status changes
@@ -2896,10 +2975,10 @@ export default function StreamerDashboard() {
         // handler doesn't leave the same booking in `bookings` twice)
         setPendingBookings(prev => prev.filter(b => b.id !== bookingId));
         setBookings(prev => [...prev.filter(b => b.id !== bookingId), { ...acceptedBooking, status: 'accepted' }]);
-        toast.success("Booking accepted successfully");
+        toast.success("Booking berhasil diterima");
       }
     } else {
-      toast.error(result.error || "Failed to accept booking");
+      toast.error(result.error || "Gagal menerima booking");
     }
   };
 
@@ -2919,31 +2998,59 @@ export default function StreamerDashboard() {
         setPendingBookings(prev => prev.filter(b => b.id !== bookingId));
         setRejectedBookings(prev => [...prev, { ...rejectedBooking, status: 'rejected', reason }]);
       }
-      toast.success("Booking rejected successfully");
+      toast.success("Booking berhasil ditolak");
     } catch (error) {
       console.error('Error rejecting booking:', error);
-      toast.error("Failed to reject booking");
+      toast.error("Gagal menolak booking");
     }
   };
 
   // Replace the simple loading div with our new LoadingScreen component
-  if (isLoading) {
+  // `isRedirecting` keeps the skeleton up while a router.push is in flight, so
+  // none of the notices below flash on the way to another route.
+  if (isLoading || isRedirecting) {
     return <LoadingScreen />;
+  }
+
+  // A brand landed on the host dashboard. Same wording `/streamer-setup` uses,
+  // so both entry points into the host area say the same thing.
+  if (isBrandAccount) {
+    return (
+      <DashboardNotice
+        title="Halaman khusus host"
+        description="Akun ini terdaftar sebagai brand, bukan host. Kamu bisa langsung mencari dan memesan host live streaming dari beranda."
+      >
+        <Link href="/protected" className={NOTICE_PRIMARY_ACTION}>
+          Kembali ke beranda
+        </Link>
+      </DashboardNotice>
+    );
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-4">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-      </div>
+      <DashboardNotice title="Dashboard belum bisa dimuat" description={error}>
+        <button type="button" onClick={() => fetchData()} className={NOTICE_PRIMARY_ACTION}>
+          Coba lagi
+        </button>
+        <Link href="/protected" className={NOTICE_SECONDARY_ACTION}>
+          Kembali ke beranda
+        </Link>
+      </DashboardNotice>
     );
   }
 
   if (!userData) {
-    return <div>No user data available</div>;
+    return (
+      <DashboardNotice
+        title="Data host belum lengkap"
+        description="Kami belum menemukan data host untuk akun ini. Selesaikan setup host dulu, lalu buka dashboard lagi."
+      >
+        <Link href="/streamer-setup" className={NOTICE_PRIMARY_ACTION}>
+          Lanjutkan setup host
+        </Link>
+      </DashboardNotice>
+    );
   }
 
   return (

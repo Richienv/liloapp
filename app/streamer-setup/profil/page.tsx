@@ -30,7 +30,7 @@ export default async function StreamerSetupProfilePage() {
   const { data: streamer } = await supabase
     .from("streamers")
     .select(
-      "id, username, image_url, city_slug, location, category, platform, price, bio",
+      "id, username, image_url, city_slug, location, full_address, category, platform, price, bio",
     )
     .eq("user_id", user.id)
     .maybeSingle();
@@ -103,8 +103,9 @@ export default async function StreamerSetupProfilePage() {
           </span>
           <h1 className="mt-4 text-xl font-semibold text-gray-900">Lengkapi profil kamu</h1>
           <p className="mt-2 text-gray-600">
-            Ini yang dilihat brand sebelum memesan. Tujuh isian, sekitar 3 menit — foto
-            galeri dan video perkenalan bisa ditambahkan nanti kapan saja.
+            Ini yang dilihat brand sebelum memesan, plus alamat untuk pengiriman produk.
+            Delapan isian, sekitar 4 menit — foto galeri dan video perkenalan bisa
+            ditambahkan nanti kapan saja.
           </p>
 
           <div className="mt-6">
@@ -112,6 +113,7 @@ export default async function StreamerSetupProfilePage() {
               defaultUsername={defaultUsername}
               currentImageUrl={streamer?.image_url ?? null}
               defaultCitySlug={defaultCitySlug}
+              defaultFullAddress={streamer?.full_address ?? ""}
               defaultCategory={streamer?.category ?? ""}
               defaultPlatforms={defaultPlatforms}
               defaultPrice={

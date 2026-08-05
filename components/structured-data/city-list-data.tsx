@@ -1,4 +1,5 @@
 import type { City } from '@/lib/cities'
+import { absoluteUrl } from '@/lib/site'
 
 interface CityListEntry {
   city: City
@@ -41,7 +42,7 @@ export function CityListStructuredData({ entries, url }: CityListStructuredDataP
             '@type': 'ListItem',
             position: index + 1,
             name: entry.city.name,
-            url: `https://salda.id/location/${entry.city.slug}`,
+            url: absoluteUrl(`/location/${entry.city.slug}`),
           })),
         }),
       }}

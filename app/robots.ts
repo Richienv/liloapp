@@ -1,4 +1,5 @@
 import { MetadataRoute } from 'next'
+import { absoluteUrl } from '@/lib/site'
 
 export default function robots(): MetadataRoute.Robots {
   return {
@@ -14,6 +15,8 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://salda.id/sitemap.xml',
+    // A robots.txt that advertises a sitemap on a different host is ignored, so
+    // this has to track the origin the file is actually served from.
+    sitemap: absoluteUrl('/sitemap.xml'),
   }
 } 

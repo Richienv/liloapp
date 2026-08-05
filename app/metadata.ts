@@ -1,7 +1,11 @@
 import { Metadata } from 'next'
+import { SITE_URL } from '@/lib/site'
 
+// Shared defaults for public pages. Note there is no `alternates.canonical`
+// here either: pages spread `defaultMetadata.openGraph` into their own metadata
+// and declare their own canonical, which is the only URL they can state truthfully.
 export const defaultMetadata: Metadata = {
-  metadataBase: new URL('https://salda.id'),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: 'Salda - Platform Live Streaming Bersama Host Profesional',
     template: '%s | Salda'
@@ -11,7 +15,7 @@ export const defaultMetadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'id_ID',
-    url: 'https://salda.id',
+    url: SITE_URL,
     siteName: 'Salda',
     images: [
       {

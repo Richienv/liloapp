@@ -26,7 +26,7 @@ export default function StreamersPage() {
         .eq('verification_status', 'approved');
 
       if (error) {
-        setError('Failed to fetch streamers');
+        setError('Gagal memuat daftar host. Coba muat ulang halaman ini.');
         setIsLoading(false);
       } else if (data) {
         setStreamers(data);
@@ -38,16 +38,16 @@ export default function StreamersPage() {
   }, []);
 
   if (isLoading) {
-    return <div className="container mx-auto px-4 py-8">Loading...</div>;
+    return <div className="container mx-auto px-4 py-8">Memuat...</div>;
   }
 
   if (error) {
-    return <div className="container mx-auto px-4 py-8">Error: {error}</div>;
+    return <div className="container mx-auto px-4 py-8 text-gray-700">{error}</div>;
   }
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Available Streamers</h1>
+      <h1 className="text-2xl font-bold mb-6">Host Live Streaming Tersedia</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"> {/* Adjusted grid and gap */}
         {streamers.map((streamer) => (
           <div key={streamer.id} className="flex justify-center">

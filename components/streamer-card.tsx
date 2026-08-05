@@ -8,7 +8,7 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { createClient } from "@/utils/supabase/client";
-import { isSameCity } from '@/lib/cities';
+import { isSameCity, resolveCity } from '@/lib/cities';
 import { VerificationBadge } from './ui/verification-badge';
 import { format, addDays, startOfWeek, addWeeks, isSameDay, endOfWeek, isAfter, isBefore, startOfDay, subWeeks, addHours, parseISO, differenceInHours, parse, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -84,18 +84,25 @@ interface TimeRange {
   duration: number;
 }
 
-// Update the Streamer interface to include new fields
+/**
+ * Since the account-first signup, a `streamers` row is created by the role
+ * picker with almost nothing in it and filled in over the following days, so
+ * every column below is genuinely nullable in the database. The types say so
+ * on purpose: this component used to assume the old signup's guarantee that
+ * they were always populated, and one half-finished profile reaching a public
+ * listing white-screened the whole page.
+ */
 export interface Streamer {
   id: number;
   user_id: string;
-  first_name: string;
-  last_name: string;
-  platform: string;
-  platforms?: string[];
-  category: string;
+  first_name: string | null;
+  last_name: string | null;
+  platform: string | null;
+  platforms?: (string | null)[] | null;
+  category: string | null;
   categories?: string[];
-  rating: number;
-  price: number;
+  rating: number | null;
+  price: number | null;
   previous_price?: number | null;
   last_price_update?: string;
   price_history?: {
@@ -103,9 +110,9 @@ export interface Streamer {
     new_price: number;
     effective_from: string;
   }[];
-  image_url: string;
+  image_url: string | null;
   bio: string;
-  location: string;
+  location: string | null;
   video_url: string | null;
   availableTimeSlots?: string[];
   discount_percentage?: number | null;
@@ -185,9 +192,46 @@ type ShippingOption = 'yes' | 'no';
 const UNVERIFIED_BOOKING_MESSAGE =
   'Profil streamer ini masih dalam proses verifikasi, jadi belum bisa dibooking.';
 
-function RatingStars({ rating }: { rating: number }) {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 >= 0.5;
+/**
+ * Copy for values a streamer has not filled in yet. Deliberately never a zero:
+ * "0.0" or "Rp 0" reads as a *claim* about a real person — that they scored
+ * nothing, or that they work for free — rather than as an absence.
+ */
+const NO_RATING_LABEL = 'Belum ada rating';
+const NO_LOCATION_LABEL = 'Lokasi belum diatur';
+const NO_PRICE_LABEL = 'Harga belum diatur';
+
+/** Same stand-in avatar the bookings and messages surfaces use. */
+const PLACEHOLDER_AVATAR = '/default-avatar.png';
+
+/** next/image throws outright on a null src, so nothing may reach it unguarded. */
+function streamerImage(imageUrl: string | null | undefined): string {
+  return imageUrl?.trim() || PLACEHOLDER_AVATAR;
+}
+
+/** Human-readable city, preferring the canonical slug's resolved name. */
+function streamerLocationLabel(streamer: Pick<Streamer, 'location' | 'city_slug'>): string {
+  const city = resolveCity(streamerCityValue(streamer));
+  return city?.name || streamer.location?.trim() || NO_LOCATION_LABEL;
+}
+
+function RatingStars({ rating }: { rating: number | null | undefined }) {
+  // An unrated host is not a zero-rated host, and a non-numeric rating would
+  // make Math.floor return NaN — which Array(NaN) rejects outright.
+  if (rating == null || !Number.isFinite(rating) || rating <= 0) {
+    return (
+      <div className="flex items-center font-sans">
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} className="w-3 h-3 text-gray-300" />
+        ))}
+        <span className="ml-1 text-[10px] text-foreground/70">{NO_RATING_LABEL}</span>
+      </div>
+    );
+  }
+
+  const safeRating = Math.min(rating, 5);
+  const fullStars = Math.floor(safeRating);
+  const hasHalfStar = safeRating % 1 >= 0.5;
 
   return (
     <div className="flex items-center font-sans">
@@ -195,11 +239,11 @@ function RatingStars({ rating }: { rating: number }) {
         <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
       ))}
       {hasHalfStar && <StarHalf className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
-      {[...Array(5 - fullStars - (hasHalfStar ? 1 : 0))].map((_, i) => (
+      {[...Array(Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0)))].map((_, i) => (
         <Star key={i + fullStars + (hasHalfStar ? 1 : 0)} className="w-3 h-3 text-gray-300" />
       ))}
       <span className="ml-1 text-[10px] text-foreground/70">
-        {rating > 0 ? rating.toFixed(1) : "Not rated yet"}
+        {safeRating.toFixed(1)}
       </span>
     </div>
   );
@@ -216,16 +260,28 @@ function formatPrice(price: number): string {
 }
 
 // First, add a helper function to format the name
-function formatName(firstName: string, lastName: string): string {
-  return `${firstName} ${lastName.charAt(0)}.`;
+// Names are copied from the `users` row when the role picker creates the
+// streamer, and that row may not carry them yet — so neither half is a given.
+function formatName(firstName: string | null | undefined, lastName: string | null | undefined): string {
+  const first = firstName?.trim() ?? '';
+  const initial = lastName?.trim().charAt(0) ?? '';
+  return [first, initial && `${initial}.`].filter(Boolean).join(' ') || 'Host Salda';
 }
 
 // Update the formatDiscount function
-function formatDiscount(basePrice: number, previousPrice?: number | null, discountPercentage?: number | null): {
+function formatDiscount(basePrice: number | null | undefined, previousPrice?: number | null, discountPercentage?: number | null): {
   displayPrice: string;
+  /** False when there is no price to show, so callers can drop the "/ jam" suffix. */
+  hasPrice: boolean;
   originalPrice?: string;
   discountPercentage?: number;
 } {
+  // No price set yet. `null * 1.3` is 0, so without this the card would quote a
+  // host at "Rp 0 / jam" — an offer they never made.
+  if (basePrice == null || !Number.isFinite(basePrice) || basePrice <= 0) {
+    return { displayPrice: NO_PRICE_LABEL, hasPrice: false };
+  }
+
   // Calculate prices with platform fee
   const currentPriceWithFee = calculatePriceWithPlatformFee(basePrice);
   const previousPriceWithFee = previousPrice ? calculatePriceWithPlatformFee(previousPrice) : null;
@@ -249,14 +305,16 @@ function formatDiscount(basePrice: number, previousPrice?: number | null, discou
 
     return {
       displayPrice: `Rp ${Math.round(currentPriceWithFee).toLocaleString('id-ID')}`,
+      hasPrice: true,
       originalPrice: `Rp ${Math.round(previousPriceWithFee).toLocaleString('id-ID')}`,
       discountPercentage
     };
   }
 
   // Default case: just return current price
-  return { 
-    displayPrice: `Rp ${Math.round(currentPriceWithFee).toLocaleString('id-ID')}` 
+  return {
+    displayPrice: `Rp ${Math.round(currentPriceWithFee).toLocaleString('id-ID')}`,
+    hasPrice: true
   };
 }
 
@@ -749,28 +807,29 @@ const groupConsecutiveHours = (hours: string[]): TimeRange[] => {
 
 // Add this utility function to normalize platform data
 function normalizePlatforms(streamer: Streamer): string[] {
-  console.log('Normalizing platforms for streamer:', {
-    streamerId: streamer.id,
-    platformString: streamer.platform,
-    platformsArray: streamer.platforms
-  });
-
-  // If platforms array exists and has items, use it
+  // `platforms` is built elsewhere from the nullable `platform` column, so it
+  // can itself be `[null]`; filter before touching any entry.
   if (streamer.platforms && streamer.platforms.length > 0) {
-    const normalized = streamer.platforms.map(p => p.trim().toLowerCase());
-    console.log('Using platforms array, normalized to:', normalized);
-    return normalized;
+    const normalized = streamer.platforms
+      .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+      .map(p => p.trim().toLowerCase());
+    if (normalized.length > 0) return normalized;
   }
 
+  // Not chosen yet — the caller renders no platform chips rather than crashing.
+  const platform = streamer.platform?.trim();
+  if (!platform) return [];
+
   // Handle the "both" case explicitly
-  if (streamer.platform.toLowerCase().trim() === 'both') {
+  if (platform.toLowerCase() === 'both') {
     return ['tiktok', 'shopee'];
   }
 
   // Otherwise split the platform string
-  const normalized = streamer.platform.split(',').map(p => p.trim().toLowerCase());
-  console.log('Using platform string, normalized to:', normalized);
-  return normalized;
+  return platform
+    .split(',')
+    .map(p => p.trim().toLowerCase())
+    .filter(Boolean);
 }
 
 interface StreamerCardProps {
@@ -810,6 +869,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
 
   // Canonical city + bookability, derived once so every branch below agrees.
   const streamerCity = streamerCityValue(streamer);
+  const locationLabel = streamerLocationLabel(streamer);
   const isBookable = isStreamerBookable(streamer);
   const isSameCityAsClient = isSameCity(clientLocation, streamerCity);
   // Rows created before usernames existed have none; linking to `/undefined`
@@ -1426,16 +1486,19 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
       total + booking.timeRanges.reduce((rangeTotal, range) => rangeTotal + range.duration, 0), 0
     );
 
+    // Every field here can be unset on a half-finished profile, and
+    // URLSearchParams stringifies null as the literal "null".
+    const basePrice = streamer.price ?? 0;
     const params = new URLSearchParams({
       streamerId: streamer.id.toString(),
       streamerName: formatName(streamer.first_name, streamer.last_name),
-      platform: platform || streamer.platform,
-      price: streamer.price.toString(),
+      platform: platform || streamer.platform || '',
+      price: basePrice.toString(),
       totalHours: totalHours.toString(),
-      totalPrice: (streamer.price * totalHours).toString(),
-      location: streamer.location,
-      rating: streamer.rating.toString(),
-      image_url: streamer.image_url,
+      totalPrice: (basePrice * totalHours).toString(),
+      location: streamer.location || streamer.city_slug || '',
+      rating: streamer.rating != null ? streamer.rating.toString() : '',
+      image_url: streamer.image_url || '',
       bookings: JSON.stringify(bookingsData)
     });
 
@@ -1872,14 +1935,14 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
         {/* Image Container with Location Overlay */}
         <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#f0f0ef]">
           <img
-            src={streamer.image_url}
+            src={streamerImage(streamer.image_url)}
             alt={formatName(streamer.first_name, streamer.last_name)}
             className="w-full h-full object-cover transition-optimized"
           />
           {/* Location overlay */}
           <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-2">
             <MapPin className="w-3.5 h-3.5 text-[#2563eb]" />
-            <span className="text-xs font-medium text-gray-700">{streamer.location}</span>
+            <span className="text-xs font-medium text-gray-700">{locationLabel}</span>
           </div>
         </div>
 
@@ -1912,10 +1975,15 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
           {/* Price Display */}
           <div className="flex flex-col mb-2">
             <div className="flex items-center gap-1.5">
-              <span className="text-base font-semibold text-gray-900">
+              <span className={cn(
+                "text-base font-semibold",
+                priceInfo.hasPrice ? "text-gray-900" : "text-gray-400"
+              )}>
                 {priceInfo.displayPrice}
               </span>
-              <span className="text-xs font-normal text-gray-500">/ jam</span>
+              {priceInfo.hasPrice && (
+                <span className="text-xs font-normal text-gray-500">/ jam</span>
+              )}
             </div>
             {priceInfo.originalPrice && priceInfo.discountPercentage && priceInfo.discountPercentage > 0 && (
               <div className="flex items-center gap-2 mt-0.5">
@@ -1951,6 +2019,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
           <div className="flex flex-wrap gap-2 mb-4">
             {(streamer.category || '')
               .split(',')
+              .map((category) => category.trim())
               .filter(Boolean)
               .slice(0, 3)
               .map((category) => (
@@ -1962,7 +2031,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                   <Monitor className="w-3 h-3 text-[#2563eb]" />
                 </div>
                 <span className="text-xs text-gray-600 truncate">
-                  {category.trim()}
+                  {category}
                 </span>
               </div>
             ))}
@@ -2026,7 +2095,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             {/* Background Image with Gradient */}
             <div className="absolute inset-0">
               <Image
-                src={streamer.image_url}
+                src={streamerImage(streamer.image_url)}
                 alt={formatName(streamer.first_name, streamer.last_name)}
                 fill
                 className="object-cover"
@@ -2044,7 +2113,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
               <div className="flex items-end gap-4">
                 <div className="relative w-16 h-16 rounded-xl overflow-hidden border-2 border-white/20 backdrop-blur-sm">
                   <Image
-                    src={streamer.image_url}
+                    src={streamerImage(streamer.image_url)}
                     alt={formatName(streamer.first_name, streamer.last_name)}
                     fill
                     className="object-cover"
@@ -2056,12 +2125,17 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                   </h2>
                   <div className="flex items-center gap-3 text-white/80">
                     <div className="flex items-center gap-1">
-                      <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm">{streamer.rating.toFixed(1)}</span>
+                      <Star className={cn(
+                        "h-4 w-4",
+                        streamer.rating ? "fill-yellow-400 text-yellow-400" : "text-white/50"
+                      )} />
+                      <span className="text-sm">
+                        {streamer.rating != null ? streamer.rating.toFixed(1) : NO_RATING_LABEL}
+                      </span>
                     </div>
                     <div className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" />
-                      <span className="text-sm">{streamer.location}</span>
+                      <span className="text-sm">{locationLabel}</span>
                     </div>
                   </div>
                 </div>
@@ -2598,7 +2672,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 {/* Summary Footer */}
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   {(() => {
-                    const { totalHours, totalPrice } = getTotalHoursAndPrice(selectedDates, streamer.price);
+                    const { totalHours, totalPrice } = getTotalHoursAndPrice(selectedDates, streamer.price ?? 0);
                     return (
                       <div className="flex items-center justify-between">
                         <div>
@@ -2676,16 +2750,19 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                     <div className="flex flex-col items-center space-y-3">
                       <div className="relative w-28 h-28 sm:w-32 sm:h-32">
                         <Image
-                          src={streamer.image_url}
+                          src={streamerImage(streamer.image_url)}
                           alt={formatName(streamer.first_name, streamer.last_name)}
                           fill
                           className="rounded-lg object-cover border-2 border-white shadow-md"
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                        <Star className={cn(
+                          "w-4 h-4",
+                          extendedProfile.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                        )} />
                         <span className="text-sm font-medium">
-                          {extendedProfile.rating ? `${Number(extendedProfile.rating).toFixed(1)} / 5.0` : 'Not rated yet'}
+                          {extendedProfile.rating ? `${Number(extendedProfile.rating).toFixed(1)} / 5.0` : NO_RATING_LABEL}
                         </span>
                       </div>
                     </div>
@@ -2754,22 +2831,23 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                           </div>
                           <div>
                             <p className="text-xs text-blue-600 font-medium">Location</p>
-                            <p className="text-sm">{extendedProfile.location || 'Not specified'}</p>
+                            <p className="text-sm">{extendedProfile.location || locationLabel}</p>
                           </div>
                         </div>
                       </div>
 
-                      {/* Platform Tags */}
+                      {/* Platform Tags — normalizePlatforms drops unset values,
+                          so a host who has not picked a platform gets no chips */}
                       <div className="flex flex-wrap gap-2 pt-2">
-                        {(streamer.platforms || [streamer.platform]).map((platform) => (
+                        {normalizePlatforms(streamer).map((platform) => (
                           <div
                             key={platform}
                             className={`px-3 py-1 rounded-full text-white text-xs font-medium
-                              ${platform.toLowerCase() === 'shopee' 
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600' 
+                              ${platform === 'shopee'
+                                ? 'bg-gradient-to-r from-orange-500 to-orange-600'
                                 : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}
                           >
-                            {platform}
+                            {platform.charAt(0).toUpperCase() + platform.slice(1)}
                           </div>
                         ))}
                       </div>

@@ -1,3 +1,5 @@
+import { SITE_URL, absoluteUrl } from '@/lib/site';
+
 export function OrganizationStructuredData() {
   return (
     <script
@@ -7,8 +9,8 @@ export function OrganizationStructuredData() {
           "@context": "https://schema.org",
           "@type": "Organization",
           name: "Salda",
-          url: "https://salda.id",
-          logo: "https://salda.id/icon-salda.png",
+          url: SITE_URL,
+          logo: absoluteUrl("/icon-salda.png"),
           description: "Platform yang membantu UMKM meningkatkan penjualan melalui live streaming bersama host profesional.",
           sameAs: [
             "https://instagram.com/salda.id",
@@ -26,7 +28,7 @@ export function OrganizationStructuredData() {
             "@type": "JoinAction",
             target: {
               "@type": "EntryPoint",
-              urlTemplate: "https://salda.id/sign-up",
+              urlTemplate: absoluteUrl("/sign-up"),
               actionPlatform: [
                 "http://schema.org/DesktopWebPlatform",
                 "http://schema.org/MobileWebPlatform"

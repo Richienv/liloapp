@@ -36,6 +36,15 @@ export interface PublishableProfile {
   platform?: string | null;
   price?: number | string | null;
   bio?: string | null;
+  /**
+   * Street address the brand ships the product to. Not portfolio polish:
+   * shipping a physical product to the host is the premise of the marketplace,
+   * and without this the brand's shipping panel is empty *after* they have paid.
+   *
+   * `undefined` means "the caller did not select this column" — see
+   * {@link isProfilePublishable} for why that is not the same as "missing".
+   */
+  full_address?: string | null;
 }
 
 export interface MilestoneInput {
@@ -52,10 +61,45 @@ function present(value: unknown): boolean {
 }
 
 /**
- * A profile is publishable once it carries everything a listing renders: who
- * they are, where to reach them, what they cost, and what they do. Gallery
- * photos and the intro video are portfolio polish and deliberately excluded —
- * requiring them is what made the original form unfinishable.
+ * `full_address` is required — but only when the caller actually selected the
+ * column.
+ *
+ * The distinction is deliberate and load-bearing. `undefined` means "this query
+ * did not ask for full_address", which is not the same claim as `null` / `""`
+ * ("we asked, and the host has not given one"). `readAccountState` in
+ * app/types/auth.ts still reads the pre-address column list and feeds the result
+ * to `nextPathFor`, which sends an unpublished streamer to /streamer-setup. If a
+ * missing *column* counted as a missing *value*, every streamer would be routed
+ * to setup on sign-in — including one who already has an address, who could
+ * never satisfy the check because the value never reaches it. That is a
+ * permanent redirect loop, not a nudge.
+ *
+ * Callers that own the field (the setup form, `saveStreamerProfile`, the setup
+ * hub) always pass the key, so the requirement is fully enforced where it is
+ * collected. Remove this tolerance once every caller selects the column.
+ */
+function addressSatisfied(profile: PublishableProfile): boolean {
+  if (profile.full_address === undefined) return true;
+  return present(profile.full_address);
+}
+
+/**
+ * A profile is publishable once it carries everything a listing renders and
+ * everything a booking needs: who they are, where to reach them, where to ship
+ * to, what they cost, and what they do. Gallery photos and the intro video are
+ * portfolio polish and deliberately excluded — requiring them is what made the
+ * original form unfinishable.
+ *
+ * MIRRORED IN SQL. `salda_stamp_streamer_published_at()` in
+ * supabase/migrations/20260806000000_account_first_revamp.sql stamps
+ * `streamers.profile_published_at` from a hand-ported copy of this predicate,
+ * and that copy does NOT yet test `full_address`. The two now disagree: the
+ * trigger will stamp a profile as published one save before this function calls
+ * it publishable. `profile_published_at` is only an observation (nothing reads
+ * it to decide visibility), so the disagreement costs an imprecise funnel metric
+ * rather than a wrongly-listed host — but it needs a migration to add
+ * `and coalesce(btrim(new.full_address), '') <> ''` to the trigger body and to
+ * the backfill predicate.
  */
 export function isProfilePublishable(profile: PublishableProfile | null): boolean {
   if (!profile) return false;
@@ -69,7 +113,8 @@ export function isProfilePublishable(profile: PublishableProfile | null): boolea
     present(profile.category) &&
     present(profile.platform) &&
     present(price) &&
-    present(profile.bio)
+    present(profile.bio) &&
+    addressSatisfied(profile)
   );
 }
 
@@ -79,6 +124,9 @@ export function missingPublishFields(profile: PublishableProfile | null): string
     ["username", "Username", present(profile?.username)],
     ["image_url", "Foto profil", present(profile?.image_url)],
     ["city", "Kota", present(profile?.city_slug) || present(profile?.location)],
+    // Right after the city, because the two are one thought: which city, then
+    // where in it. Same tolerance for an unselected column as above.
+    ["full_address", "Alamat lengkap", profile ? addressSatisfied(profile) : false],
     ["category", "Kategori", present(profile?.category)],
     ["platform", "Platform", present(profile?.platform)],
     ["price", "Harga per jam", present(
@@ -110,15 +158,21 @@ export function streamerMilestones(input: MilestoneInput): Milestone[] {
     publish: {
       id: "publish",
       title: "Lengkapi profil",
-      description: "Foto, kota, kategori, dan harga — sekitar 3 menit.",
-      unlocks: "Profil kamu tayang di Salda",
+      description:
+        "Foto, kota, alamat pengiriman, kategori, dan harga — sekitar 4 menit.",
+      // Honest about what this step actually buys. Finishing it does NOT put the
+      // profile on Salda: listing needs `is_active = true AND
+      // verification_status = 'approved'`, and only an admin sets the second one
+      // (see supabase/SCHEMA_REFERENCE.md). Promising "tayang" here made step 2
+      // look optional, which it never was.
+      unlocks: "Profil siap diajukan untuk ditinjau tim Salda",
       href: "/streamer-setup",
     },
     verify: {
       id: "verify",
       title: "Verifikasi identitas",
       description: "KTP, selfie, dan bukti kepemilikan akun live kamu.",
-      unlocks: "Brand bisa mulai memesan jadwalmu",
+      unlocks: "Profil tayang di Salda dan brand bisa memesan jadwalmu",
       href: "/streamer-verification",
     },
     payout: {
@@ -134,6 +188,56 @@ export function streamerMilestones(input: MilestoneInput): Milestone[] {
     ...specs[id],
     done: done[id],
     current: current === id,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// The starting schedule
+// ---------------------------------------------------------------------------
+
+/**
+ * Publishing a profile also has to produce a bookable calendar.
+ *
+ * `BookingCalendar` greys out every date for which `streamer_active_schedules`
+ * has no row, so a host who finished all three milestones and was approved by an
+ * admin still could not be booked: the calendar was entirely red. Nothing in the
+ * milestones ever wrote that row — /streamer-schedule did, and nothing sent a
+ * new host there.
+ *
+ * So the profile write seeds a starting week (see `saveStreamerProfile`). The
+ * window below is the default, and it is deliberately wide-ish:
+ *
+ *   - It must be at least three hourly slots on any day it covers, because the
+ *     booking form refuses a session shorter than 2 consecutive hours.
+ *   - It spans both the daytime and the evening live-commerce peaks, so a brand
+ *     browsing at any hour finds something rather than nothing.
+ *   - It is an opening offer, not a commitment: every booking still arrives as
+ *     `pending` and the host accepts or rejects it by hand.
+ *
+ * Seeded once and only when the host has no schedule at all, so it can never
+ * overwrite hours somebody actually chose.
+ */
+export const DEFAULT_SCHEDULE_START_TIME = "09:00:00";
+export const DEFAULT_SCHEDULE_END_TIME = "21:00:00";
+
+/** Indonesian, for the copy that tells the host what we set for them. */
+export const DEFAULT_SCHEDULE_LABEL = "09.00–21.00 setiap hari";
+
+export interface ScheduleDay {
+  /** 0 = Sunday … 6 = Saturday, matching `Date.getDay()`. */
+  day: number;
+  slots: { start: string; end: string }[];
+}
+
+/**
+ * The JSON shape `streamer_active_schedules.schedule` holds and
+ * `components/streamer-card.tsx` indexes by `date.getDay()` — so the array must
+ * stay in day order, with an entry for every day, even an empty one.
+ */
+export function buildDefaultWeeklySchedule(): ScheduleDay[] {
+  return Array.from({ length: 7 }, (_, day) => ({
+    day,
+    slots: [{ start: DEFAULT_SCHEDULE_START_TIME, end: DEFAULT_SCHEDULE_END_TIME }],
   }));
 }
 
