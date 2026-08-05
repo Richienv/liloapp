@@ -15,9 +15,13 @@ export default function StreamersPage() {
       // Bookability rule: only an active, admin-approved streamer is listed
       // publicly. Without these filters this page renders StreamerCard directly
       // and would show accounts that have passed no verification at all.
+      // Explicit columns, never `select('*')`: this runs in the browser with the
+      // public anon key, and the table carries each host's `full_address` — the
+      // home address brands ship to. A wildcard here hands it to anyone who
+      // opens the network tab.
       const { data, error } = await supabase
         .from('streamers')
-        .select('*')
+        .select('id, user_id, username, first_name, last_name, bio, location, city_slug, category, platform, price, image_url, rating, video_url, is_active, verification_status, profile_published_at')
         .eq('is_active', true)
         .eq('verification_status', 'approved');
 

@@ -41,14 +41,19 @@ async function getStreamer(username: string): Promise<StreamerRichData | null> {
   // account must not exist as far as brands or Google are concerned. Filtering
   // in the query (rather than after the fetch) also keeps generateMetadata from
   // emitting a canonical URL for a profile that then 404s.
-  const { data: streamer } = await supabase
+  // `error` is deliberately captured rather than discarded. Swallowing it is how
+  // a schema mismatch turned into a silent 404 on every public profile: the
+  // query failed, `data` came back null, and the page simply called notFound()
+  // as if the host did not exist. A broken query and a missing host must not
+  // look the same from here.
+  const { data: streamer, error } = await supabase
     .from('streamers')
     .select(`
       id,
       first_name,
       last_name,
       bio,
-      profile_picture_url,
+      profile_picture_url:image_url,
       location,
       username,
       category,
@@ -67,6 +72,14 @@ async function getStreamer(username: string): Promise<StreamerRichData | null> {
     .eq('is_active', true)
     .eq('verification_status', 'approved')
     .maybeSingle()
+
+  if (error) {
+    // A query failure is an outage on our side, not a missing profile. Log it
+    // loudly so it shows up as a broken deploy instead of quietly turning every
+    // public profile into a 404 that nobody notices.
+    console.error(`[username/${username}] profile query failed:`, error)
+    return null
+  }
 
   if (!streamer) return null
 

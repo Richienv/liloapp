@@ -8,9 +8,16 @@ export async function GET() {
     // Public marketplace inventory. Brands ship physical product to whoever
     // they book, so only accounts an admin has verified — and that are still
     // active — may appear here.
+    // Explicit column list, never `select('*')`. This endpoint is unauthenticated
+    // and `public.streamers` grants anon SELECT over every column, so a wildcard
+    // published each verified host's `full_address` — the home address brands
+    // ship to, and precisely what the KYC pipeline exists to protect — along
+    // with `gender`, `age` and their auth `user_id`. Anything added to the table
+    // in future is private here by default; add it below only if the public
+    // marketplace genuinely needs it.
     const { data: streamers, error: streamersError } = await supabase
       .from('streamers')
-      .select('*')
+      .select('id, user_id, username, first_name, last_name, bio, location, city_slug, category, platform, price, image_url, rating, video_url, is_active, verification_status, profile_published_at, created_at, updated_at')
       .eq('is_active', true)
       .eq('verification_status', 'approved');
 

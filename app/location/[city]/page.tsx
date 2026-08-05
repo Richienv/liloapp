@@ -37,8 +37,12 @@ interface LocationStreamer {
   profile_picture_url: string | null
 }
 
+// The avatar lives in `streamers.image_url`. `profile_picture_url` is a column
+// on `users`, not on this table, so selecting it by that name made PostgREST
+// reject the whole query — which surfaced as "this city has no hosts" rather
+// than as an error. Aliased so the rows keep the shape the component expects.
 const STREAMER_COLUMNS =
-  'id, first_name, last_name, username, location, city_slug, category, price, profile_picture_url'
+  'id, first_name, last_name, username, location, city_slug, category, price, profile_picture_url:image_url'
 
 /**
  * Read-only Supabase client with no cookie access.
