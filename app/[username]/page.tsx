@@ -6,6 +6,7 @@ import { StreamerRichStructuredData } from '@/components/structured-data/streame
 import { notFound } from 'next/navigation'
 import { MapPin, Star, Tag } from 'lucide-react'
 import { subtotalWithPlatformFee } from '@/lib/pricing'
+import { VerificationBadge } from '@/components/ui/verification-badge'
 
 // Define the interface for testimonials
 interface Testimonial {
@@ -33,7 +34,13 @@ interface StreamerRichData {
 async function getStreamer(username: string): Promise<StreamerRichData | null> {
   const supabase = createClient()
 
-  // Get streamer basic info with testimonials
+  // Get streamer basic info with testimonials.
+  //
+  // The page is only ever reachable for a streamer who is active AND approved:
+  // this URL is the public, indexable, bookable profile, and an unverified
+  // account must not exist as far as brands or Google are concerned. Filtering
+  // in the query (rather than after the fetch) also keeps generateMetadata from
+  // emitting a canonical URL for a profile that then 404s.
   const { data: streamer } = await supabase
     .from('streamers')
     .select(`
@@ -53,8 +60,13 @@ async function getStreamer(username: string): Promise<StreamerRichData | null> {
         created_at
       )
     `)
-    .eq('username', username)
-    .single()
+    // Uniqueness is enforced on lower(username), so /Rizky and /rizky are one
+    // profile by definition — an exact match would 404 the very links legacy
+    // rows still emit, since the backfill preserved their original casing.
+    .ilike('username', username)
+    .eq('is_active', true)
+    .eq('verification_status', 'approved')
+    .maybeSingle()
 
   if (!streamer) return null
 
@@ -144,7 +156,13 @@ export default async function StreamerPage({ params }: { params: { username: str
             className="h-28 w-28 flex-shrink-0 rounded-full object-cover ring-2 ring-gray-100"
           />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+              {/* getStreamer only returns approved streamers, so this always
+                  renders here — it is the trust signal brands are looking for
+                  before they ship a product to a stranger. */}
+              <VerificationBadge status="approved" />
+            </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-4 w-4" /> {streamer.location}

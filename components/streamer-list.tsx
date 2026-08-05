@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { StreamerCard } from './streamer-card';
+import { StreamerCard, isStreamerBookable } from './streamer-card';
 import { Search } from 'lucide-react';
 import type { Streamer } from './streamer-card';
 
@@ -42,9 +42,15 @@ function StreamerCardSkeleton() {
 }
 
 export function StreamerList({ initialStreamers, filter, className }: StreamerListProps) {
+  // Belt-and-braces: the listing queries already filter on
+  // is_active + verification_status, but this is the one component every public
+  // list funnels through, so an unverified streamer that slips past a caller's
+  // query still never gets rendered as bookable inventory.
+  const listedStreamers = initialStreamers.filter(isStreamerBookable);
+
   return (
     <div className={className}>
-      {initialStreamers.map((streamer) => (
+      {listedStreamers.map((streamer) => (
         <Suspense key={streamer.id} fallback={<StreamerCardSkeleton />}>
           <StreamerCard streamer={streamer} />
         </Suspense>

@@ -1,3 +1,12 @@
+/**
+ * WebSite JSON-LD.
+ *
+ * The `SearchAction` that used to live here pointed at `https://salda.id/search`,
+ * a route that does not exist — declaring a sitelinks searchbox that 404s only
+ * gets the markup ignored (or flagged) rather than rendered. It is omitted until
+ * a real search endpoint exists; the city hub at `/locations` is the browse
+ * entry point in the meantime.
+ */
 export function WebsiteStructuredData() {
   return (
     <script
@@ -8,16 +17,14 @@ export function WebsiteStructuredData() {
           "@type": "WebSite",
           name: "Salda",
           url: "https://salda.id",
-          potentialAction: {
-            "@type": "SearchAction",
-            target: {
-              "@type": "EntryPoint",
-              urlTemplate: "https://salda.id/search?q={search_term_string}"
-            },
-            "query-input": "required name=search_term_string"
+          inLanguage: "id-ID",
+          publisher: {
+            "@type": "Organization",
+            name: "Salda",
+            url: "https://salda.id"
           }
         })
       }}
     />
   )
-} 
+}

@@ -1,8 +1,14 @@
-I have opened the images to verify the database structure. Now, I will create a proper database documentation based on the provided tables for your web app. Here’s the documentation for your team:
-
 Database Documentation
 
 This documentation describes the database structure for a web application that facilitates booking livestreamers for TikTok and Shopee Live to help businesses sell products through live streams. The application also integrates Midtrans for payment processing.
+
+THE BOOKABILITY RULE — read this first
+
+A streamer is publicly listed and bookable only when:
+
+	is_active = true AND verification_status = 'approved'
+
+Every public query — the marketplace listing, the `/location/<slug>` city pages, `sitemap.xml`, and the `/[username]` profile page — MUST apply both conditions. `is_active` is the streamer's own on/off switch; `verification_status` is Salda's trust decision, and only an admin can change it. Neither one alone is sufficient.
 
 Tables Overview
 
@@ -12,6 +18,7 @@ Stores information about livestreamers, including their associated details.
 	•	Columns:
 	•	id (bigint): Unique identifier for the livestreamer.
 	•	user_id (UUID): Reference to the corresponding user in the users table.
+	•	username (text): Public profile slug. This is the whole public SEO surface: the `/[username]` route, the canonical URL in structured data, and the sitemap entry. Unique CASE-INSENSITIVELY via the `streamers_username_lower_key` index on `lower(username)` — a duplicate insert fails with SQLSTATE 23505 naming that index. Nullable in the database only so a deploy cannot break in-flight inserts; signup always writes one. Generated and validated by `lib/username.ts`.
 	•	first_name (text): Livestreamer’s first name.
 	•	last_name (text): Livestreamer’s last name.
 	•	platform (text): The platform where the livestreamer operates (e.g., TikTok, Shopee).
@@ -19,10 +26,16 @@ Stores information about livestreamers, including their associated details.
 	•	price (numeric): Hourly rate of the livestreamer.
 	•	image_url (text): URL to the livestreamer’s profile image.
 	•	bio (text): Description or biography of the livestreamer.
-	•	location (text): Livestreamer’s current location.
+	•	location (text): Free-text location as typed at signup. LEGACY — kept for display and old reads; filter on `city_slug` instead.
+	•	city_slug (text): Canonical city slug from the 30-city registry in `lib/cities.ts`. Powers `/location/<slug>` SEO pages and shipping logistics. Backfilled best-effort from `location`; NULL when the legacy text matched no city. Indexed (`idx_streamers_city_slug`).
 	•	full_address (text): Detailed address of the livestreamer.
 	•	video_url (text): URL to a sample video or livestream demo.
 	•	rating (numeric): Average rating given to the livestreamer.
+	•	is_active (boolean, not null, default true): The streamer’s own availability switch. False hides the profile from search and booking without deleting it.
+	•	verification_status (text, not null, default 'pending'): One of 'pending' | 'approved' | 'rejected' | 'suspended', enforced by `streamers_verification_status_check`. New signups start 'pending'. Every streamer that existed before this column was introduced was grandfathered to 'approved' so nobody who was bookable stopped being bookable. Indexed (`idx_streamers_verification_status`).
+	•	verified_at (timestamptz): When the streamer reached 'approved'.
+	•	verified_by (UUID): The admin (auth.users.id) who approved them. NULL for grandfathered rows — no human actually reviewed those.
+	•	rejection_reason (text): Why verification was rejected, shown back to the streamer.
 
 2. Users
 
@@ -32,12 +45,15 @@ Contains details of all users, including business owners and livestreamers.
 	•	email (text): User’s email address.
 	•	first_name (text): User’s first name.
 	•	last_name (text): User’s last name.
-	•	user_type (text): Type of user (e.g., Client, Streamer).
+	•	user_type (text): Type of user (e.g., Client, Streamer). There is no 'admin' value — see “Admin access” at the end of this document.
 	•	profile_picture_url (text): URL to the user’s profile picture.
 	•	bio (text): Short biography of the user.
 	•	brand_name (text): Name of the client’s brand, if applicable.
 	•	brand_guidelines_url (text): URL to the client’s brand guidelines.
-	•	location (text): User’s current location.
+	•	location (text): Free-text location. LEGACY — prefer `city_slug`.
+	•	city_slug (text): Canonical city slug from `lib/cities.ts`. Backfilled best-effort from `location`.
+	•	phone (text): Contact number in E.164 format (+628…), normalized by `lib/phone.ts`. This is the WhatsApp channel brands and streamers actually use to reach each other.
+	•	phone_verified (boolean, not null, default false): True once the number has passed OTP verification. Every pre-existing row is false — nobody had been verified when the column shipped.
 	•	created_at (timestamp): Timestamp when the user was created.
 	•	updated_at (timestamp): Timestamp when the user’s details were last updated.
 	•	brand_name_updated_at (timestamp): Timestamp when the brand name was last updated.
@@ -220,4 +236,63 @@ Tracks bookings that have been accepted by livestreamers.
 	•	end_time (time): End time of the booking.
 	•	created_at (timestamp): Timestamp when the booking was accepted.
 	•	updated_at (timestamp): Timestamp when the booking record was last updated.
+
+17. Streamer Verification Submissions
+
+One row per KYC attempt by a streamer. Kept separate from the streamers table so identity documents sit behind their own RLS boundary, and so a rejected attempt stays on the record instead of being overwritten by the next try. An admin reviews each row and mirrors the outcome onto `streamers.verification_status`.
+	•	Columns:
+	•	id (UUID): Unique identifier for the submission.
+	•	streamer_id (bigint): Foreign key referencing the streamers table (on delete cascade).
+	•	user_id (UUID): Foreign key referencing auth.users (on delete cascade). The uploader.
+	•	id_card_url (text): Storage path inside the private `verification_documents` bucket.
+	•	selfie_url (text): Storage path to a selfie holding the ID.
+	•	platform_proof_url (text): Storage path to a screenshot proving control of the TikTok/Shopee account.
+	•	platform_handle (text): The streamer’s handle on that platform.
+	•	status (text, not null, default 'pending'): 'pending' | 'approved' | 'rejected', enforced by a CHECK constraint. Indexed (`idx_streamer_verification_submissions_status`).
+	•	notes (text): Reviewer notes; doubles as the rejection explanation shown to the streamer.
+	•	reviewed_by (UUID): The admin who reviewed it (auth.users.id).
+	•	reviewed_at (timestamptz): When it was reviewed.
+	•	created_at / updated_at (timestamptz, not null): `updated_at` is stamped automatically by the `salda_set_updated_at` trigger.
+	•	RLS: enabled, nothing granted to `anon`. A streamer reads submissions belonging to their own streamer profile, inserts only for themselves and only with status 'pending', and may edit a submission ONLY while it is still pending and only if it stays pending — that is what prevents a streamer from self-approving. There is no DELETE policy: the submission is the audit trail for a trust decision. Admins read and update everything.
+	•	Indexed on `status` and `streamer_id`.
+
+18. Streamer Payout Accounts
+
+Bank accounts a streamer can be paid out to. Separate from the streamers table because a streamer may rotate accounts over time and the history matters for reconciliation.
+	•	Columns:
+	•	id (UUID): Unique identifier for the payout account.
+	•	streamer_id (bigint): Foreign key referencing the streamers table (on delete cascade).
+	•	bank_code (text, not null): Bank identifier used by the disbursement provider (e.g. bca, mandiri, bni, bri).
+	•	bank_name (text, not null): Human-readable bank name.
+	•	account_number (text, not null): Account number.
+	•	account_holder_name (text, not null): Name on the account, checked against the bank before payout.
+	•	is_primary (boolean, not null, default true): The account used for automatic disbursement. A partial unique index (`idx_streamer_payout_accounts_one_primary`) guarantees at most ONE primary row per streamer, so a payout always has exactly one destination.
+	•	verified_at (timestamptz): Set once the holder name has been confirmed against the bank. Should only ever be written server-side.
+	•	created_at / updated_at (timestamptz, not null): `updated_at` is stamped automatically by the `salda_set_updated_at` trigger.
+	•	RLS: enabled, nothing granted to `anon` — bank details must never be readable with the public browser key. A streamer has full CRUD on rows attached to their own streamer profile; admins read and update all.
+
+Storage buckets
+
+	•	streamers (public): profile and gallery images.
+	•	brand-guidelines (public): client brand guideline documents.
+	•	verification_documents (PRIVATE, 10 MB limit, jpeg/png/webp/pdf): identity documents for KYC. Objects MUST be stored under a folder named after the uploader’s auth user id:
+
+		verification_documents/<auth.uid()>/<filename>
+
+	Storage RLS enforces exactly that prefix — a streamer can insert, read, and overwrite only inside their own folder, and admins can read everything. There is no delete policy; removing a document is a service-role action. Because the bucket is private, always hand the client a signed URL, never a public one.
+
+Admin access
+
+There is no admin role in the data model (`users.user_type` is only 'client' | 'streamer'). `app/admin/layout.tsx` gates the /admin section on a comma-separated `ADMIN_EMAILS` environment variable. Postgres cannot read that env var, so the same allowlist is mirrored into the `public.admin_users` table and read by `public.is_admin()`, which every admin RLS policy calls.
+
+Grant admin by inserting a row (Supabase SQL editor, or any service-role connection):
+
+	insert into public.admin_users (email, note)
+	values ('owner@salda.id', 'Founder');
+
+Revoke by deleting the row. The email must match the address the person signs in with, and it is compared case-insensitively against the caller's JWT email claim.
+
+Note: migration `20260805120000` originally read this allowlist from an `app.admin_emails` database setting. That approach does not work on hosted Supabase — the `postgres` role there is not a superuser, so `alter database postgres set app.admin_emails = …` fails with `42501: permission denied to set parameter`. Migration `20260805130000` replaced it with the table above and carries over any value the setting did hold, so a local or self-hosted database that had it set does not regress.
+
+Keep the table in sync with `ADMIN_EMAILS`. It is fail-closed: an empty table means `is_admin()` returns false for everyone and the admin policies grant nothing. The table itself has RLS enabled with no policies, so it is neither readable nor writable through the API under any session — that stops it from publishing the exact list of accounts worth phishing, and stops a signed-in user from escalating by inserting their own address. Server code using the service-role key (`utils/supabase/admin.ts`) bypasses RLS entirely and does not depend on it.
 

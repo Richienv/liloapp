@@ -181,9 +181,15 @@ export default function Hero() {
       setIsLoadingStreamers(true);
       try {
         const supabase = createClient();
+        // Same bookability rule as every other public listing: the landing-page
+        // marquee is the first thing a brand sees, so it must not showcase
+        // accounts that have not been verified. `username` and `city_slug` come
+        // along so the cards can link to a real profile and compare cities.
         const { data, error } = await supabase
           .from('streamers')
-          .select('id, first_name, last_name, platform, location, price, image_url, rating')
+          .select('id, first_name, last_name, username, platform, location, city_slug, price, image_url, rating')
+          .eq('is_active', true)
+          .eq('verification_status', 'approved')
           .limit(10);
 
         if (error) {

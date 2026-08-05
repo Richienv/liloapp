@@ -6,19 +6,32 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CityCombobox } from "@/components/ui/city-combobox";
+import { PhoneInput } from "@/components/ui/phone-input";
 import Link from "next/link";
 import { useState, useRef } from "react";
 import Image from "next/image";
-import { Info, ArrowLeft, ArrowRight, Upload, Check, AlertCircle } from 'lucide-react';
+import { Info, ArrowLeft, ArrowRight, Upload, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SignUpResponse } from "@/app/types/auth";
+import { getCityBySlug } from "@/lib/cities";
+import { formatPhoneLocal, isValidPhone, normalizePhone, PHONE_INVALID_MESSAGE } from "@/lib/phone";
+
+const TOTAL_STEPS = 4;
+/**
+ * Step 3 collects nothing an account needs. It is presented after the
+ * account-critical steps and can be skipped outright — a brand can only judge
+ * whether Salda is worth describing their brand to *after* they're inside.
+ */
+const OPTIONAL_STEP = 3;
 
 interface FormData {
   basicInfo: {
     first_name: string;
     last_name: string;
     email: string;
+    phone: string;
     location: string;
   };
   security: {
@@ -40,6 +53,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
       first_name: '',
       last_name: '',
       email: '',
+      phone: '',
       location: '',
     },
     security: {
@@ -56,7 +70,13 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [docError, setDocError] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [showPhoneError, setShowPhoneError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /**
+   * Set once the account exists. The button re-enables in `finally` before the
+   * redirect lands, so this stops a second submission slipping through.
+   */
+  const submittedRef = useRef(false);
 
   // Add state for password
   const [showPassword, setShowPassword] = useState(false);
@@ -74,20 +94,33 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
 
   const validateStep = (step: number): boolean => {
     setError(null);
-    
+
     switch (step) {
-      case 1: // Basic Info
-        const { first_name, last_name, email, location } = formData.basicInfo;
-        if (!first_name || !last_name || !email || !location) {
-          setError('Mohon lengkapi semua field yang diperlukan');
+      case 1: // Basic info + brand name — everything an account actually needs
+        const { first_name, last_name, email, phone, location } = formData.basicInfo;
+        if (!first_name || !last_name || !email) {
+          setError('Mohon lengkapi nama dan email Anda');
           return false;
         }
         if (!email.includes('@')) {
           setError('Mohon masukkan alamat email yang valid');
           return false;
         }
+        if (!isValidPhone(phone)) {
+          setShowPhoneError(true);
+          setError(PHONE_INVALID_MESSAGE);
+          return false;
+        }
+        if (!getCityBySlug(location)) {
+          setError('Pilih kota Anda dari daftar yang tersedia');
+          return false;
+        }
+        if (!formData.brandInfo.brand_name) {
+          setError('Mohon isi nama brand Anda');
+          return false;
+        }
         break;
-        
+
       case 2: // Security
         const { password, confirm_password } = formData.security;
         if (!password || !confirm_password) {
@@ -103,22 +136,19 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
           return false;
         }
         break;
-        
-      case 3: // Brand Info
-        const { brand_name, brand_description } = formData.brandInfo;
-        if (!brand_name || !brand_description) {
-          setError('Mohon lengkapi informasi brand Anda');
-          return false;
-        }
+
+      case OPTIONAL_STEP:
+        // Brand description and guidelines are optional by design — nothing to
+        // validate, and skipping is a supported outcome.
         break;
     }
-    
+
     return true;
   };
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+      setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS));
     }
   };
 
@@ -126,16 +156,41 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
+  /**
+   * Enter previously triggered a native submit, which navigated away and threw
+   * out everything typed so far. It now advances the step; on the last step it
+   * runs the real signup.
+   */
+  const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    if (target instanceof HTMLTextAreaElement) return;
+    const tag = target.tagName.toLowerCase();
+    if (tag === 'button' || tag === 'a' || tag === 'select') return;
+
+    event.preventDefault();
+
+    if (currentStep < TOTAL_STEPS) {
+      handleNext();
+      return;
+    }
+    if (acceptedTerms && !isSigningUp) {
+      handleSignUp();
+    }
+  };
+
   const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setDocError('File size must not exceed 5MB');
+        setDocError('Ukuran file maksimal 5MB');
         return;
       }
       const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(file.type)) {
-        setDocError('Only PDF and DOC/DOCX files are allowed');
+        setDocError('Hanya file PDF dan DOC/DOCX yang diperbolehkan');
         return;
       }
       updateFormData('brandInfo', 'brand_doc', file);
@@ -177,24 +232,26 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
       <div className="space-y-8">
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="first_name" className="text-gray-700 font-medium">First Name</Label>
+            <Label htmlFor="first_name" className="text-gray-700 font-medium">Nama Depan</Label>
             <Input 
+              id="first_name"
               name="first_name"
               value={formData.basicInfo.first_name}
               onChange={(e) => updateFormData('basicInfo', 'first_name', e.target.value)}
-              placeholder="John" 
+              placeholder="Budi" 
               required 
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
                 transition-all duration-200 text-base rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="last_name" className="text-gray-700 font-medium">Last Name</Label>
+            <Label htmlFor="last_name" className="text-gray-700 font-medium">Nama Belakang</Label>
             <Input 
+              id="last_name"
               name="last_name"
               value={formData.basicInfo.last_name}
               onChange={(e) => updateFormData('basicInfo', 'last_name', e.target.value)}
-              placeholder="Smith" 
+              placeholder="Santoso" 
               required 
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
                 transition-all duration-200 text-base rounded-xl"
@@ -203,64 +260,80 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700 font-medium">Email Address</Label>
+          <Label htmlFor="email" className="text-gray-700 font-medium">Alamat Email</Label>
           <div className="relative">
-            <Input 
+            <Input
+              id="email"
               name="email"
               type="email"
               value={formData.basicInfo.email}
               onChange={(e) => updateFormData('basicInfo', 'email', e.target.value)}
-              placeholder="you@example.com" 
-              required 
+              placeholder="anda@contoh.com"
+              required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
                 transition-all duration-200 text-base rounded-xl pl-12"
             />
-            <svg 
-              className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
                 d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
           <p className="text-sm text-gray-500 mt-2 flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-500" />
-            We'll send important updates to this email
+            Kami mengirim informasi penting ke email ini
           </p>
         </div>
 
+        {/* WhatsApp is Salda's support channel and how a host reaches a brand
+            about a booking — the privacy notice already says we collect it. */}
         <div className="space-y-2">
-          <Label htmlFor="location" className="text-gray-700 font-medium">Location</Label>
-          <div className="relative">
-            <Input 
-              name="location"
-              value={formData.basicInfo.location}
-              onChange={(e) => updateFormData('basicInfo', 'location', e.target.value)}
-              placeholder="e.g. Jakarta" 
-              required 
-              className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
-                transition-all duration-200 text-base rounded-xl pl-12"
-            />
-            <svg 
-              className="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} 
-                d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-          </div>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-200 mt-3">
-            <p className="text-sm text-gray-600 flex items-center gap-2">
-              <Info className="w-4 h-4 text-blue-500 flex-shrink-0" />
-              <span>Major cities: Jakarta, Bandung, Surabaya, Medan, Semarang, Yogyakarta</span>
-            </p>
-          </div>
+          <Label htmlFor="phone" className="text-gray-700 font-medium">Nomor WhatsApp</Label>
+          <PhoneInput
+            id="phone"
+            name="phone"
+            required
+            value={formData.basicInfo.phone}
+            onChange={(value) => {
+              setShowPhoneError(false);
+              updateFormData('basicInfo', 'phone', value);
+            }}
+            forceShowError={showPhoneError}
+          />
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="location" className="text-gray-700 font-medium">Kota</Label>
+          <CityCombobox
+            id="location"
+            name="location"
+            value={formData.basicInfo.location}
+            onChange={(slug) => updateFormData('basicInfo', 'location', slug)}
+            placeholder="Pilih kota Anda"
+          />
+          <p className="mt-2 text-sm text-gray-500">
+            Dipakai untuk estimasi pengiriman produk ke host dan untuk menampilkan host di kota Anda.
+          </p>
+        </div>
+
+        {/* Brand name lives here rather than on its own screen: it is the only
+            brand field the account genuinely needs. */}
+        <div className="space-y-2">
+          <Label htmlFor="brand_name" className="text-gray-700 font-medium">Nama Brand</Label>
+          <Input
+            id="brand_name"
+            name="brand_name"
+            value={formData.brandInfo.brand_name}
+            onChange={(e) => updateFormData('brandInfo', 'brand_name', e.target.value)}
+            placeholder="Nama brand Anda"
+            required
+            className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
+              transition-all duration-200 text-base rounded-xl"
+          />
         </div>
       </div>
     );
@@ -270,14 +343,15 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
     return (
       <div className="space-y-8">
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
+          <Label htmlFor="password" className="text-gray-700 font-medium">Kata Sandi</Label>
           <div className="relative">
             <Input
+              id="password"
               type={showPassword ? "text" : "password"}
               name="password"
               value={formData.security.password}
               onChange={(e) => updateFormData('security', 'password', e.target.value)}
-              placeholder="Create a secure password"
+              placeholder="Buat kata sandi yang aman"
               minLength={6}
               required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
@@ -307,14 +381,15 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirm_password" className="text-gray-700 font-medium">Confirm Password</Label>
+          <Label htmlFor="confirm_password" className="text-gray-700 font-medium">Konfirmasi Kata Sandi</Label>
           <div className="relative">
             <Input
+              id="confirm_password"
               type={showConfirmPassword ? "text" : "password"}
               name="confirm_password"
               value={formData.security.confirm_password}
               onChange={(e) => updateFormData('security', 'confirm_password', e.target.value)}
-              placeholder="Confirm your password"
+              placeholder="Ulangi kata sandi Anda"
               minLength={6}
               required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
@@ -344,19 +419,19 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
         </div>
 
         <div className="p-4 rounded-xl bg-gray-50 border border-gray-200">
-          <h4 className="font-medium text-gray-900 mb-3">Password Requirements:</h4>
+          <h4 className="font-medium text-gray-900 mb-3">Syarat Kata Sandi:</h4>
           <ul className="space-y-2 text-sm text-gray-600">
             <li className="flex items-center gap-2">
               <div className="w-1 h-1 rounded-full bg-gray-400" />
-              Minimum 6 characters
+              Minimal 6 karakter
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1 h-1 rounded-full bg-gray-400" />
-              Mix of letters and numbers recommended
+              Disarankan kombinasi huruf dan angka
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1 h-1 rounded-full bg-gray-400" />
-              Special characters add extra security
+              Karakter spesial menambah keamanan
             </li>
           </ul>
         </div>
@@ -367,40 +442,51 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
   const renderBrandInfo = () => {
     return (
       <div className="space-y-8">
-        <div className="space-y-2">
-          <Label htmlFor="brand_name" className="text-gray-700 font-medium">Brand Name</Label>
-          <Input 
-            name="brand_name"
-            value={formData.brandInfo.brand_name}
-            onChange={(e) => updateFormData('brandInfo', 'brand_name', e.target.value)}
-            placeholder="Your brand name" 
-            required 
-            className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
-              transition-all duration-200 text-base rounded-xl"
-          />
+        {/* Say plainly that nothing here blocks the account. */}
+        <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+          <div className="flex items-start gap-3">
+            <Info className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-500" />
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-blue-900">
+                Langkah ini opsional
+              </p>
+              <p className="text-sm text-blue-700">
+                Semua di halaman ini bisa dilengkapi nanti — akun Anda tetap bisa dibuat
+                sekarang. Host membaca bagian ini sebelum menerima booking, jadi mengisinya
+                membantu, tapi tidak wajib.
+              </p>
+            </div>
+          </div>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="brand_description" className="text-gray-700 font-medium">Brand Description</Label>
+          <Label htmlFor="brand_description" className="text-gray-700 font-medium">
+            Deskripsi Brand{" "}
+            <span className="font-normal text-gray-400">(opsional)</span>
+          </Label>
           <p className="text-sm text-gray-500 flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-500" />
-            Tell us about your brand and its values
+            Ceritakan tentang brand Anda dan nilai yang dibawa
           </p>
-          <Textarea 
+          <Textarea
+            id="brand_description"
             name="brand_description"
             value={formData.brandInfo.brand_description}
             onChange={(e) => updateFormData('brandInfo', 'brand_description', e.target.value)}
-            placeholder="Describe your brand's story, mission, and target audience" 
+            placeholder="Cerita, misi, dan target audiens brand Anda"
             className="min-h-[120px] bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
               transition-all duration-200 text-base rounded-xl resize-none"
           />
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="brand_doc" className="text-gray-700 font-medium">Brand Guidelines</Label>
+          <Label htmlFor="brand_doc" className="text-gray-700 font-medium">
+            Brand Guidelines{" "}
+            <span className="font-normal text-gray-400">(opsional)</span>
+          </Label>
           <p className="text-sm text-gray-500 flex items-center gap-2">
             <Info className="w-4 h-4 text-blue-500" />
-            Upload your brand guidelines document to share with streamers
+            Unggah dokumen panduan brand untuk dibagikan ke host
           </p>
           <div 
             onClick={() => fileInputRef.current?.click()}
@@ -422,10 +508,10 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
                   </svg>
                 </div>
                 <p className="text-sm font-medium text-gray-600 group-hover:text-blue-600">
-                  {formData.brandInfo.brand_doc ? formData.brandInfo.brand_doc.name : 'Upload Brand Guidelines'}
+                  {formData.brandInfo.brand_doc ? formData.brandInfo.brand_doc.name : 'Unggah Brand Guidelines'}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  PDF or DOC up to 5MB
+                  PDF atau DOC maksimal 5MB
                 </p>
               </div>
             </div>
@@ -435,7 +521,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              File selected: {formData.brandInfo.brand_doc.name}
+              File terpilih: {formData.brandInfo.brand_doc.name}
             </p>
           )}
           {docError && (
@@ -457,20 +543,20 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
         <div className="p-4 bg-gray-50 rounded-xl space-y-3">
           <div className="flex items-center gap-2 text-gray-700">
             <Info className="w-4 h-4" />
-            <span className="text-sm font-medium">Brand Guidelines Tips</span>
+            <span className="text-sm font-medium">Tips Brand Guidelines</span>
           </div>
           <ul className="space-y-2 text-sm text-gray-600">
             <li className="flex items-center gap-2">
               <div className="w-1 h-1 rounded-full bg-gray-400" />
-              Include your brand's color palette and typography
+              Sertakan palet warna dan tipografi brand Anda
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1 h-1 rounded-full bg-gray-400" />
-              Specify do's and don'ts for brand representation
+              Jelaskan hal yang boleh dan tidak boleh disampaikan host
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1 h-1 rounded-full bg-gray-400" />
-              Add examples of successful brand content
+              Tambahkan contoh konten brand yang berhasil
             </li>
           </ul>
         </div>
@@ -489,22 +575,22 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                 d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            Account Preview
+            Pratinjau Akun
           </div>
 
           <div className="grid gap-6">
             {/* Basic Information */}
             <div className="bg-white rounded-xl p-6 border border-gray-200 space-y-4">
               <h3 className="text-sm font-medium text-gray-900 pb-2 border-b border-gray-100">
-                Basic Information
+                Informasi Dasar
               </h3>
               <div className="grid grid-cols-1 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Brand Name</span>
+                  <span className="text-gray-500">Nama Brand</span>
                   <p className="font-medium text-gray-900 mt-0.5">{formData.brandInfo.brand_name}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Contact Person</span>
+                  <span className="text-gray-500">Narahubung</span>
                   <p className="font-medium text-gray-900 mt-0.5">
                     {formData.basicInfo.first_name} {formData.basicInfo.last_name}
                   </p>
@@ -514,8 +600,16 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
                   <p className="font-medium text-gray-900 mt-0.5">{formData.basicInfo.email}</p>
                 </div>
                 <div>
-                  <span className="text-gray-500">Location</span>
-                  <p className="font-medium text-gray-900 mt-0.5">{formData.basicInfo.location}</p>
+                  <span className="text-gray-500">WhatsApp</span>
+                  <p className="font-medium text-gray-900 mt-0.5">
+                    {formatPhoneLocal(normalizePhone(formData.basicInfo.phone))}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-gray-500">Kota</span>
+                  <p className="font-medium text-gray-900 mt-0.5">
+                    {getCityBySlug(formData.basicInfo.location)?.name ?? formData.basicInfo.location}
+                  </p>
                 </div>
               </div>
             </div>
@@ -523,12 +617,18 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
             {/* Brand Information */}
             <div className="bg-white rounded-xl p-6 border border-gray-200 space-y-4">
               <h3 className="text-sm font-medium text-gray-900 pb-2 border-b border-gray-100">
-                Brand Information
+                Profil Brand
               </h3>
               <div className="space-y-4">
                 <div>
-                  <span className="text-sm text-gray-500">Description</span>
-                  <p className="text-gray-900 mt-1.5">{formData.brandInfo.brand_description}</p>
+                  <span className="text-sm text-gray-500">Deskripsi</span>
+                  {formData.brandInfo.brand_description ? (
+                    <p className="text-gray-900 mt-1.5">{formData.brandInfo.brand_description}</p>
+                  ) : (
+                    <p className="text-gray-500 mt-1.5 italic">
+                      Belum diisi — bisa dilengkapi setelah akun dibuat.
+                    </p>
+                  )}
                 </div>
                 {formData.brandInfo.brand_doc && (
                   <div>
@@ -561,25 +661,25 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
                 htmlFor="terms"
                 className="text-sm text-gray-600 leading-relaxed"
               >
-                I agree to the{" "}
+                Saya menyetujui{" "}
                 <Link 
                   href="/terms" 
                   className="text-blue-600 hover:text-blue-700 font-medium underline"
                   target="_blank"
                 >
-                  Terms of Service
+                  Syarat & Ketentuan
                 </Link>
-                {" "}and{" "}
+                {" "}dan{" "}
                 <Link 
                   href="/privacy-notice" 
                   className="text-blue-600 hover:text-blue-700 font-medium underline"
                   target="_blank"
                 >
-                  Privacy Policy
+                  Kebijakan Privasi
                 </Link>
               </label>
               <p className="text-xs text-gray-500">
-                By creating an account, you agree to our terms and conditions
+                Dengan membuat akun, Anda menyetujui syarat dan ketentuan kami
               </p>
             </div>
           </div>
@@ -589,20 +689,29 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
   };
 
   const handleSignUp = async () => {
+    // Guard the in-flight and already-done cases as well as disabling the
+    // button: a double Enter press can fire twice before React re-renders the
+    // disabled state, and the redirect after success is not instant.
+    if (isSigningUp || submittedRef.current) return;
+
     try {
       setError(null);
       setIsSigningUp(true);
 
       const submitFormData = new FormData();
-      
+
       // Add basic info
-      Object.entries(formData.basicInfo).forEach(([key, value]) => {
-        submitFormData.append(key, value);
-      });
-      
+      submitFormData.append('first_name', formData.basicInfo.first_name);
+      submitFormData.append('last_name', formData.basicInfo.last_name);
+      submitFormData.append('email', formData.basicInfo.email);
+      // Stored in canonical E.164 ("+62812...") so WhatsApp links always work.
+      submitFormData.append('phone', normalizePhone(formData.basicInfo.phone) ?? '');
+      // Canonical city slug from lib/cities, never free text.
+      submitFormData.append('location', formData.basicInfo.location);
+
       // Add password
       submitFormData.append('password', formData.security.password);
-      
+
       // Add brand info
       submitFormData.append('brand_name', formData.brandInfo.brand_name);
       submitFormData.append('brand_description', formData.brandInfo.brand_description);
@@ -615,14 +724,16 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
       const result: SignUpResponse = await signUpAction(submitFormData);
       
       if (result.success && result.redirectTo) {
+        submittedRef.current = true;
         window.location.href = result.redirectTo;
       } else {
-        setError(result.error || 'An unexpected error occurred');
+        setError(result.error || 'Terjadi kesalahan. Silakan coba lagi.');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      setError('Terjadi kesalahan tak terduga. Silakan coba lagi.');
     } finally {
+      // In `finally` so a thrown action never leaves the button permanently dead.
       setIsSigningUp(false);
     }
   };
@@ -634,23 +745,29 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
           <div className="px-5 py-8 sm:px-10 sm:py-12">
             <div className="mb-8 sm:mb-12">
               <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
-                Create Brand Account
+                Buat Akun Brand
               </h1>
               <p className="mt-2 sm:mt-3 text-gray-500">
-                Already have an account?{" "}
+                Sudah punya akun?{" "}
                 <Link href="/sign-in" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                  Sign in here
+                  Masuk di sini
                 </Link>
               </p>
             </div>
 
             {renderStepIndicator()}
 
-            <form className="space-y-6">
+            <form
+              className="space-y-6"
+              // Nothing here is a native submit — every path goes through
+              // handleSignUp. A native submit would navigate and wipe the form.
+              onSubmit={(e) => e.preventDefault()}
+              onKeyDown={handleFormKeyDown}
+            >
               {currentStep === 1 && renderBasicInfo()}
               {currentStep === 2 && renderSecurity()}
-              {currentStep === 3 && renderBrandInfo()}
-              {currentStep === 4 && renderPreview()}
+              {currentStep === OPTIONAL_STEP && renderBrandInfo()}
+              {currentStep === TOTAL_STEPS && renderPreview()}
 
               {error && (
                 <div className="p-3 rounded-lg bg-red-50 border border-red-200">
@@ -663,25 +780,35 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
                   <Button
                     type="button"
                     onClick={handlePrevious}
+                    disabled={isSigningUp}
                     className="flex-1 h-11 bg-gray-100 hover:bg-gray-200 text-gray-700"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
                     Sebelumnya
                   </Button>
                 )}
-                
+
                 <Button
                   type="button"
-                  onClick={currentStep === 4 ? handleSignUp : handleNext}
-                  disabled={currentStep === 4 && !acceptedTerms}
-                  className={`flex-1 h-11 bg-gradient-to-r from-blue-600 to-blue-500 
-                    ${currentStep === 4 && !acceptedTerms 
-                      ? 'opacity-50 cursor-not-allowed' 
+                  onClick={currentStep === TOTAL_STEPS ? handleSignUp : handleNext}
+                  // Disabled while a submission is in flight so a second click
+                  // cannot create a second account.
+                  disabled={isSigningUp || (currentStep === TOTAL_STEPS && !acceptedTerms)}
+                  className={`flex-1 h-11 bg-gradient-to-r from-blue-600 to-blue-500
+                    ${isSigningUp || (currentStep === TOTAL_STEPS && !acceptedTerms)
+                      ? 'opacity-50 cursor-not-allowed'
                       : 'hover:from-blue-700 hover:to-blue-600'
                     } text-white`}
                 >
-                  {currentStep === 4 ? (
-                    isSigningUp ? "Membuat Akun..." : "Buat Akun"
+                  {currentStep === TOTAL_STEPS ? (
+                    isSigningUp ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Membuat Akun...
+                      </>
+                    ) : (
+                      "Buat Akun"
+                    )
                   ) : (
                     <>
                       Lanjut
@@ -690,6 +817,17 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
                   )}
                 </Button>
               </div>
+
+              {/* Explicit escape hatch out of the optional step. */}
+              {currentStep === OPTIONAL_STEP && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(TOTAL_STEPS)}
+                  className="w-full text-center text-sm text-gray-500 underline underline-offset-2 hover:text-gray-700"
+                >
+                  Lewati — lengkapi nanti
+                </button>
+              )}
 
               <FormMessage message={searchParams} />
             </form>

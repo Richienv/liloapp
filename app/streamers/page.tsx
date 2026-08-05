@@ -12,9 +12,14 @@ export default function StreamersPage() {
   useEffect(() => {
     const fetchStreamers = async () => {
       const supabase = createClient();
+      // Bookability rule: only an active, admin-approved streamer is listed
+      // publicly. Without these filters this page renders StreamerCard directly
+      // and would show accounts that have passed no verification at all.
       const { data, error } = await supabase
         .from('streamers')
-        .select('*');
+        .select('*')
+        .eq('is_active', true)
+        .eq('verification_status', 'approved');
 
       if (error) {
         setError('Failed to fetch streamers');

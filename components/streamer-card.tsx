@@ -8,6 +8,8 @@ import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 import { createClient } from "@/utils/supabase/client";
+import { isSameCity } from '@/lib/cities';
+import { VerificationBadge } from './ui/verification-badge';
 import { format, addDays, startOfWeek, addWeeks, isSameDay, endOfWeek, isAfter, isBefore, startOfDay, subWeeks, addHours, parseISO, differenceInHours, parse, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { toast } from 'react-hot-toast';
@@ -110,6 +112,43 @@ export interface Streamer {
   gender?: string;
   age?: number;
   experience?: string;
+  /** Public profile handle. Null on rows created before usernames existed. */
+  username?: string | null;
+  /** Canonical city slug. Preferred over the legacy free-text `location`. */
+  city_slug?: string | null;
+  is_active?: boolean | null;
+  verification_status?: string | null;
+}
+
+/**
+ * Bookability gate, shared with every surface that renders a card.
+ *
+ * A brand ships physical product to this person's home address, so a streamer
+ * only becomes bookable once an admin has approved their identity and platform
+ * ownership, and only while the account is still active.
+ *
+ * `undefined`/`null` means the caller's query never selected these columns —
+ * the landing-page marquee and the sign-up preview both build partial Streamer
+ * objects — so it is read as "not evaluated here" rather than "rejected". The
+ * authoritative gate is the `is_active`/`verification_status` filter on the
+ * server-side listing queries; this keeps those partial previews from rendering
+ * as blocked.
+ */
+export function isStreamerBookable(
+  streamer: Pick<Streamer, 'is_active' | 'verification_status'>
+): boolean {
+  if (streamer.is_active === false) return false;
+  if (streamer.verification_status == null) return true;
+  return streamer.verification_status === 'approved';
+}
+
+/**
+ * The city used for shipping maths. `city_slug` is canonical once the row has
+ * been migrated; `location` is the legacy free-text value, which resolveCity()
+ * still understands.
+ */
+function streamerCityValue(streamer: Pick<Streamer, 'location' | 'city_slug'>): string {
+  return streamer.city_slug || streamer.location || '';
 }
 
 // Update the testimonial interface
@@ -141,6 +180,10 @@ interface RatingData {
 }
 
 type ShippingOption = 'yes' | 'no';
+
+/** Shown wherever a brand tries to book a streamer we have not verified yet. */
+const UNVERIFIED_BOOKING_MESSAGE =
+  'Profil streamer ini masih dalam proses verifikasi, jadi belum bisa dibooking.';
 
 function RatingStars({ rating }: { rating: number }) {
   const fullStars = Math.floor(rating);
@@ -576,14 +619,18 @@ const validateDateRestrictions = (
 
   // Shipping validation
   if (needsShipping === 'yes') {
-    const isSameCity = clientLocation.toLowerCase() === streamerLocation.toLowerCase();
-    const minDays = isSameCity ? 1 : 3;
+    // Compared through the city registry, not raw strings: "Jakarta",
+    // "DKI Jakarta" and "Jaksel" are one city for a courier. An unknown or
+    // missing city resolves to "not the same city", which keeps the safer
+    // 3-day lead time.
+    const sameCity = isSameCity(clientLocation, streamerLocation);
+    const minDays = sameCity ? 1 : 3;
     const earliestDate = addDays(startOfTomorrow, minDays - 1);
 
     if (isBefore(date, earliestDate)) {
       return {
         isValid: false,
-        error: isSameCity
+        error: sameCity
           ? "Untuk pengiriman produk, pemesanan dapat dilakukan mulai besok untuk memastikan pengiriman produk"
           : "Untuk pengiriman produk ke luar kota, pemesanan dapat dilakukan minimal 3 hari dari sekarang untuk memastikan pengiriman produk"
       };
@@ -761,6 +808,14 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
   const [needsShipping, setNeedsShipping] = useState<ShippingOption | null>(null);
   const [clientLocation, setClientLocation] = useState<string>('');
 
+  // Canonical city + bookability, derived once so every branch below agrees.
+  const streamerCity = streamerCityValue(streamer);
+  const isBookable = isStreamerBookable(streamer);
+  const isSameCityAsClient = isSameCity(clientLocation, streamerCity);
+  // Rows created before usernames existed have none; linking to `/undefined`
+  // renders a dead 404, so the link must simply not be there.
+  const profileHref = streamer.username ? `/${streamer.username}` : null;
+
   // Add new state for active bulk selection mode
   const [activeBulkMode, setActiveBulkMode] = useState<'week' | 'twoWeeks' | 'month' | null>(null);
   const [isSummaryExpanded, setIsSummaryExpanded] = useState(true);
@@ -853,6 +908,17 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
 
   // Prefetch data for better UX
   const openBookingModal = () => {
+    // Second line of defence behind the disabled button: an unapproved streamer
+    // must never reach the booking flow, whichever surface rendered this card.
+    if (!isBookable) {
+      toast.error(UNVERIFIED_BOOKING_MESSAGE, {
+        duration: 4000,
+        position: 'top-center',
+        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+      });
+      return;
+    }
+
     // Refresh all booking data before opening modal
     refreshBookingData();
     
@@ -928,16 +994,22 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
     const fetchClientLocation = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       if (user) {
+        // `users` is the profile table in this schema. This used to read a
+        // `profiles` table that does not exist, so the query silently returned
+        // nothing and every booking — same city or not — was charged the
+        // out-of-town 3-day shipping lead time.
         const { data: profile } = await supabase
-          .from('profiles')
-          .select('location')
+          .from('users')
+          .select('location, city_slug')
           .eq('id', user.id)
           .single();
-        
-        if (profile?.location) {
-          setClientLocation(profile.location);
+
+        // Prefer the canonical slug; fall back to the legacy free-text value.
+        const location = profile?.city_slug || profile?.location;
+        if (location) {
+          setClientLocation(location);
         }
       }
     };
@@ -1263,7 +1335,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
       date,
       needsShipping as ShippingOption,
       clientLocation,
-      streamer.location
+      streamerCity
     );
 
     if (!dateValidation.isValid) {
@@ -1324,6 +1396,16 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
   // Update handleBooking to handle multi-day bookings
   const handleBooking = () => {
     if (!selectedDates.size) return;
+    // Last gate before the payment flow, in case the modal was already open
+    // when the streamer's verification was revoked.
+    if (!isBookable) {
+      toast.error(UNVERIFIED_BOOKING_MESSAGE, {
+        duration: 4000,
+        position: 'top-center',
+        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+      });
+      return;
+    }
 
     const bookingsData = Array.from(selectedDates.entries()).map(([dateKey, dateInfo]) => {
       // Group consecutive hours into time ranges
@@ -1436,10 +1518,10 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
     const startOfTomorrow = startOfDay(addDays(new Date(), 1));
     
     if (needsShipping === 'no') return startOfTomorrow;
-    
-    // If shipping is needed, check locations
-    const isSameCity = clientLocation.toLowerCase() === streamer.location.toLowerCase();
-    const daysToAdd = isSameCity ? 0 : 2; // Subtract 1 from previous values since we're starting from tomorrow
+
+    // If shipping is needed, check locations. Must stay in step with
+    // validateDateRestrictions: same city -> tomorrow, otherwise 3 days out.
+    const daysToAdd = isSameCity(clientLocation, streamerCity) ? 0 : 2; // Subtract 1 from previous values since we're starting from tomorrow
     return addDays(startOfTomorrow, daysToAdd);
   };
 
@@ -1557,7 +1639,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
       dates,
       needsShipping as ShippingOption,
       clientLocation,
-      streamer.location
+      streamerCity
     );
 
     if (validDates.length === 0) {
@@ -1809,6 +1891,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
               <h3 className="text-base font-medium text-gray-900">
                 {formatName(streamer.first_name, streamer.last_name)}
               </h3>
+              <VerificationBadge status={streamer.verification_status} showLabel={false} />
               <div className="flex gap-1">
                 {normalizePlatforms(streamer).map((platform) => (
                   <div
@@ -1885,21 +1968,36 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             ))}
           </div>
 
+          {/* Verification notice — the brand needs to know why booking is off */}
+          {!isBookable && (
+            <div className="mb-3 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 px-2.5 py-2">
+              <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-yellow-600" />
+              <p className="text-[11px] leading-snug text-yellow-800">
+                Profil ini sedang ditinjau tim Salda dan belum bisa dibooking.
+              </p>
+            </div>
+          )}
+
           {/* Buttons */}
-          <div 
-            className="flex gap-2" 
+          <div
+            className="flex gap-2"
             onClick={(e) => e.stopPropagation()}
           >
-            <Button 
-              className="flex-1 text-xs py-2 text-white max-w-[85%] 
-                bg-gradient-to-r from-[#1e40af] to-[#6b21a8] hover:from-[#1e3a8a] hover:to-[#581c87]
-                transition-optimized"
+            <Button
+              className={cn(
+                "flex-1 text-xs py-2 text-white max-w-[85%] transition-optimized",
+                isBookable
+                  ? "bg-gradient-to-r from-[#1e40af] to-[#6b21a8] hover:from-[#1e3a8a] hover:to-[#581c87]"
+                  : "bg-gray-300 hover:bg-gray-300 cursor-not-allowed"
+              )}
+              disabled={!isBookable}
+              title={isBookable ? undefined : UNVERIFIED_BOOKING_MESSAGE}
               onClick={(e) => {
                 e.stopPropagation();
                 openBookingModal();
               }}
             >
-              Book Livestreamer
+              {isBookable ? 'Book Livestreamer' : 'Menunggu Verifikasi'}
             </Button>
             <Button
               variant="outline"
@@ -2051,7 +2149,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                             <div className="space-y-1">
                               <p className="font-medium">Pengiriman Diperlukan</p>
                               <p className="text-sm text-blue-600">
-                                {clientLocation.toLowerCase() === streamer.location.toLowerCase()
+                                {isSameCityAsClient
                                   ? "Pemesanan dapat dilakukan mulai besok untuk memastikan pengiriman produk"
                                   : "Pemesanan dapat dilakukan minimal 3 hari dari sekarang untuk memastikan pengiriman produk"
                                 }
@@ -2175,7 +2273,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                             date,
                             needsShipping as ShippingOption,
                             clientLocation,
-                            streamer.location
+                            streamerCity
                           );
                           return dateValidation.isValid;
                         }}
@@ -2596,10 +2694,22 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                     <div className="flex-1 space-y-4">
                       {/* Name and Title */}
                       <div className="border-b border-blue-200 pb-3">
-                        <h2 className="text-xl font-semibold text-blue-900">
-                          {formatName(streamer.first_name, streamer.last_name)}
-                        </h2>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-xl font-semibold text-blue-900">
+                            {formatName(streamer.first_name, streamer.last_name)}
+                          </h2>
+                          <VerificationBadge status={streamer.verification_status} />
+                        </div>
                         <p className="text-sm text-blue-600 font-medium">Professional Livestreamer</p>
+                        {/* Only rendered when the streamer actually has a handle */}
+                        {profileHref && (
+                          <a
+                            href={profileHref}
+                            className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+                          >
+                            Lihat halaman profil &rarr;
+                          </a>
+                        )}
                       </div>
 
                       {/* Info Grid - Redesigned for better desktop view */}
