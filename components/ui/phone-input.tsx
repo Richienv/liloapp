@@ -120,6 +120,11 @@ export function PhoneInput({
         />
       </div>
 
+      {/* Carries the canonical E.164 value for native form submissions. */}
+      {name && (
+        <input type="hidden" name={name} value={normalizePhone(value) ?? ""} />
+      )}
+
       {showError || showEmptyError ? (
         <p id={errorId} className="flex items-center gap-2 text-sm text-red-600">
           <AlertCircle className="h-4 w-4 flex-shrink-0" />
