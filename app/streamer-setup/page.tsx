@@ -147,7 +147,8 @@ export default async function StreamerSetupHubPage() {
 
   // Only worth saying once the profile is publishable: before that the host has
   // a more pressing thing to do, and the seeding has not been attempted yet.
-  const showScheduleWarning = milestones[0].done && !hasSchedule;
+  const publishDone = milestones.some((m) => m.id === "publish" && m.done);
+  const showScheduleWarning = publishDone && !hasSchedule;
 
   return (
     <Shell>

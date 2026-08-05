@@ -1,3 +1,4 @@
+import { absoluteUrl } from '@/lib/site'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/server'
@@ -119,7 +120,10 @@ export async function generateMetadata({ params }: { params: { username: string 
       images: streamer.profile_picture_url ? [{ url: streamer.profile_picture_url }] : defaultMetadata.openGraph?.images,
     },
     alternates: {
-      canonical: `https://salda.id/${streamer.username}`,
+      // Encoded to match the JSON-LD `url` in streamer-rich-data.tsx exactly.
+      // A canonical and a structured-data URL that disagree for the same page is
+      // a contradiction Google resolves by trusting neither.
+      canonical: absoluteUrl(`/${encodeURIComponent(streamer.username)}`),
     }
   }
 }

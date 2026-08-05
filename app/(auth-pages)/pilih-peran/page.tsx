@@ -155,6 +155,21 @@ export default function RolePicker() {
     // is recycled. The `role` key comes from the hidden input in the form.
     const formData = new FormData(event.currentTarget);
 
+    // A brand still owes us a city. Nothing is written yet; this only moves the
+    // screen on, so backing out costs nothing.
+    if (role === "client" && step === "choose") {
+      setError(null);
+      setStep("client-city");
+      return;
+    }
+
+    // Mirrors the server's check so a missed pick costs no round trip. The
+    // server re-validates: this is a hint, not the rule.
+    if (role === "client" && !citySlug) {
+      setError("Pilih kota brand kamu dari daftar.");
+      return;
+    }
+
     setError(null);
     setPendingRole(role);
 
@@ -207,6 +222,102 @@ export default function RolePicker() {
 
   const busy = pendingRole !== null || status === "leaving";
 
+  // Step two, brands only: one field, then straight into the marketplace.
+  if (step === "client-city") {
+    return (
+      <div className="w-full max-w-[560px]">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+          <div className="p-8">
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setStep("choose");
+              }}
+              disabled={busy}
+              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-600
+                transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali
+            </button>
+
+            <div className="mb-6">
+              <p className="text-sm font-medium text-blue-600">Satu langkah lagi</p>
+              <h1 className="mt-2 text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Brand kamu ada di kota mana?
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Kami pakai ini untuk menghitung perkiraan pengiriman produk ke host.
+                Tanpa kota, setiap pesanan otomatis dihitung kirim luar kota dan kamu
+                harus memesan 3 hari lebih awal — walaupun host-nya satu kota denganmu.
+              </p>
+            </div>
+
+            {/* Above the submit button, like everywhere else in the flow. */}
+            {error && (
+              <div className="mb-5">
+                <FormMessage message={{ error }} className="max-w-none" />
+              </div>
+            )}
+
+            <form onSubmit={(event) => handleSubmit(event, "client")}>
+              <input type="hidden" name="role" value="client" />
+
+              <label
+                htmlFor="client-city"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Kota
+              </label>
+              {/* `name` makes the combobox emit a hidden input, so the slug is in
+                  the FormData this form submits without any manual wiring. */}
+              <CityCombobox
+                id="client-city"
+                name="city_slug"
+                value={citySlug}
+                onChange={(slug) => {
+                  setError(null);
+                  setCitySlug(slug);
+                }}
+                disabled={busy}
+                placeholder="Pilih kota brand kamu"
+                aria-describedby="client-city-help"
+                aria-invalid={Boolean(error) && !citySlug}
+              />
+              <p id="client-city-help" className="mt-2 text-sm text-gray-500">
+                Bisa diubah kapan saja lewat pengaturan akun.
+              </p>
+
+              <button
+                type="submit"
+                disabled={busy}
+                aria-busy={pendingRole === "client"}
+                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl
+                  bg-gradient-to-r from-blue-600 to-indigo-600 px-5 font-medium text-white
+                  transition-all hover:from-blue-700 hover:to-indigo-700
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100
+                  disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pendingRole === "client" || status === "leaving" ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Menyimpan…
+                  </>
+                ) : (
+                  <>
+                    Mulai cari host
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const cards: Array<{
     role: UserRole;
     title: string;
@@ -217,7 +328,7 @@ export default function RolePicker() {
       role: "client",
       title: "Cari host untuk brand saya",
       outcome:
-        "Berikutnya: lengkapi profil brand singkat, lalu kamu langsung bisa menelusuri dan membooking host.",
+        "Berikutnya: pilih kota brand kamu, lalu kamu langsung bisa menelusuri dan membooking host.",
       Icon: Search,
     },
     {

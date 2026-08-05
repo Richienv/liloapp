@@ -173,14 +173,15 @@ async function requireStreamerContext() {
 /**
  * Give a newly-published host a calendar a brand can actually click on.
  *
- * WHY THIS RATHER THAN A FOURTH MILESTONE. A fourth step would only produce a
- * schedule for the hosts who finish it — and a host who stops before it is
- * approved by an admin all the same, lands in the marketplace, and shows the
- * brand an entirely red calendar. That is the bug we are fixing, renamed. It
- * also re-adds a decision to a flow whose whole purpose was removing them, and
- * duplicates the write path /streamer-schedule already owns. Seeding at publish
- * time makes the invariant unconditional: finish setup, get a bookable calendar,
- * without knowing that /streamer-schedule exists.
+ * WHY THIS RATHER THAN A FOURTH MILESTONE. A fourth step only produces a
+ * schedule for the hosts who finish it. Nothing makes finishing it a condition
+ * of anything: a host who stops short is still approved by an admin, still
+ * lands in the marketplace, and still shows the brand an entirely red calendar.
+ * That is the bug we are fixing, renamed. It also re-adds a decision to a flow
+ * whose whole purpose was removing them, and duplicates the write path
+ * /streamer-schedule already owns. Seeding at publish time makes the invariant
+ * unconditional: finish setup, get a bookable calendar, without ever having to
+ * know that /streamer-schedule exists.
  *
  * The safety properties that make a default acceptable:
  *

@@ -586,9 +586,9 @@ export function ProfileForm({
             {ready
               ? // Honest: saving does not put the profile on Salda. Listing also
                 // needs an approved verification, which only an admin can give.
-                `Semua lengkap. Setelah disimpan, profil kamu siap ditinjau tim Salda — dan kami
-                 langsung menyiapkan jadwal awal ${DEFAULT_SCHEDULE_LABEL} yang bisa kamu ubah
-                 kapan saja di menu Jadwal.`
+                "Semua lengkap. Setelah disimpan, profil kamu siap ditinjau tim Salda, dan " +
+                `kami langsung menyiapkan jadwal awal ${DEFAULT_SCHEDULE_LABEL} — bisa kamu ` +
+                "ubah kapan saja di menu Jadwal."
               : `Tinggal lengkapi: ${missing.join(", ")}.`}
           </span>
         </p>
