@@ -278,7 +278,7 @@ Bank accounts a streamer can be paid out to. Separate from the streamers table b
 	•	bank_name (text, not null): Human-readable bank name.
 	•	account_number (text, not null): Account number.
 	•	account_holder_name (text, not null): Name on the account, checked against the bank before payout.
-	•	is_primary (boolean, not null, default true): The account used for automatic disbursement. A partial unique index (`idx_streamer_payout_accounts_one_primary`) guarantees at most ONE primary row per streamer, so a payout always has exactly one destination.
+	•	is_primary (boolean, not null, default FALSE): The account used for automatic disbursement. A partial unique index (`idx_streamer_payout_accounts_one_primary`) guarantees at most ONE primary row per streamer, so a payout always has exactly one destination. The default was `true` originally, which meant adding a SECOND account always failed on that index — rotating accounts is the case the table exists for. Migration `20260805140000` changed it to false: promoting an account is now an explicit act that must demote the current primary in the same transaction, and inserting before promoting is the order that does not trip the index.
 	•	verified_at (timestamptz): Set once the holder name has been confirmed against the bank. Should only ever be written server-side.
 	•	created_at / updated_at (timestamptz, not null): `updated_at` is stamped automatically by the `salda_set_updated_at` trigger.
 	•	RLS: enabled, nothing granted to `anon` — bank details must never be readable with the public browser key. A streamer has full CRUD on rows attached to their own streamer profile; admins read and update all.

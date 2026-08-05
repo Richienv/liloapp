@@ -66,7 +66,11 @@ export interface UseDraftResult {
   offerSavedAt: string | null;
   /** "kemarin 21:14" for the offered draft. */
   offerSavedAtLabel: string | null;
-  /** Queue a debounced save. Safe to call on every keystroke. */
+  /**
+   * Queue a debounced save. Safe to call on every keystroke, and a no-op while
+   * `offer` is still set — call `restore()` or `dismissOffer()` first, otherwise
+   * autosave stays paused.
+   */
   save: (data: DraftInput) => void;
   /** Write any queued save immediately (e.g. before navigating between steps). */
   flush: () => Promise<void>;

@@ -156,15 +156,21 @@ export async function PUT(request: NextRequest) {
   const data = sanitizeDraft(kind, payload.data);
   const updatedAt = new Date().toISOString();
 
-  const { error } = await supabase.from(TABLE).upsert(
-    {
-      user_id: user.id,
-      kind,
-      data,
-      updated_at: updatedAt,
-    },
-    { onConflict: "user_id" },
-  );
+  const { data: saved, error } = await supabase
+    .from(TABLE)
+    .upsert(
+      {
+        user_id: user.id,
+        kind,
+        data,
+        updated_at: updatedAt,
+      },
+      { onConflict: "user_id" },
+    )
+    // An update goes through the set_updated_at trigger, so the row's stamp is
+    // the authoritative one; read it back rather than reporting our own guess.
+    .select("updated_at")
+    .maybeSingle();
 
   if (error) {
     console.error("[drafts] write failed", error);
@@ -174,7 +180,7 @@ export async function PUT(request: NextRequest) {
   // Echo what was actually stored: the caller can see which fields were
   // dropped instead of assuming the whole form is safely on the server.
   return NextResponse.json(
-    { ok: true, kind, data, updatedAt },
+    { ok: true, kind, data, updatedAt: saved?.updated_at ?? updatedAt },
     { headers: NO_STORE },
   );
 }

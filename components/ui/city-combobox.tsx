@@ -79,10 +79,7 @@ function decodeHeader(value: string | null | undefined): string {
  * Dropping the direction word lands them on the right registry entry.
  */
 function resolveEnglishCityName(name: string): City | null {
-  const stripped = name.replace(
-    /^(north|south|east|west|central)\s+/i,
-    "",
-  );
+  const stripped = name.replace(/^(north|south|east|west|central)\s+/i, "");
   return stripped === name ? null : resolveCity(stripped);
 }
 
@@ -93,10 +90,22 @@ function resolveEnglishCityName(name: string): City | null {
  * for the provinces above. Everything runs through `resolveCity()` so aliases
  * ("DKI", "Jogja", "Ujung Pandang") land on the same slug the picker emits.
  *
- * Note the module is `"use client"`: a Server Component cannot call this across
- * the boundary. There it is one line anyway —
- *   `resolveCity(headers().get("x-vercel-ip-city"))?.slug`
- * — or pass the raw header values into a client component and call this there.
+ * This module is `"use client"`, so a Server Component cannot call this across
+ * the boundary — it reads the headers and passes the raw values in:
+ *
+ *   // page.tsx (server)
+ *   const h = headers();
+ *   <SignupForm geo={{
+ *     city: h.get("x-vercel-ip-city"),
+ *     region: h.get("x-vercel-ip-country-region"),
+ *     country: h.get("x-vercel-ip-country"),
+ *   }} />
+ *
+ *   // signup-form.tsx (client)
+ *   <CityCombobox defaultSlug={cityDefaultFromGeo(geo)} ... />
+ *
+ * Locally and in preview the headers are simply absent, which returns undefined
+ * and leaves the field empty — the behaviour before this existed.
  */
 export function cityDefaultFromGeo(
   hint: GeoCityHint | null | undefined,
@@ -107,7 +116,8 @@ export function cityDefaultFromGeo(
   const country = decodeHeader(hint.country).toUpperCase();
   if (country && country !== "ID") return undefined;
 
-  const fromCity = resolveCity(decodeHeader(hint.city));
+  const cityName = decodeHeader(hint.city);
+  const fromCity = resolveCity(cityName) ?? resolveEnglishCityName(cityName);
   if (fromCity) return fromCity.slug;
 
   const region = decodeHeader(hint.region);
