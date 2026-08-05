@@ -347,7 +347,9 @@ export function locationMatchValues(city: City): string[] {
   for (const alias of city.aliases) {
     values.add(alias.replace(/\b\w/g, (ch) => ch.toUpperCase()));
   }
-  return [...values];
+  // Array.from rather than [...values]: tsconfig targets es5 without
+  // downlevelIteration, under which spreading a Set is a compile error.
+  return Array.from(values);
 }
 
 /**
