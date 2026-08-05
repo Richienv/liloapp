@@ -3,6 +3,7 @@
 import { signInAction } from "@/app/actions";
 import { FormMessage } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
+import { GoogleButton } from "@/components/ui/google-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -81,6 +82,29 @@ export default function Login({
                 Buat akun
               </Link>
             </p>
+          </div>
+
+          {/*
+            Google first: most people signing in here created the account with
+            it, and one tap beats remembering which password they used. It
+            renders its own failure message directly above itself, so the form's
+            FormMessage below stays about credentials only.
+          */}
+          <GoogleButton
+            label="Masuk dengan Google"
+            // The same deep link the form below carries, so choosing Google
+            // does not cost the user the page they were headed to.
+            redirectTo={redirectTo || undefined}
+            disabled={isSigningIn}
+          />
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-200" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-4 text-gray-500">atau</span>
+            </div>
           </div>
 
           {/*
@@ -191,14 +215,13 @@ export default function Login({
                 )}
               </Button>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-4 bg-white text-gray-500">atau</span>
-                </div>
-              </div>
+              {/*
+                A plain rule, not a second "atau": the only real either/or on
+                this page is Google vs. email, and labelling this separator the
+                same way read as a third way to sign in. What follows is
+                orientation, not a credential choice.
+              */}
+              <div className="border-t border-gray-200" />
 
               {/*
                 Discreet orientation for streamers, who used to look for a

@@ -1,47 +1,34 @@
 import { redirect } from "next/navigation";
-import { createClient } from "@/utils/supabase/server";
+import { getAdmin } from "@/lib/admin";
 import AdminShell from "./admin-shell";
 
 /**
  * Server-side gate for the entire /admin section.
  *
- * There is no admin role in the data model (user_type is only
- * 'client' | 'streamer'), so admin access is granted via an explicit
- * allowlist of email addresses in the ADMIN_EMAILS environment variable
- * (comma-separated). This is fail-closed: if ADMIN_EMAILS is unset or the
- * caller is not on the list, they are redirected away.
+ * The allowlist parse and the membership test used to live here, copy-pasted
+ * into `app/admin/actions.ts` and the verification queue as well. They are now
+ * in `lib/admin.ts` so that revoking access changes one file, and so that all
+ * three surfaces fail the same way.
  *
- * Set ADMIN_EMAILS in your environment, e.g.:
- *   ADMIN_EMAILS="owner@salda.id,ops@salda.id"
+ * Failure is uniform across every admin surface: `getAdmin()` returning null —
+ * whether that means "not signed in" or "signed in but not on the allowlist" —
+ * sends the caller to `/`. The signed-out case does not need a friendlier
+ * answer here: `utils/supabase/middleware.ts` lists `/admin` as a protected
+ * prefix and has already bounced anonymous requests to
+ * `/sign-in?redirect_to=...` at the edge, before this layout runs.
+ *
+ * This layout is not a security boundary for anything but page rendering. Every
+ * server action re-checks on its own, because a server action is a POST
+ * endpoint that never renders the layout.
  */
-function getAdminEmails(): string[] {
-  return (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const admin = await getAdmin();
 
-  // Not signed in -> send to sign-in (middleware also guards /admin, but this
-  // makes the server component self-sufficient).
-  if (!user) {
-    redirect("/sign-in?redirect_to=/admin");
-  }
-
-  const adminEmails = getAdminEmails();
-  const email = user.email?.toLowerCase();
-
-  if (!email || adminEmails.length === 0 || !adminEmails.includes(email)) {
-    // Authenticated but not an admin (or no allowlist configured) -> deny.
+  if (!admin) {
     redirect("/");
   }
 

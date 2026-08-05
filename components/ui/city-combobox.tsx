@@ -31,6 +31,82 @@ import {
 
 const RESULT_LIMIT = 8;
 
+/* -------------------------------------------------------------------------- */
+/* Geo default                                                                 */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * The geo headers Vercel puts on every request. Read them in a Server Component
+ * (`headers()`) and hand the result down — this component never reads headers
+ * or calls the network itself.
+ */
+export interface GeoCityHint {
+  /** `x-vercel-ip-city`, e.g. "Jakarta" or "Bandar%20Lampung". */
+  city?: string | null;
+  /** `x-vercel-ip-country-region`, an ISO-3166-2 subdivision code, e.g. "JK". */
+  region?: string | null;
+  /** `x-vercel-ip-country`, e.g. "ID". Anything else disables the guess. */
+  country?: string | null;
+}
+
+/**
+ * The handful of Indonesian subdivision codes where the province maps to
+ * exactly one city we serve. Everything wider than this ("Jawa Barat" could be
+ * Bandung, Bekasi, Depok, Bogor, Cirebon or Sukabumi) is deliberately left
+ * unguessed: a confident wrong default is worse than an empty field, because
+ * people accept defaults without reading them.
+ */
+const UNAMBIGUOUS_REGIONS: { [code: string]: string } = {
+  JK: "jakarta", // DKI Jakarta — the province is the city
+  YO: "yogyakarta", // DI Yogyakarta
+  BA: "denpasar", // Bali — the only Bali city in the registry
+};
+
+/** Header values arrive percent-encoded on some edges ("Bandar%20Lampung"). */
+function decodeHeader(value: string | null | undefined): string {
+  if (!value) return "";
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return value.trim();
+  }
+}
+
+/**
+ * Turn a Vercel geo hint into a city slug, or undefined when we cannot tell.
+ *
+ * City comes first because it is specific; the region code is only consulted
+ * for the provinces above. Everything runs through `resolveCity()` so aliases
+ * ("DKI", "Jogja", "Ujung Pandang") land on the same slug the picker emits.
+ *
+ * Note the module is `"use client"`: a Server Component cannot call this across
+ * the boundary. There it is one line anyway —
+ *   `resolveCity(headers().get("x-vercel-ip-city"))?.slug`
+ * — or pass the raw header values into a client component and call this there.
+ */
+export function cityDefaultFromGeo(
+  hint: GeoCityHint | null | undefined,
+): string | undefined {
+  if (!hint) return undefined;
+
+  // A visitor outside Indonesia gets no guess at all.
+  const country = decodeHeader(hint.country).toUpperCase();
+  if (country && country !== "ID") return undefined;
+
+  const fromCity = resolveCity(decodeHeader(hint.city));
+  if (fromCity) return fromCity.slug;
+
+  const region = decodeHeader(hint.region);
+  if (!region) return undefined;
+
+  // Some edges send the province name instead of the code; resolveCity()
+  // handles the ones that are also city aliases ("Bali", "Lampung").
+  const fromRegionName = resolveCity(region);
+  if (fromRegionName) return fromRegionName.slug;
+
+  return UNAMBIGUOUS_REGIONS[region.toUpperCase()];
+}
+
 export interface CityComboboxProps {
   /**
    * Canonical city slug. A legacy free-text value (e.g. "DKI Jakarta") is
@@ -39,6 +115,16 @@ export interface CityComboboxProps {
   value: string;
   /** Called with the canonical slug — never with free text. */
   onChange: (slug: string) => void;
+  /**
+   * City to pre-select when `value` is still empty, typically from
+   * {@link cityDefaultFromGeo}. Applied once, on mount, via `onChange`, so the
+   * field arrives filled in and editable instead of asking for something we can
+   * already guess — and a small note tells the user where the guess came from.
+   *
+   * Only pass this for a fresh form. A restored draft sets `value` itself and
+   * therefore always wins; a user's own pick clears the note.
+   */
+  defaultSlug?: string;
   id?: string;
   /**
    * When set, a hidden input carries the slug so a native form submission
@@ -58,6 +144,7 @@ export interface CityComboboxProps {
 export function CityCombobox({
   value,
   onChange,
+  defaultSlug,
   id,
   name,
   placeholder = "Pilih kota",
@@ -71,6 +158,8 @@ export function CityCombobox({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
   const [activeIndex, setActiveIndex] = React.useState(0);
+  /** True while the shown city is our guess and the user has not confirmed it. */
+  const [usedGeoDefault, setUsedGeoDefault] = React.useState(false);
 
   const searchRef = React.useRef<HTMLInputElement>(null);
   const listRef = React.useRef<HTMLUListElement>(null);
@@ -81,6 +170,31 @@ export function CityCombobox({
     () => getCityBySlug(value) ?? resolveCity(value),
     [value]
   );
+
+  // Kept in a ref so applying the default does not depend on the caller passing
+  // a stable onChange — inline arrows are the norm in these forms.
+  const onChangeRef = React.useRef(onChange);
+  onChangeRef.current = onChange;
+  const defaultAppliedRef = React.useRef(false);
+
+  // Pre-fill from the geo hint exactly once, and only into an empty field.
+  React.useEffect(() => {
+    if (defaultAppliedRef.current || disabled) return;
+
+    // Something is already selected (a restored draft, saved profile data, or
+    // the user). Never argue with it.
+    if (value) {
+      defaultAppliedRef.current = true;
+      return;
+    }
+
+    const guess = getCityBySlug(defaultSlug) ?? resolveCity(defaultSlug);
+    if (!guess) return;
+
+    defaultAppliedRef.current = true;
+    setUsedGeoDefault(true);
+    onChangeRef.current(guess.slug);
+  }, [defaultSlug, value, disabled]);
 
   const results = React.useMemo(
     () => searchCities(query, RESULT_LIMIT),
@@ -112,6 +226,8 @@ export function CityCombobox({
   };
 
   const select = (city: City) => {
+    // The user has now chosen for themselves; the "we guessed this" note goes.
+    setUsedGeoDefault(false);
     onChange(city.slug);
     setOpen(false);
   };
@@ -265,6 +381,14 @@ export function CityCombobox({
           )}
         </PopoverContent>
       </Popover>
+
+      {/* A guess we made for the user is stated out loud. Pre-filling silently
+          would put a city they never chose on their public profile. */}
+      {usedGeoDefault && selected && (
+        <p className="mt-2 text-sm text-gray-500">
+          Kami isi otomatis dari lokasimu. Ganti kalau tidak sesuai.
+        </p>
+      )}
 
       {name && <input type="hidden" name={name} value={selected?.slug ?? ""} />}
     </>
