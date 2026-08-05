@@ -175,6 +175,12 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
   // Draft autosave
   const [draftOffer, setDraftOffer] = useState<StreamerDraft | null>(null);
   const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+  /**
+   * Set once the account exists. Stops the pending autosave timer from writing
+   * the draft back after we cleared it, and stops a second submission during
+   * the redirect (the button re-enables in `finally` before navigation lands).
+   */
+  const submittedRef = useRef(false);
 
   const updateFormData = (step: string, field: string, value: any) => {
     setFormData(prev => ({
@@ -217,7 +223,7 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
   // Debounced save of the text fields. Skipped while the restore banner is up so
   // an untouched empty form cannot overwrite the draft we are offering back.
   useEffect(() => {
-    if (draftOffer) return;
+    if (draftOffer || submittedRef.current) return;
 
     const { image, gallery, ...profileText } = formData.profile;
     const hasContent =
@@ -228,6 +234,7 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
     if (!hasContent) return;
 
     const timer = setTimeout(() => {
+      if (submittedRef.current) return;
       try {
         const draft: StreamerDraft = {
           savedAt: new Date().toISOString(),
@@ -401,36 +408,36 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
       case 3: // Profile
         const { image, platforms, categories, price, gender, age, experience } = formData.profile;
         if (!image) {
-          setError('Please upload a profile image');
+          setError('Mohon unggah foto profil kamu');
           return false;
         }
         if (platforms.length === 0) {
-          setError('Please select at least one platform');
+          setError('Pilih minimal satu platform');
           return false;
         }
         if (categories.length === 0) {
-          setError('Please select at least one category');
+          setError('Pilih minimal satu kategori');
           return false;
         }
         if (!price) {
-          setError('Please enter your price per hour');
+          setError('Mohon isi tarif per jam kamu');
           return false;
         }
         if (!gender) {
-          setError('Please select your gender');
+          setError('Mohon pilih jenis kelamin');
           return false;
         }
         if (!age) {
-          setError('Please enter your age');
+          setError('Mohon isi umur kamu');
           return false;
         }
         const ageNum = parseInt(age);
         if (isNaN(ageNum) || ageNum < 18 || ageNum > 100) {
-          setError('Please enter a valid age between 18 and 100');
+          setError('Masukkan umur yang valid antara 18 dan 100');
           return false;
         }
         if (!experience) {
-          setError('Please select your experience level');
+          setError('Mohon pilih tingkat pengalaman kamu');
           return false;
         }
         break;
@@ -485,24 +492,25 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
 
   const validateFile = (file: File, type: 'image' | 'gallery'): string | null => {
     if (!file || file.size === 0) {
-      return type === 'image' ? 'Please select a profile image' : null;
+      return type === 'image' ? 'Mohon pilih foto profil' : null;
     }
     
     if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      return 'Only JPG, PNG and WebP images are allowed';
+      return 'Hanya file JPG, PNG, dan WebP yang diperbolehkan';
     }
     
     if (file.size > MAX_FILE_SIZE) {
-      return 'File size should not exceed 5MB';
+      return 'Ukuran file maksimal 5MB';
     }
     
     return null;
   };
 
   const handleSignUp = async () => {
-    // Guard the in-flight case as well as disabling the button: a double Enter
-    // press can fire twice before React re-renders the disabled state.
-    if (isSigningUp) return;
+    // Guard the in-flight and already-done cases as well as disabling the
+    // button: a double Enter press can fire twice before React re-renders the
+    // disabled state, and the redirect after success is not instant.
+    if (isSigningUp || submittedRef.current) return;
 
     // A restored draft cannot carry the photo, and the profile is unusable
     // without one — send the user back rather than failing server-side.
@@ -566,6 +574,7 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
 
       if (result.success && result.redirectTo) {
         // The account exists now, so the draft has served its purpose.
+        submittedRef.current = true;
         clearDraft();
         window.location.href = result.redirectTo;
       } else {
@@ -609,7 +618,7 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
 
     const remainingSlots = 5 - formData.profile.gallery.length;
     if (remainingSlots <= 0) {
-      setError('Maximum 5 photos allowed');
+      setError('Maksimal 5 foto');
       return;
     }
 
@@ -617,12 +626,12 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
     
     newFiles.forEach(file => {
       if (file.size > MAX_FILE_SIZE) {
-        setError('Each file must be less than 5MB');
+        setError('Setiap file maksimal 5MB');
         return;
       }
 
       if (!['image/jpeg', 'image/png'].includes(file.type)) {
-        setError('Only JPG and PNG files are allowed');
+        setError('Hanya file JPG dan PNG yang diperbolehkan');
         return;
       }
 
@@ -880,14 +889,15 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
     return (
       <div className="space-y-8">
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-gray-700 font-medium">Password</Label>
+          <Label htmlFor="password" className="text-gray-700 font-medium">Kata Sandi</Label>
           <div className="relative">
             <Input
+              id="password"
               type={showPassword ? "text" : "password"}
               name="password"
               value={formData.security.password}
               onChange={(e) => updateFormData('security', 'password', e.target.value)}
-              placeholder="Create a secure password"
+              placeholder="Buat kata sandi yang aman"
               minLength={6}
               required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
@@ -917,14 +927,15 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirm_password" className="text-gray-700 font-medium">Confirm Password</Label>
+          <Label htmlFor="confirm_password" className="text-gray-700 font-medium">Konfirmasi Kata Sandi</Label>
           <div className="relative">
             <Input
+              id="confirm_password"
               type={showConfirmPassword ? "text" : "password"}
               name="confirm_password"
               value={formData.security.confirm_password}
               onChange={(e) => updateFormData('security', 'confirm_password', e.target.value)}
-              placeholder="Confirm your password"
+              placeholder="Ulangi kata sandi kamu"
               minLength={6}
               required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
@@ -954,19 +965,19 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
         </div>
 
         <div className="p-4 rounded-xl bg-blue-50 border border-blue-100">
-          <h4 className="font-medium text-blue-800 mb-2">Password Requirements:</h4>
+          <h4 className="font-medium text-blue-800 mb-2">Syarat Kata Sandi:</h4>
           <ul className="space-y-1 text-sm text-blue-700">
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              Minimum 6 characters
+              Minimal 6 karakter
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              Mix of letters and numbers recommended
+              Disarankan kombinasi huruf dan angka
             </li>
             <li className="flex items-center gap-2">
               <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
-              Special characters add extra security
+              Karakter spesial menambah keamanan
             </li>
           </ul>
         </div>
@@ -1782,25 +1793,25 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
                 htmlFor="terms"
                 className="text-sm text-gray-600 leading-relaxed"
               >
-                I agree to the{" "}
+                Saya menyetujui{" "}
                 <Link 
                   href="/terms" 
                   className="text-blue-600 hover:text-blue-700 font-medium underline"
                   target="_blank"
                 >
-                  Terms of Service
+                  Syarat & Ketentuan
                 </Link>
-                {" "}and{" "}
+                {" "}dan{" "}
                 <Link 
                   href="/privacy-notice" 
                   className="text-blue-600 hover:text-blue-700 font-medium underline"
                   target="_blank"
                 >
-                  Privacy Policy
+                  Kebijakan Privasi
                 </Link>
               </label>
               <p className="text-xs text-gray-500">
-                By creating an account, you agree to our terms and conditions
+                Dengan membuat akun, kamu menyetujui syarat dan ketentuan kami
               </p>
             </div>
           </div>
@@ -1841,12 +1852,12 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
           <div className="px-5 py-8 sm:px-10 sm:py-12 overflow-y-auto">
             <div className="mb-8 sm:mb-12">
               <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
-                Become a Host
+                Daftar Jadi Host
               </h1>
               <p className="mt-2 sm:mt-3 text-gray-500">
-                Already have an account?{" "}
+                Sudah punya akun?{" "}
                 <Link href="/sign-in?type=streamer" className="text-blue-600 hover:text-blue-700 font-medium transition-colors">
-                  Sign in here
+                  Masuk di sini
                 </Link>
               </p>
             </div>

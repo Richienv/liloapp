@@ -72,6 +72,11 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
   const [error, setError] = useState<string | null>(null);
   const [showPhoneError, setShowPhoneError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /**
+   * Set once the account exists. The button re-enables in `finally` before the
+   * redirect lands, so this stops a second submission slipping through.
+   */
+  const submittedRef = useRef(false);
 
   // Add state for password
   const [showPassword, setShowPassword] = useState(false);
@@ -229,6 +234,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
           <div className="space-y-2">
             <Label htmlFor="first_name" className="text-gray-700 font-medium">Nama Depan</Label>
             <Input 
+              id="first_name"
               name="first_name"
               value={formData.basicInfo.first_name}
               onChange={(e) => updateFormData('basicInfo', 'first_name', e.target.value)}
@@ -241,6 +247,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
           <div className="space-y-2">
             <Label htmlFor="last_name" className="text-gray-700 font-medium">Nama Belakang</Label>
             <Input 
+              id="last_name"
               name="last_name"
               value={formData.basicInfo.last_name}
               onChange={(e) => updateFormData('basicInfo', 'last_name', e.target.value)}
@@ -339,6 +346,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
           <Label htmlFor="password" className="text-gray-700 font-medium">Kata Sandi</Label>
           <div className="relative">
             <Input
+              id="password"
               type={showPassword ? "text" : "password"}
               name="password"
               value={formData.security.password}
@@ -376,6 +384,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
           <Label htmlFor="confirm_password" className="text-gray-700 font-medium">Konfirmasi Kata Sandi</Label>
           <div className="relative">
             <Input
+              id="confirm_password"
               type={showConfirmPassword ? "text" : "password"}
               name="confirm_password"
               value={formData.security.confirm_password}
@@ -680,9 +689,10 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
   };
 
   const handleSignUp = async () => {
-    // Guard the in-flight case as well as disabling the button: a double Enter
-    // press can fire twice before React re-renders the disabled state.
-    if (isSigningUp) return;
+    // Guard the in-flight and already-done cases as well as disabling the
+    // button: a double Enter press can fire twice before React re-renders the
+    // disabled state, and the redirect after success is not instant.
+    if (isSigningUp || submittedRef.current) return;
 
     try {
       setError(null);
@@ -714,6 +724,7 @@ export default function Signup({ searchParams }: { searchParams: Message }) {
       const result: SignUpResponse = await signUpAction(submitFormData);
       
       if (result.success && result.redirectTo) {
+        submittedRef.current = true;
         window.location.href = result.redirectTo;
       } else {
         setError(result.error || 'Terjadi kesalahan. Silakan coba lagi.');
