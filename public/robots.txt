@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: https://salda.id
-
-# Sitemaps
-Sitemap: https://salda.id/sitemap.xml

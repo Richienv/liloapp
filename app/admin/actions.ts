@@ -123,7 +123,6 @@ export async function approveStreamerVerification(formData: FormData) {
       status: "approved",
       reviewed_by: admin.user.id,
       reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .eq("id", submission.id);
 
@@ -189,7 +188,6 @@ export async function rejectStreamerVerification(formData: FormData) {
       notes: rejectionReason,
       reviewed_by: admin.user.id,
       reviewed_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
     })
     .eq("id", submission.id);
 

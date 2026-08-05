@@ -78,7 +78,7 @@ export function FormMessage({
   const resolved = resolve(message);
   if (!resolved) return null;
 
-  const { Icon, className: variantClass, iconClassName, role, srLabel } =
+  const { Icon, className: variantClass, role, srLabel } =
     VARIANTS[resolved.variant];
 
   return (
@@ -87,10 +87,7 @@ export function FormMessage({
       aria-live={role === "alert" ? "assertive" : "polite"}
       className={`flex w-full max-w-md items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm leading-snug ${variantClass} ${className}`}
     >
-      <Icon
-        aria-hidden="true"
-        className={`mt-px h-[18px] w-[18px] shrink-0 ${iconClassName}`}
-      />
+      <Icon aria-hidden="true" className="mt-px h-[18px] w-[18px] shrink-0" />
       <span className="min-w-0 break-words font-medium">
         <span className="sr-only">{srLabel} </span>
         {resolved.text}

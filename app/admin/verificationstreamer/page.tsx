@@ -66,7 +66,8 @@ interface SubmissionRow {
     is_active: boolean | null;
     rejection_reason: string | null;
   } | null;
-  user: {
+  /** Joined in application code, not by PostgREST — see the query below. */
+  user?: {
     id: string;
     email: string | null;
     phone: string | null;
@@ -179,7 +180,7 @@ export default async function StreamerVerificationPage({
       status,
       notes,
       created_at,
-      streamer:streamers!streamer_verification_submissions_streamer_id_fkey (
+      streamer:streamers (
         id,
         first_name,
         last_name,
@@ -190,11 +191,6 @@ export default async function StreamerVerificationPage({
         verification_status,
         is_active,
         rejection_reason
-      ),
-      user:users!streamer_verification_submissions_user_id_fkey (
-        id,
-        email,
-        phone
       )
     `
     )
@@ -205,9 +201,27 @@ export default async function StreamerVerificationPage({
   }
 
   const { data, error } = await submissionsQuery;
+  const rows = (data ?? []) as unknown as SubmissionRow[];
 
-  const submissions = ((data ?? []) as unknown as SubmissionRow[]).filter(
-    (submission) => {
+  // `user_id` is a foreign key into auth.users, so PostgREST cannot embed the
+  // public.users profile row through it. The two tables share the same uuid, so
+  // the contact details are fetched in one extra round trip and joined here.
+  const userIds = Array.from(
+    new Set(rows.map((row) => row.user_id).filter((id): id is string => Boolean(id)))
+  );
+  const { data: profiles } = userIds.length
+    ? await db.from("users").select("id, email, phone").in("id", userIds)
+    : { data: [] as { id: string; email: string | null; phone: string | null }[] };
+  const profilesById = new Map(
+    (profiles ?? []).map((profile) => [profile.id, profile])
+  );
+
+  const submissions = rows
+    .map((row) => ({
+      ...row,
+      user: (row.user_id ? profilesById.get(row.user_id) : null) ?? null,
+    }))
+    .filter((submission) => {
       if (!query) return true;
       const haystack = [
         fullName(submission.streamer),
@@ -219,8 +233,7 @@ export default async function StreamerVerificationPage({
         .join(" ")
         .toLowerCase();
       return haystack.includes(query.toLowerCase());
-    }
-  );
+    });
 
   // Sign every document up front so each row can render its links directly.
   const documents = await Promise.all(

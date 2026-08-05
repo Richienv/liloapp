@@ -1396,6 +1396,16 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
   // Update handleBooking to handle multi-day bookings
   const handleBooking = () => {
     if (!selectedDates.size) return;
+    // Last gate before the payment flow, in case the modal was already open
+    // when the streamer's verification was revoked.
+    if (!isBookable) {
+      toast.error(UNVERIFIED_BOOKING_MESSAGE, {
+        duration: 4000,
+        position: 'top-center',
+        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+      });
+      return;
+    }
 
     const bookingsData = Array.from(selectedDates.entries()).map(([dateKey, dateInfo]) => {
       // Group consecutive hours into time ranges

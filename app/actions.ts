@@ -28,6 +28,13 @@ function sanitizeFileName(fileName: string): string {
 const GENERIC_ERROR_MESSAGE = "Terjadi kesalahan. Silakan coba lagi.";
 
 /**
+ * Throwaway origin used only to resolve a post-sign-in redirect path. The host
+ * is deliberately unreachable (.invalid is reserved by RFC 2606), so a value
+ * that escapes this origin during parsing is self-evidently not our path.
+ */
+const SAFE_REDIRECT_BASE = "https://redirect-base.invalid";
+
+/**
  * Supabase reports auth failures as English strings written for developers.
  * Showing them verbatim in an Indonesian product is both untranslated and
  * unhelpful — "Invalid login credentials" reads as a system fault rather than a
@@ -104,10 +111,24 @@ function toFriendlyError(error: unknown): string {
  */
 function safeRedirectPath(raw: FormDataEntryValue | null): string | null {
   if (typeof raw !== "string") return null;
-  const path = raw.trim();
-  if (!path.startsWith("/")) return null;
-  if (path.startsWith("//") || path.startsWith("/\\")) return null;
-  return path;
+  const candidate = raw.trim();
+  if (!candidate.startsWith("/")) return null;
+
+  // Resolve against a throwaway origin instead of pattern-matching the string.
+  // A prefix check on "//" and "/\" looks sufficient but isn't: browsers strip
+  // tab, CR and LF from a URL before resolving it, so "/\t/evil.example" passes
+  // every string test and *then* becomes "//evil.example" — protocol-relative,
+  // and our login is an open redirect. URL parsing applies the same WHATWG
+  // rules the browser will, so anything that escapes our origin fails here too.
+  let url: URL;
+  try {
+    url = new URL(candidate, SAFE_REDIRECT_BASE);
+  } catch {
+    return null;
+  }
+  if (url.origin !== SAFE_REDIRECT_BASE) return null;
+
+  return `${url.pathname}${url.search}${url.hash}`;
 }
 
 export interface StreamerProfileResponse {
@@ -273,15 +294,20 @@ async function signInWithPassword(formData: FormData) {
     password,
   });
 
+  // Hand the email and the pending deep link back on every failure path, so a
+  // wrong password costs the user one field instead of retyping the form and
+  // losing wherever they were originally headed.
+  const retryParams = { email, redirect_to: requestedPath };
+
   if (error) {
     console.error("Sign-in error:", error);
-    return encodedRedirect("error", "/sign-in", translateAuthError(error));
+    return encodedRedirect("error", "/sign-in", translateAuthError(error), retryParams);
   }
 
   // Defensive: a non-error response without a user means the session is unusable.
   if (!data.user) {
     console.error("Sign-in returned no user for", email);
-    return encodedRedirect("error", "/sign-in", GENERIC_ERROR_MESSAGE);
+    return encodedRedirect("error", "/sign-in", GENERIC_ERROR_MESSAGE, retryParams);
   }
 
   const { data: userData, error: userError } = await supabase

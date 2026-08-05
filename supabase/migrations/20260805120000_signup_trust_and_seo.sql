@@ -47,10 +47,17 @@
 -- bypasses RLS entirely and does not depend on this setting.
 -- ============================================================================
 
+-- security definer on purpose: this runs inside RLS policies, so it must not
+-- depend on the caller holding privileges on the auth schema. If it raised
+-- "permission denied for schema auth" instead of returning false, every policy
+-- that calls it would error out and a streamer would lose access to their own
+-- rows. It reads no tables and takes no arguments, so there is nothing an
+-- attacker can steer.
 create or replace function public.is_admin()
 returns boolean
 language sql
 stable
+security definer
 set search_path = ''
 as $$
   select exists (
