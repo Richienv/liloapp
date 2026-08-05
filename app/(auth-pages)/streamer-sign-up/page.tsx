@@ -1,27 +1,44 @@
 "use client";
 
-import { streamerSignUpAction } from "@/app/actions";
+import { checkUsernameAvailability, streamerSignUpAction } from "@/app/actions";
 import { FormMessage, Message } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { CityCombobox } from "@/components/ui/city-combobox";
+import { PhoneInput } from "@/components/ui/phone-input";
 import Link from "next/link";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
-import { Info, ArrowLeft, ArrowRight, Youtube, HelpCircle } from 'lucide-react';
+import { Info, ArrowLeft, ArrowRight, Youtube, HelpCircle, Check, AlertCircle, Loader2, Save, RotateCcw, X } from 'lucide-react';
 import { StreamerCard, Streamer } from "@/components/streamer-card";
 import { motion } from "framer-motion";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SignUpResponse } from "@/app/types/auth";
-import { createClient } from "@/utils/supabase/client";
+import { getCityBySlug } from "@/lib/cities";
+import { formatPhoneLocal, isValidPhone, normalizePhone, PHONE_INVALID_MESSAGE } from "@/lib/phone";
+import { suggestUsername, USERNAME_MAX, validateUsername } from "@/lib/username";
 
 const platforms = ["TikTok", "Shopee"];
 const categories = ["Fashion", "Technology", "Beauty", "Gaming", "Cooking", "Fitness", "Music", "Others"];
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const TOTAL_STEPS = 6;
+
+/**
+ * Draft autosave. This form asks ~19 fields plus a photo, a video link and a
+ * portfolio — 30-60 minutes of work that used to be lost to a refresh, a dead
+ * battery or a stray Enter keypress. Text is snapshotted to localStorage;
+ * File objects cannot be serialised, so photos are always re-uploaded.
+ */
+const DRAFT_STORAGE_KEY = "salda:streamer-signup-draft:v1";
+const DRAFT_SAVE_DELAY_MS = 800;
+/** Long enough that we aren't querying on every keystroke, short enough to feel live. */
+const USERNAME_CHECK_DELAY_MS = 500;
 
 interface GalleryImage {
   file: File;
@@ -33,6 +50,8 @@ interface FormData {
     first_name: string;
     last_name: string;
     email: string;
+    username: string;
+    phone: string;
     city: string;
     full_address: string;
   };
@@ -54,6 +73,51 @@ interface FormData {
   };
 }
 
+/** Text-only snapshot of the form. Password is deliberately never persisted. */
+interface StreamerDraft {
+  savedAt: string;
+  step: number;
+  basicInfo: FormData["basicInfo"];
+  profile: Omit<FormData["profile"], "image" | "gallery">;
+}
+
+type UsernameStatus =
+  | "idle"
+  | "checking"
+  | "available"
+  | "taken"
+  | "invalid"
+  | "error";
+
+/**
+ * Keep what the user is typing, only dropping characters a username can never
+ * contain. Deliberately *not* slugifyUsername(): that trims trailing separators,
+ * which makes "rizky-pratama" impossible to type. validateUsername() reports the
+ * leftover problems in Indonesian instead.
+ */
+/** "14:05" / "kemarin 14:05" style stamp for the autosave notice. */
+function formatDraftTime(iso: string): string {
+  const saved = new Date(iso);
+  if (Number.isNaN(saved.getTime())) return "beberapa saat lalu";
+
+  const time = saved.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const isToday = saved.toDateString() === new Date().toDateString();
+  if (isToday) return `hari ini ${time}`;
+
+  return `${saved.toLocaleDateString("id-ID", { day: "numeric", month: "short" })} ${time}`;
+}
+
+function sanitizeUsernameInput(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9_-]/g, "")
+    .slice(0, USERNAME_MAX);
+}
+
 export default function StreamerSignUp({ searchParams }: { searchParams: Message }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -62,6 +126,8 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
       first_name: '',
       last_name: '',
       email: '',
+      username: '',
+      phone: '',
       city: '',
       full_address: '',
     },
@@ -95,6 +161,21 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Username: this is the streamer's whole public profile URL (/[username]).
+  // It was never asked for before, which is why public profiles 404'd.
+  const [usernameStatus, setUsernameStatus] = useState<UsernameStatus>('idle');
+  const [usernameMessage, setUsernameMessage] = useState<string | null>(null);
+  const [usernameSuggestion, setUsernameSuggestion] = useState<string | null>(null);
+  const usernameEditedRef = useRef(false);
+  // Guards against a slow earlier request overwriting a newer answer.
+  const usernameCheckSeq = useRef(0);
+
+  const [showPhoneError, setShowPhoneError] = useState(false);
+
+  // Draft autosave
+  const [draftOffer, setDraftOffer] = useState<StreamerDraft | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<string | null>(null);
+
   const updateFormData = (step: string, field: string, value: any) => {
     setFormData(prev => ({
       ...prev,
@@ -105,38 +186,218 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
     }));
   };
 
+  const clearDraft = useCallback(() => {
+    try {
+      window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch {
+      // Private mode / disabled storage: autosave is best-effort by design.
+    }
+    setDraftSavedAt(null);
+  }, []);
+
+  // Offer any saved draft on mount rather than silently replacing what the user
+  // sees — they may have deliberately started over.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as StreamerDraft;
+      if (parsed && parsed.basicInfo && parsed.profile) {
+        setDraftOffer(parsed);
+      }
+    } catch {
+      try {
+        window.localStorage.removeItem(DRAFT_STORAGE_KEY);
+      } catch {
+        /* nothing else to do */
+      }
+    }
+  }, []);
+
+  // Debounced save of the text fields. Skipped while the restore banner is up so
+  // an untouched empty form cannot overwrite the draft we are offering back.
+  useEffect(() => {
+    if (draftOffer) return;
+
+    const { image, gallery, ...profileText } = formData.profile;
+    const hasContent =
+      Object.values(formData.basicInfo).some((value) => value !== '') ||
+      Object.values(profileText).some((value) =>
+        Array.isArray(value) ? value.length > 0 : value !== ''
+      );
+    if (!hasContent) return;
+
+    const timer = setTimeout(() => {
+      try {
+        const draft: StreamerDraft = {
+          savedAt: new Date().toISOString(),
+          step: currentStep,
+          basicInfo: formData.basicInfo,
+          profile: profileText,
+        };
+        window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+        setDraftSavedAt(draft.savedAt);
+      } catch {
+        // Quota exceeded or storage blocked — never break the form over it.
+      }
+    }, DRAFT_SAVE_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [formData.basicInfo, formData.profile, currentStep, draftOffer]);
+
+  const restoreDraft = () => {
+    if (!draftOffer) return;
+    setFormData(prev => ({
+      ...prev,
+      basicInfo: { ...prev.basicInfo, ...draftOffer.basicInfo },
+      profile: { ...prev.profile, ...draftOffer.profile },
+    }));
+    // A restored username was chosen deliberately; don't overwrite it with a
+    // fresh name-based suggestion.
+    if (draftOffer.basicInfo?.username) usernameEditedRef.current = true;
+    // Photos can't be restored, so never drop the user past the photo step.
+    setCurrentStep(Math.min(Math.max(draftOffer.step ?? 1, 1), 3));
+    setDraftSavedAt(draftOffer.savedAt);
+    setDraftOffer(null);
+  };
+
+  const discardDraft = () => {
+    clearDraft();
+    setDraftOffer(null);
+  };
+
+  // Suggest a username from the name, until the user edits it themselves.
+  useEffect(() => {
+    if (usernameEditedRef.current) return;
+    const { first_name, last_name } = formData.basicInfo;
+    if (!first_name && !last_name) return;
+
+    const suggested = suggestUsername(first_name, last_name);
+    setFormData(prev =>
+      prev.basicInfo.username === suggested
+        ? prev
+        : { ...prev, basicInfo: { ...prev.basicInfo, username: suggested } }
+    );
+  }, [formData.basicInfo.first_name, formData.basicInfo.last_name]);
+
+  // Debounced live availability check.
+  useEffect(() => {
+    const raw = formData.basicInfo.username.trim();
+    if (!raw) {
+      setUsernameStatus('idle');
+      setUsernameMessage(null);
+      setUsernameSuggestion(null);
+      return;
+    }
+
+    const validation = validateUsername(raw);
+    if (!validation.ok) {
+      setUsernameStatus('invalid');
+      setUsernameMessage(validation.reason);
+      setUsernameSuggestion(null);
+      return;
+    }
+
+    setUsernameStatus('checking');
+    setUsernameMessage(null);
+    const seq = ++usernameCheckSeq.current;
+
+    const timer = setTimeout(async () => {
+      try {
+        const result = await checkUsernameAvailability(validation.username);
+        if (seq !== usernameCheckSeq.current) return; // a newer keystroke won
+
+        if (result.error) {
+          setUsernameStatus('error');
+          setUsernameMessage('Gagal memeriksa username. Coba lagi sebentar.');
+          setUsernameSuggestion(null);
+          return;
+        }
+        if (result.available) {
+          setUsernameStatus('available');
+          setUsernameMessage(null);
+          setUsernameSuggestion(null);
+          return;
+        }
+        setUsernameStatus('taken');
+        setUsernameMessage('Username ini sudah dipakai. Pilih yang lain.');
+        setUsernameSuggestion(
+          (result as { suggestion?: string }).suggestion ?? null
+        );
+      } catch {
+        if (seq !== usernameCheckSeq.current) return;
+        setUsernameStatus('error');
+        setUsernameMessage('Gagal memeriksa username. Coba lagi sebentar.');
+        setUsernameSuggestion(null);
+      }
+    }, USERNAME_CHECK_DELAY_MS);
+
+    return () => clearTimeout(timer);
+  }, [formData.basicInfo.username]);
+
+  const handleUsernameChange = (raw: string) => {
+    usernameEditedRef.current = true;
+    updateFormData('basicInfo', 'username', sanitizeUsernameInput(raw));
+  };
+
   const validateStep = (step: number): boolean => {
     setError(null);
-    
+
     switch (step) {
       case 1: // Basic Info
-        const { first_name, last_name, email, city, full_address } = formData.basicInfo;
-        if (!first_name || !last_name || !email || !city || !full_address) {
-          setError('Please fill in all required fields');
+        const { first_name, last_name, email, username, phone, city, full_address } = formData.basicInfo;
+        if (!first_name || !last_name || !email) {
+          setError('Mohon lengkapi nama dan email kamu');
           return false;
         }
         if (!email.includes('@')) {
-          setError('Please enter a valid email address');
+          setError('Mohon masukkan alamat email yang valid');
+          return false;
+        }
+        const usernameCheck = validateUsername(username);
+        if (!usernameCheck.ok) {
+          setError(usernameCheck.reason);
+          return false;
+        }
+        if (usernameStatus === 'checking') {
+          setError('Tunggu sebentar, kami sedang memeriksa ketersediaan username.');
+          return false;
+        }
+        if (usernameStatus === 'taken') {
+          setError('Username ini sudah dipakai. Pilih username lain.');
+          return false;
+        }
+        if (!isValidPhone(phone)) {
+          setShowPhoneError(true);
+          setError(PHONE_INVALID_MESSAGE);
+          return false;
+        }
+        if (!getCityBySlug(city)) {
+          setError('Pilih kota kamu dari daftar yang tersedia');
+          return false;
+        }
+        if (!full_address) {
+          setError('Alamat lengkap wajib diisi untuk pengiriman produk dari brand');
           return false;
         }
         break;
-        
+
       case 2: // Security
         const { password, confirm_password } = formData.security;
         if (!password || !confirm_password) {
-          setError('Please fill in all required fields');
+          setError('Mohon lengkapi semua field yang diperlukan');
           return false;
         }
         if (password !== confirm_password) {
-          setError('Passwords do not match');
+          setError('Kata sandi tidak cocok');
           return false;
         }
         if (password.length < 6) {
-          setError('Password must be at least 6 characters long');
+          setError('Kata sandi minimal 6 karakter');
           return false;
         }
         break;
-        
+
       case 3: // Profile
         const { image, platforms, categories, price, gender, age, experience } = formData.profile;
         if (!image) {
@@ -188,12 +449,38 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 6));
+      setCurrentStep(prev => Math.min(prev + 1, TOTAL_STEPS));
     }
   };
 
   const handlePrevious = () => {
     setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  /**
+   * Enter used to submit this form natively, which navigated away and wiped up
+   * to an hour of typing. Enter now advances the step instead; on the last step
+   * it triggers the real signup, and inside a textarea it still types a newline.
+   */
+  const handleFormKeyDown = (event: React.KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== 'Enter' || event.shiftKey) return;
+
+    const target = event.target as HTMLElement | null;
+    if (!target) return;
+    if (target instanceof HTMLTextAreaElement) return;
+    const tag = target.tagName.toLowerCase();
+    // Buttons, links and Radix triggers need Enter to activate themselves.
+    if (tag === 'button' || tag === 'a' || tag === 'select') return;
+
+    event.preventDefault();
+
+    if (currentStep < TOTAL_STEPS) {
+      handleNext();
+      return;
+    }
+    if (acceptedTerms && !isSigningUp) {
+      handleSignUp();
+    }
   };
 
   const validateFile = (file: File, type: 'image' | 'gallery'): string | null => {
@@ -213,17 +500,33 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
   };
 
   const handleSignUp = async () => {
+    // Guard the in-flight case as well as disabling the button: a double Enter
+    // press can fire twice before React re-renders the disabled state.
+    if (isSigningUp) return;
+
+    // A restored draft cannot carry the photo, and the profile is unusable
+    // without one — send the user back rather than failing server-side.
+    if (!formData.profile.image) {
+      setError('Foto profil belum diunggah. Silakan unggah ulang di langkah 3.');
+      setCurrentStep(3);
+      return;
+    }
+
     try {
       setError(null);
       setIsSigningUp(true);
 
-      const supabase = createClient();
       const submitFormData = new FormData();
 
       // Add basic info
       submitFormData.append('first_name', formData.basicInfo.first_name);
       submitFormData.append('last_name', formData.basicInfo.last_name);
       submitFormData.append('email', formData.basicInfo.email);
+      // Public profile handle -> /[username]. Lowercased by validateUsername.
+      submitFormData.append('username', formData.basicInfo.username.trim().toLowerCase());
+      // Stored in canonical E.164 ("+62812...") so WhatsApp links always work.
+      submitFormData.append('phone', normalizePhone(formData.basicInfo.phone) ?? '');
+      // Canonical city slug from lib/cities, never free text.
       submitFormData.append('city', formData.basicInfo.city);
       submitFormData.append('full_address', formData.basicInfo.full_address);
 
@@ -260,16 +563,19 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
       submitFormData.append('experience', formData.profile.experience);
 
       const result: SignUpResponse = await streamerSignUpAction(submitFormData);
-      
+
       if (result.success && result.redirectTo) {
+        // The account exists now, so the draft has served its purpose.
+        clearDraft();
         window.location.href = result.redirectTo;
       } else {
-        setError(result.error || 'An unexpected error occurred');
+        setError(result.error || 'Terjadi kesalahan. Silakan coba lagi.');
       }
     } catch (error: any) {
       console.error('Sign up error:', error);
-      setError('An unexpected error occurred. Please try again.');
+      setError('Terjadi kesalahan tak terduga. Silakan coba lagi.');
     } finally {
+      // In `finally` so a thrown action never leaves the button permanently dead.
       setIsSigningUp(false);
     }
   };
@@ -388,10 +694,45 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
     );
   };
 
-  const handleCityInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Capitalize each word
-    const value = e.target.value.replace(/\b\w/g, (c) => c.toUpperCase());
-    updateFormData('basicInfo', 'city', value);
+  const renderUsernameStatus = () => {
+    switch (usernameStatus) {
+      case 'checking':
+        return (
+          <p className="flex items-center gap-2 text-sm text-gray-500">
+            <Loader2 className="h-4 w-4 flex-shrink-0 animate-spin" />
+            Memeriksa ketersediaan...
+          </p>
+        );
+      case 'available':
+        return (
+          <p className="flex items-center gap-2 text-sm text-green-600">
+            <Check className="h-4 w-4 flex-shrink-0" />
+            Username tersedia.
+          </p>
+        );
+      case 'invalid':
+      case 'taken':
+      case 'error':
+        return (
+          <div className="space-y-2">
+            <p className="flex items-start gap-2 text-sm text-red-600">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+              {usernameMessage}
+            </p>
+            {usernameSuggestion && (
+              <button
+                type="button"
+                onClick={() => handleUsernameChange(usernameSuggestion)}
+                className="text-sm font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
+              >
+                Pakai “{usernameSuggestion}” saja
+              </button>
+            )}
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   const renderBasicInfo = () => {
@@ -399,25 +740,27 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
       <div className="space-y-6">
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="first_name" className="text-gray-700 font-medium">First Name</Label>
-            <Input 
+            <Label htmlFor="first_name" className="text-gray-700 font-medium">Nama Depan</Label>
+            <Input
+              id="first_name"
               name="first_name"
               value={formData.basicInfo.first_name}
               onChange={(e) => updateFormData('basicInfo', 'first_name', e.target.value)}
-              placeholder="John" 
-              required 
+              placeholder="Rizky"
+              required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
                 transition-all duration-200 text-base rounded-xl"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="last_name" className="text-gray-700 font-medium">Last Name</Label>
-            <Input 
+            <Label htmlFor="last_name" className="text-gray-700 font-medium">Nama Belakang</Label>
+            <Input
+              id="last_name"
               name="last_name"
               value={formData.basicInfo.last_name}
               onChange={(e) => updateFormData('basicInfo', 'last_name', e.target.value)}
-              placeholder="Smith" 
-              required 
+              placeholder="Pratama"
+              required
               className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
                 transition-all duration-200 text-base rounded-xl"
             />
@@ -425,49 +768,108 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-gray-700 font-medium">Email Address</Label>
-          <Input 
+          <Label htmlFor="email" className="text-gray-700 font-medium">Alamat Email</Label>
+          <Input
+            id="email"
             name="email"
             type="email"
             value={formData.basicInfo.email}
             onChange={(e) => updateFormData('basicInfo', 'email', e.target.value)}
-            placeholder="you@example.com" 
-            required 
+            placeholder="kamu@contoh.com"
+            required
             className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
               transition-all duration-200 text-base rounded-xl"
           />
         </div>
 
+        {/* Username = the streamer's public profile URL. Chosen here because it
+            is the one thing that cannot be changed casually later. */}
         <div className="space-y-2">
-          <Label htmlFor="city" className="text-gray-700 font-medium">City</Label>
-          <Input 
-            name="city"
-            type="text"
-            value={formData.basicInfo.city}
-            onChange={handleCityInput}
-            placeholder="e.g. Jakarta" 
-            required 
-            className="h-12 bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
-              transition-all duration-200 text-base rounded-xl"
+          <Label htmlFor="username" className="text-gray-700 font-medium">Username</Label>
+          <p className="flex items-start gap-2 text-sm text-gray-500">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-500" />
+            Ini jadi alamat profil publik kamu yang dilihat brand. Pilih yang mudah diingat.
+          </p>
+          <div className="flex h-12 w-full items-center rounded-xl border border-gray-200 bg-gray-50
+            transition-all duration-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+            <span
+              aria-hidden="true"
+              className="flex h-full select-none items-center border-r border-gray-200 px-4 text-base text-gray-500"
+            >
+              salda.id/
+            </span>
+            <input
+              id="username"
+              name="username"
+              type="text"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              maxLength={USERNAME_MAX}
+              value={formData.basicInfo.username}
+              onChange={(e) => handleUsernameChange(e.target.value)}
+              placeholder="rizky-pratama"
+              required
+              aria-invalid={usernameStatus === 'invalid' || usernameStatus === 'taken'}
+              className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none
+                placeholder:text-gray-400"
+            />
+          </div>
+          {formData.basicInfo.username && (
+            <p className="text-sm text-gray-500">
+              Profil kamu:{" "}
+              <span className="font-medium text-gray-800">
+                salda.id/{formData.basicInfo.username}
+              </span>
+            </p>
+          )}
+          {renderUsernameStatus()}
+        </div>
+
+        {/* WhatsApp is the support and coordination channel, so this is required. */}
+        <div className="space-y-2">
+          <Label htmlFor="phone" className="text-gray-700 font-medium">Nomor WhatsApp</Label>
+          <PhoneInput
+            id="phone"
+            name="phone"
+            required
+            value={formData.basicInfo.phone}
+            onChange={(value) => {
+              setShowPhoneError(false);
+              updateFormData('basicInfo', 'phone', value);
+            }}
+            forceShowError={showPhoneError}
           />
-          <p className="text-sm text-gray-500 mt-2">
-            Examples: Jakarta, Bandung, Surabaya
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="city" className="text-gray-700 font-medium">Kota</Label>
+          <CityCombobox
+            id="city"
+            name="city"
+            value={formData.basicInfo.city}
+            onChange={(slug) => updateFormData('basicInfo', 'city', slug)}
+            placeholder="Pilih kota kamu"
+          />
+          <p className="mt-2 text-sm text-gray-500">
+            Dipakai brand untuk mencari host di kotanya dan untuk estimasi pengiriman produk.
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="full_address" className="text-gray-700 font-medium">Full Address</Label>
-          <Textarea 
+          <Label htmlFor="full_address" className="text-gray-700 font-medium">Alamat Lengkap</Label>
+          <Textarea
+            id="full_address"
             name="full_address"
             value={formData.basicInfo.full_address}
             onChange={(e) => updateFormData('basicInfo', 'full_address', e.target.value)}
-            placeholder="Enter your complete address" 
+            placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan, kode pos"
             required
             className="min-h-[100px] bg-gray-50 border-gray-200 focus:border-blue-500 focus:ring-blue-500
               transition-all duration-200 text-base rounded-xl resize-none"
           />
-          <p className="text-sm text-gray-500 mt-2">
-            Required for product delivery from brands
+          <p className="mt-2 text-sm text-gray-500">
+            Diperlukan untuk pengiriman produk dari brand. Hanya dilihat admin dan brand yang membooking kamu.
           </p>
         </div>
       </div>
@@ -1179,7 +1581,8 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
       price: parseInt(formData.profile.price.replace(/\./g, '')),
       image_url: imagePreview || '/images/default-avatar.png',
       bio: formData.profile.bio,
-      location: formData.basicInfo.city,
+      // The card shows a human-readable city; the slug is what gets submitted.
+      location: getCityBySlug(formData.basicInfo.city)?.name ?? formData.basicInfo.city,
       video_url: formData.profile.video_url,
       availableTimeSlots: [],
       gender: formData.profile.gender,
@@ -1231,11 +1634,25 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
                 </div>
                 <div>
                   <span className="text-gray-500">Location</span>
-                  <p className="font-medium text-gray-900 mt-0.5">{formData.basicInfo.city}</p>
+                  <p className="font-medium text-gray-900 mt-0.5">
+                    {getCityBySlug(formData.basicInfo.city)?.name ?? formData.basicInfo.city}
+                  </p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-gray-500">Alamat Profil Publik</span>
+                  <p className="font-medium text-gray-900 mt-0.5">
+                    salda.id/{formData.basicInfo.username}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Email</span>
                   <p className="font-medium text-gray-900 mt-0.5">{formData.basicInfo.email}</p>
+                </div>
+                <div>
+                  <span className="text-gray-500">WhatsApp</span>
+                  <p className="font-medium text-gray-900 mt-0.5">
+                    {formatPhoneLocal(normalizePhone(formData.basicInfo.phone))}
+                  </p>
                 </div>
                 <div>
                   <span className="text-gray-500">Gender</span>
@@ -1434,9 +1851,51 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
               </p>
             </div>
 
+            {/* Offer back an unfinished draft instead of silently restoring it. */}
+            {draftOffer && (
+              <div className="mb-8 rounded-xl border border-blue-200 bg-blue-50 p-4">
+                <div className="flex items-start gap-3">
+                  <RotateCcw className="mt-0.5 h-5 w-5 flex-shrink-0 text-blue-600" />
+                  <div className="space-y-3">
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium text-blue-900">
+                        Lanjutkan pendaftaran yang belum selesai?
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        Kami menyimpan isian kamu dari {formatDraftTime(draftOffer.savedAt)}.
+                        Foto dan video perlu diunggah ulang.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        onClick={restoreDraft}
+                        className="h-9 bg-blue-600 px-4 text-sm text-white hover:bg-blue-700"
+                      >
+                        Lanjutkan
+                      </Button>
+                      <Button
+                        type="button"
+                        onClick={discardDraft}
+                        className="h-9 border border-gray-200 bg-white px-4 text-sm text-gray-700 hover:bg-gray-50"
+                      >
+                        Mulai dari awal
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {renderStepIndicator()}
 
-            <form className="space-y-8 sm:space-y-10">
+            <form
+              className="space-y-8 sm:space-y-10"
+              // Nothing here is a native submit — every path goes through
+              // handleSignUp. A native submit would navigate and wipe the form.
+              onSubmit={(e) => e.preventDefault()}
+              onKeyDown={handleFormKeyDown}
+            >
               {currentStep === 1 && renderBasicInfo()}
               {currentStep === 2 && renderSecurity()}
               {currentStep === 3 && renderProfile()}
@@ -1455,34 +1914,65 @@ export default function StreamerSignUp({ searchParams }: { searchParams: Message
                   <Button
                     type="button"
                     onClick={handlePrevious}
-                    className="flex-1 h-11 sm:h-12 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200 
+                    disabled={isSigningUp}
+                    className="flex-1 h-11 sm:h-12 bg-gray-50 hover:bg-gray-100 text-gray-700 border border-gray-200
                       transition-all duration-200 hover:shadow-md text-sm sm:text-base"
                   >
                     <ArrowLeft className="w-4 h-4 mr-2" />
-                    Previous
+                    Sebelumnya
                   </Button>
                 )}
-                
+
                 <Button
                   type="button"
-                  onClick={currentStep === 6 ? handleSignUp : handleNext}
-                  disabled={currentStep === 6 && !acceptedTerms}
+                  onClick={currentStep === TOTAL_STEPS ? handleSignUp : handleNext}
+                  // Disabled while a submission is in flight so a second click
+                  // cannot create a second account.
+                  disabled={isSigningUp || (currentStep === TOTAL_STEPS && !acceptedTerms)}
                   className={`flex-1 h-11 sm:h-12 bg-gradient-to-r from-blue-600 to-blue-700
                     hover:from-blue-700 hover:to-blue-800 transition-all duration-200
-                    ${currentStep === 6 && !acceptedTerms 
-                      ? 'opacity-50 cursor-not-allowed' 
+                    ${isSigningUp || (currentStep === TOTAL_STEPS && !acceptedTerms)
+                      ? 'opacity-50 cursor-not-allowed'
                       : 'hover:shadow-lg hover:shadow-blue-100'
                     } text-white font-medium tracking-wide text-sm sm:text-base`}
                 >
-                  {currentStep === 6 ? (
-                    isSigningUp ? "Creating Account..." : "Create Account"
+                  {currentStep === TOTAL_STEPS ? (
+                    isSigningUp ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Membuat Akun...
+                      </>
+                    ) : (
+                      "Buat Akun"
+                    )
                   ) : (
                     <>
-                      Continue
+                      Lanjut
                       <ArrowRight className="w-4 h-4 ml-2" />
                     </>
                   )}
                 </Button>
+              </div>
+
+              {/* Make the safety net visible — people abandon long forms they
+                  don't trust to survive a reload. */}
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                <p className="flex items-center gap-2 text-xs text-gray-600 sm:text-sm">
+                  <Save className="h-4 w-4 flex-shrink-0 text-gray-400" />
+                  {draftSavedAt
+                    ? `Progres tersimpan otomatis di perangkat ini (${formatDraftTime(draftSavedAt)}).`
+                    : 'Progres kamu tersimpan otomatis di perangkat ini.'}
+                </p>
+                {draftSavedAt && (
+                  <button
+                    type="button"
+                    onClick={clearDraft}
+                    className="flex flex-shrink-0 items-center gap-1 text-xs text-gray-500 underline underline-offset-2 hover:text-gray-700"
+                  >
+                    <X className="h-3 w-3" />
+                    Hapus
+                  </button>
+                )}
               </div>
 
               <FormMessage message={searchParams} />

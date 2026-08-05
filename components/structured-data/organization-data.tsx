@@ -17,7 +17,10 @@ export function OrganizationStructuredData() {
           address: {
             "@type": "PostalAddress",
             addressCountry: "ID",
-            addressRegion: "Jakarta"
+            // `addressRegion` is a province, not a city. "Jakarta" is the city;
+            // the province is "DKI Jakarta" — the exact spelling the city
+            // registry uses, so the two never disagree.
+            addressRegion: "DKI Jakarta"
           },
           potentialAction: {
             "@type": "JoinAction",

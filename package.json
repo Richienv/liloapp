@@ -27,7 +27,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@sentry/nextjs": "^8.47.0",
     "@stitches/react": "^1.2.8",
-    "@supabase/ssr": "latest",
+    "@supabase/ssr": "^0.5.1",
     "@supabase/supabase-js": "^2.45.4",
     "@tanstack/react-virtual": "^3.13.2",
     "@types/lodash": "^4.17.13",

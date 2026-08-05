@@ -5,10 +5,14 @@ export async function GET() {
   try {
     const supabase = createClient();
 
-    // First get all streamers
+    // Public marketplace inventory. Brands ship physical product to whoever
+    // they book, so only accounts an admin has verified — and that are still
+    // active — may appear here.
     const { data: streamers, error: streamersError } = await supabase
       .from('streamers')
-      .select('*');
+      .select('*')
+      .eq('is_active', true)
+      .eq('verification_status', 'approved');
 
     if (streamersError) {
       console.error('Error fetching streamers:', streamersError);
