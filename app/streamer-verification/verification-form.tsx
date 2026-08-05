@@ -74,6 +74,14 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
     const problem = validateFile(file, field);
     if (problem) {
       setError(problem);
+      // Clear the input too. handleSubmit builds FormData from the DOM, not from
+      // React state, so leaving the rejected file attached would show the
+      // previously accepted document in the UI while actually uploading the
+      // oversized one — and the server would reject a file the user can see is fine.
+      const input = document.getElementById(field.name) as HTMLInputElement | null;
+      if (input) input.value = "";
+      setFiles((prev) => ({ ...prev, [field.name]: null }));
+      setPreviews((prev) => ({ ...prev, [field.name]: null }));
       return;
     }
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
+import { createAdminClient } from "@/utils/supabase/admin";
 
 /**
  * Write path for streamer KYC.
@@ -182,14 +183,26 @@ export async function submitStreamerVerification(
       throw new Error("Gagal menyimpan pengajuan. Coba lagi sebentar lagi.");
     }
   } catch (error) {
-    // Roll the uploads back. Without this a retry orphans identity documents in
-    // a private bucket that nobody — not even the streamer — can clean up.
+    // Roll the uploads back. This must go through the service-role client: the
+    // bucket deliberately has no DELETE policy, because a submitted document is
+    // evidence behind an approval decision and a streamer must not be able to
+    // retract it. Cleanup is therefore a privileged action, and attempting it on
+    // the session client would silently fail RLS and orphan identity documents
+    // in a private bucket nobody can reach.
     if (uploadedPaths.length > 0) {
-      const { error: cleanupError } = await supabase.storage
-        .from("verification_documents")
-        .remove(uploadedPaths);
-      if (cleanupError) {
-        console.error("Verification: rollback failed", cleanupError, uploadedPaths);
+      const admin = createAdminClient();
+      if (!admin) {
+        console.error(
+          "Verification: SUPABASE_SERVICE_ROLE_KEY not set — cannot remove orphaned documents",
+          uploadedPaths,
+        );
+      } else {
+        const { error: cleanupError } = await admin.storage
+          .from("verification_documents")
+          .remove(uploadedPaths);
+        if (cleanupError) {
+          console.error("Verification: rollback failed", cleanupError, uploadedPaths);
+        }
       }
     }
 

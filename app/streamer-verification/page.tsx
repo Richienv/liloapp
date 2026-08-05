@@ -38,7 +38,7 @@ export default async function StreamerVerificationPage() {
 
   const { data: streamer } = await supabase
     .from("streamers")
-    .select("id, verification_status, rejection_reason, platform")
+    .select("id, verification_status, platform")
     .eq("user_id", user.id)
     .maybeSingle();
 
@@ -63,7 +63,7 @@ export default async function StreamerVerificationPage() {
 
   const { data: submission } = await supabase
     .from("streamer_verification_submissions")
-    .select("id, status, platform_handle, created_at")
+    .select("id, status, platform_handle, notes, created_at")
     .eq("streamer_id", streamer.id)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -98,8 +98,8 @@ export default async function StreamerVerificationPage() {
         </span>
         <h1 className="mt-4 text-xl font-semibold text-gray-900">Akun kamu sedang ditangguhkan</h1>
         <p className="mt-2 text-gray-600">
-          {streamer.rejection_reason
-            ? streamer.rejection_reason
+          {submission?.notes
+            ? submission.notes
             : "Hubungi dukungan Salda lewat WhatsApp untuk mengetahui langkah selanjutnya."}
         </p>
       </Shell>
@@ -152,10 +152,10 @@ export default async function StreamerVerificationPage() {
         </p>
       </div>
 
-      {wasRejected && streamer.rejection_reason && (
+      {wasRejected && submission?.notes && (
         <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
           <p className="text-sm font-medium text-destructive-emphasis">Catatan dari tim kami</p>
-          <p className="mt-1 text-sm text-gray-700">{streamer.rejection_reason}</p>
+          <p className="mt-1 text-sm text-gray-700">{submission.notes}</p>
         </div>
       )}
 

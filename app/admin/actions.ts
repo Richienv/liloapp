@@ -105,7 +105,6 @@ export async function approveStreamerVerification(formData: FormData) {
       verified_by: admin.user.id,
       // Clear any reason left over from an earlier rejection so the profile
       // does not keep showing a stale explanation.
-      rejection_reason: null,
     })
     .eq("id", submission.streamer_id)
     .select("id");
@@ -166,7 +165,6 @@ export async function rejectStreamerVerification(formData: FormData) {
     .from("streamers")
     .update({
       verification_status: "rejected",
-      rejection_reason: rejectionReason,
       // verified_at/verified_by stay untouched: they mean "when and by whom
       // this account was verified". The reviewer of a rejection is recorded on
       // the submission row instead.

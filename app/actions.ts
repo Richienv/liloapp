@@ -35,6 +35,28 @@ const GENERIC_ERROR_MESSAGE = "Terjadi kesalahan. Silakan coba lagi.";
 const SAFE_REDIRECT_BASE = "https://redirect-base.invalid";
 
 /**
+ * Split a submitted city into the two columns that store it.
+ *
+ * The signup forms now emit a canonical slug, but `location` is not an internal
+ * key — it is rendered straight into profile pages, cards, page titles and
+ * structured data, and it is what the brand-side location filter matches
+ * against. Writing the slug there would publish "bandar-lampung" as a streamer's
+ * city and stop a brand typing "Bandar Lampung" from matching anyone. So
+ * `location` gets the display name and `city_slug` gets the slug. Text we can't
+ * resolve is passed through unchanged rather than discarded.
+ */
+function cityFields(raw: string | null | undefined): {
+  location: string | null;
+  citySlug: string | null;
+} {
+  const city = resolveCity(raw);
+  return {
+    location: city?.name ?? raw ?? null,
+    citySlug: city?.slug ?? null,
+  };
+}
+
+/**
  * Supabase reports auth failures as English strings written for developers.
  * Showing them verbatim in an Indonesian product is both untranslated and
  * unhelpful — "Invalid login credentials" reads as a system fault rather than a
@@ -162,10 +184,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
       return { success: false, error: PHONE_INVALID_MESSAGE };
     }
 
-    // `location` stays as submitted because other queries still read that column,
-    // but city filtering and /location/<slug> need a canonical value, so resolve
-    // one alongside it. Unrecognised free text simply has no slug.
-    const citySlug = resolveCity(location)?.slug ?? null;
+    const { location: locationName, citySlug } = cityFields(location);
 
     // 1. Create the user (auth.signUp already errors on a duplicate email)
     const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -177,7 +196,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
           last_name: lastName,
           user_type: 'client',
           brand_name: brandName,
-          location: location,
+          location: locationName,
           city_slug: citySlug,
           phone,
         }
@@ -232,7 +251,7 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
         brand_name: brandName,
         brand_description: brandDescription,
         brand_guidelines_url: brandGuidelineUrl,
-        location: location,
+        location: locationName,
         city_slug: citySlug,
         phone,
         profile_picture_url: null,
@@ -346,7 +365,10 @@ export const forgotPasswordAction = async (formData: FormData) => {
   // Prefer the configured site URL; fall back to the request Origin header.
   // A configured value guarantees the redirect target is one Supabase allows.
   const origin = process.env.NEXT_PUBLIC_SITE_URL || headers().get("origin");
-  const callbackUrl = formData.get("callbackUrl")?.toString();
+  // Same treatment as `redirect_to` on sign-in: this value is attacker-supplied
+  // and lands the user somewhere immediately after a genuine reset email goes
+  // out — the most credible possible moment to phish the reset code.
+  const callbackUrl = safeRedirectPath(formData.get("callbackUrl"));
 
   if (!email) {
     return encodedRedirect("error", "/forgot-password", "Email wajib diisi.");
@@ -519,8 +541,8 @@ export async function updateUserProfile(formData: FormData) {
     const updateData: any = {
       first_name: firstName,
       last_name: lastName,
-      location: location,
-      city_slug: resolveCity(location)?.slug ?? null,
+      location: cityFields(location).location,
+      city_slug: cityFields(location).citySlug,
       updated_at: new Date().toISOString(),
     };
 
@@ -572,7 +594,7 @@ export async function updateUserProfile(formData: FormData) {
       const streamerUpdateData = {
         first_name: firstName,
         last_name: lastName,
-        location: location,
+        location: updateData.location,
         city_slug: updateData.city_slug,
         ...(updateData.profile_picture_url && { image_url: updateData.profile_picture_url })
       };
@@ -680,10 +702,7 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
     }
     const baseUsername = usernameCheck.username;
 
-    // `location` keeps the submitted value (other queries still read it) while
-    // `city_slug` carries the canonical one that shipping and /location/<slug>
-    // depend on.
-    const citySlug = resolveCity(city)?.slug ?? null;
+    const { location: cityName, citySlug } = cityFields(city);
 
     // First, handle image uploads before user creation
     let profileImageUrl = null;
@@ -709,7 +728,7 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
             first_name: firstName,
             last_name: lastName,
             user_type: 'streamer',
-            location: city,
+            location: cityName,
             city_slug: citySlug,
             phone,
           },
@@ -834,7 +853,7 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
           first_name: firstName,
           last_name: lastName,
           user_type: 'streamer',
-          location: city,
+          location: cityName,
           city_slug: citySlug,
           phone,
           profile_picture_url: profileImageUrl,
@@ -862,7 +881,7 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
           price: parseInt((formData.get('price') as string)?.replace(/\./g, '') || '0'),
           image_url: profileImageUrl,
           bio: formData.get('bio') as string,
-          location: city,
+          location: cityName,
           city_slug: citySlug,
           full_address: formData.get('full_address') as string,
           video_url: formData.get('video_url') as string,
@@ -1012,8 +1031,8 @@ export async function updateStreamerProfile(formData: FormData): Promise<Streame
     const updateData = {
       first_name: formData.get('firstName'),
       last_name: formData.get('lastName'),
-      location: streamerLocation,
-      city_slug: resolveCity(streamerLocation)?.slug ?? null,
+      location: cityFields(streamerLocation).location,
+      city_slug: cityFields(streamerLocation).citySlug,
       video_url: formData.get('youtubeVideoUrl'),
       platform: formData.get('platform'),
       category: formData.get('category'),

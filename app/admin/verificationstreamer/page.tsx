@@ -64,7 +64,6 @@ interface SubmissionRow {
     city_slug: string | null;
     verification_status: string | null;
     is_active: boolean | null;
-    rejection_reason: string | null;
   } | null;
   /** Joined in application code, not by PostgREST — see the query below. */
   user?: {
@@ -190,7 +189,6 @@ export default async function StreamerVerificationPage({
         city_slug,
         verification_status,
         is_active,
-        rejection_reason
       )
     `
     )

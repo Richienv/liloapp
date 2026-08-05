@@ -60,7 +60,10 @@ async function getStreamer(username: string): Promise<StreamerRichData | null> {
         created_at
       )
     `)
-    .eq('username', username)
+    // Uniqueness is enforced on lower(username), so /Rizky and /rizky are one
+    // profile by definition — an exact match would 404 the very links legacy
+    // rows still emit, since the backfill preserved their original casing.
+    .ilike('username', username)
     .eq('is_active', true)
     .eq('verification_status', 'approved')
     .maybeSingle()
