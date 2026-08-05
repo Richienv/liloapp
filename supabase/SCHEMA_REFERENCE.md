@@ -283,9 +283,16 @@ Storage buckets
 
 Admin access
 
-There is no admin role in the data model (`users.user_type` is only 'client' | 'streamer'). `app/admin/layout.tsx` gates the /admin section on a comma-separated `ADMIN_EMAILS` environment variable. Postgres cannot read that env var, so the same allowlist is mirrored into a database setting and read by `public.is_admin()`, which every admin RLS policy calls:
+There is no admin role in the data model (`users.user_type` is only 'client' | 'streamer'). `app/admin/layout.tsx` gates the /admin section on a comma-separated `ADMIN_EMAILS` environment variable. Postgres cannot read that env var, so the same allowlist is mirrored into the `public.admin_users` table and read by `public.is_admin()`, which every admin RLS policy calls.
 
-	alter database postgres set app.admin_emails = 'owner@salda.id,ops@salda.id';
+Grant admin by inserting a row (Supabase SQL editor, or any service-role connection):
 
-Keep this in sync with `ADMIN_EMAILS`. It is fail-closed: an unset setting means `is_admin()` returns false for everyone and the admin policies grant nothing. Server code using the service-role key (`utils/supabase/admin.ts`) bypasses RLS entirely and does not depend on it.
+	insert into public.admin_users (email, note)
+	values ('owner@salda.id', 'Founder');
+
+Revoke by deleting the row. The email must match the address the person signs in with, and it is compared case-insensitively against the caller's JWT email claim.
+
+Note: migration `20260805120000` originally read this allowlist from an `app.admin_emails` database setting. That approach does not work on hosted Supabase — the `postgres` role there is not a superuser, so `alter database postgres set app.admin_emails = …` fails with `42501: permission denied to set parameter`. Migration `20260805130000` replaced it with the table above and carries over any value the setting did hold, so a local or self-hosted database that had it set does not regress.
+
+Keep the table in sync with `ADMIN_EMAILS`. It is fail-closed: an empty table means `is_admin()` returns false for everyone and the admin policies grant nothing. The table itself has RLS enabled with no policies, so it is neither readable nor writable through the API under any session — that stops it from publishing the exact list of accounts worth phishing, and stops a signed-in user from escalating by inserting their own address. Server code using the service-role key (`utils/supabase/admin.ts`) bypasses RLS entirely and does not depend on it.
 
