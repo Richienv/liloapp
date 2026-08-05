@@ -135,6 +135,8 @@ export default function StreamerOnboarding() {
   const [currentStep, setCurrentStep] = useState(0);
   /** Gate the whole page until we know there is a signed-in streamer behind it. */
   const [authState, setAuthState] = useState<"checking" | "ready">("checking");
+  /** Where the tour hands off; narrowed to verification for unapproved hosts. */
+  const [exitPath, setExitPath] = useState(APP_HOME);
   const router = useRouter();
 
   const step = onboardingSteps[currentStep];
@@ -168,6 +170,22 @@ export default function StreamerOnboarding() {
         return;
       }
 
+      // A new host signs up as `pending` and stays unbookable until an admin
+      // approves them, so the tour hands off to verification rather than to a
+      // dashboard that cannot yet take a single booking. Already-approved
+      // hosts (and anyone we can't read a status for) go straight to the app.
+      const { data: streamerRow } = await supabase
+        .from('streamers')
+        .select('verification_status')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      if (streamerRow && streamerRow.verification_status !== 'approved') {
+        setExitPath('/streamer-verification');
+      }
+
       setAuthState("ready");
     };
 
@@ -182,10 +200,10 @@ export default function StreamerOnboarding() {
     };
   }, [router]);
 
-  /** Single exit: the streamer's real home inside the app. */
+  /** Single exit: verification if it's still outstanding, otherwise the app. */
   const goToApp = useCallback(() => {
-    router.push(APP_HOME);
-  }, [router]);
+    router.push(exitPath);
+  }, [router, exitPath]);
 
   const handleNext = () => {
     if (currentStep < onboardingSteps.length - 1) {

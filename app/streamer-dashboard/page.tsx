@@ -2465,6 +2465,10 @@ export default function StreamerDashboard() {
   const [galleryPhotos, setGalleryPhotos] = useState<StreamerGalleryPhoto[]>([]);
   // Add state for status filter
   const [scheduleFilter, setScheduleFilter] = useState<string>('Semua');
+  // Drives the verification banner. A host who skipped the onboarding tour has
+  // no other route to the KYC form, and while they sit at 'pending' they are
+  // invisible to brands — so the dashboard has to keep saying so.
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
 
   // Define fetchData first
   const fetchData = useCallback(async () => {
@@ -2488,6 +2492,8 @@ export default function StreamerDashboard() {
         .single();
 
       if (streamerError) throw streamerError;
+
+      setVerificationStatus(streamerData?.verification_status ?? null);
 
       if (streamerData) {
         try {
@@ -2772,7 +2778,43 @@ export default function StreamerDashboard() {
       <Navbar />
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
         <ToastContainer />
-        
+
+        {/* Verification banner: the only persistent entry point to the KYC form
+            for a host who skipped onboarding. Hidden once approved. */}
+        {verificationStatus && verificationStatus !== 'approved' && (
+          <div
+            className={`mb-6 rounded-xl border p-4 sm:flex sm:items-center sm:justify-between sm:gap-4 ${
+              verificationStatus === 'rejected'
+                ? 'border-red-200 bg-red-50'
+                : 'border-yellow-200 bg-yellow-50'
+            }`}
+          >
+            <div>
+              <p className="font-semibold text-gray-900">
+                {verificationStatus === 'rejected'
+                  ? 'Verifikasi kamu belum disetujui'
+                  : verificationStatus === 'suspended'
+                    ? 'Akun kamu sedang ditangguhkan'
+                    : 'Akun kamu belum terverifikasi'}
+              </p>
+              <p className="mt-1 text-sm text-gray-600">
+                {verificationStatus === 'suspended'
+                  ? 'Hubungi dukungan Salda untuk mengetahui langkah selanjutnya.'
+                  : 'Profil kamu belum tampil untuk brand sampai verifikasi selesai. Prosesnya sekitar 5 menit.'}
+              </p>
+            </div>
+            {verificationStatus !== 'suspended' && (
+              <Link
+                href="/streamer-verification"
+                className="mt-3 inline-flex h-10 shrink-0 items-center justify-center rounded-xl bg-blue-600
+                  px-4 text-sm font-medium text-white transition-colors hover:bg-blue-700 sm:mt-0"
+              >
+                {verificationStatus === 'rejected' ? 'Kirim ulang' : 'Verifikasi sekarang'}
+              </Link>
+            )}
+          </div>
+        )}
+
         {/* ID Card */}
         {userData && streamerStats && (
           <IDCard

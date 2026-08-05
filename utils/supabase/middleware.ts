@@ -13,6 +13,14 @@ const PROTECTED_PREFIXES = [
   "/settings",
   "/messages",
   "/notifications",
+  // Handles identity documents (KTP, selfie), so it must never be reachable
+  // without a session — client-side gating alone would still render the shell.
+  "/streamer-verification",
+  // The onboarding tours read and write the signed-in user's profile; they
+  // gate client-side too, but the edge should turn anonymous visitors away
+  // before any of that ships to the browser.
+  "/client-onboarding",
+  "/streamer-onboarding",
 ];
 
 const isProtectedPath = (pathname: string) =>

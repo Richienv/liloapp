@@ -41,6 +41,7 @@ export const RESERVED_USERNAMES: ReadonlySet<string> = new Set([
   "streamer-dashboard",
   "streamer-schedule",
   "streamer-sign-up",
+  "streamer-verification",
   "streamers",
   "terms",
   "tutorial",
