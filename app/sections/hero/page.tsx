@@ -196,8 +196,24 @@ const partners = [
   // Add more partner logos as needed
 ];
 
+/** The headline's rotating tail. Same meaning, three ways a brand says it. */
+const ROTATING_WORDS = ['produk kamu.', 'brand kamu.', 'toko kamu.'] as const;
+
 export default function Hero() {
   const router = useRouter();
+  const [rotatingIndex, setRotatingIndex] = useState(0);
+
+  useEffect(() => {
+    // Paused for anyone who has asked for reduced motion: a word swapping
+    // itself every few seconds is exactly the kind of unrequested movement
+    // that setting exists to stop.
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const timer = setInterval(
+      () => setRotatingIndex((i) => (i + 1) % ROTATING_WORDS.length),
+      2600,
+    );
+    return () => clearInterval(timer);
+  }, []);
   const [streamers, setStreamers] = useState<Streamer[]>([]);
   const [duplicatedStreamers, setDuplicatedStreamers] = useState<Streamer[]>([]);
   const [isLoadingStreamers, setIsLoadingStreamers] = useState(true);
@@ -303,51 +319,52 @@ export default function Hero() {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="text-center w-full max-w-5xl mx-auto mb-4 sm:mb-6 md:mb-8 px-2 relative z-20"
               >
-                <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 md:mb-6">
-                  <div className="px-2 md:px-3 py-1 md:py-1.5 bg-black/5 rounded-full border border-black/10">
-                    <span className="text-[10px] md:text-xs font-medium text-black/80">
-                      Shopee & TikTok Live-Seller Supported.
-                    </span>
-                  </div>
+                <div className="mb-5 flex items-center justify-center">
+                  <span className="rounded-pill border border-hairline bg-surface px-3 py-1.5 text-mini font-medium text-ink-muted">
+                    Shopee &amp; TikTok Live-Seller Supported
+                  </span>
                 </div>
 
-                <h1 className="text-[28px] sm:text-[32px] md:text-5xl lg:text-6xl xl:text-7xl font-serif mb-2 sm:mb-3 md:mb-4 mx-auto tracking-tight leading-[1.2]">
-                  <span className="sr-only">Salda by TROLIVE - </span>
-                  <span className="block">Host Livestreamer Terlatih</span>
-                  <span className="block mt-1 sm:mt-2">Untuk Boost Penjualan</span>
-                  <span className="block mt-1 sm:mt-2 text-black">Produk kamu</span>
+                {/*
+                  The headline is one sentence with a rotating tail. The three
+                  words all mean the same thing to a brand — produk, brand, toko
+                  — which is the point: it reads as the product knowing who is
+                  looking, not as a slogan.
+                */}
+                <h1 className="mx-auto max-w-[16ch] font-serif text-hero font-medium text-balance text-ink">
+                  <span className="sr-only">Salda by TROLIVE — </span>
+                  Host livestreamer terlatih untuk{' '}
+                  <span className="text-brand">{ROTATING_WORDS[rotatingIndex]}</span>
                 </h1>
-                
-                <p className="text-xs sm:text-sm md:text-base text-ink-muted mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-3 sm:px-4">
-                  Platform host live streaming dari TROLIVE untuk boost penjualan produk kamu di TIKTOK & SHOPEE LIVE dengan harga terjangkau.
+
+                <p className="mx-auto mt-6 max-w-[52ch] text-lede text-ink-muted">
+                  Booking host yang sudah terverifikasi, atur jadwal live, dan bayar di satu
+                  tempat. Rata-rata brand mulai live dalam tiga hari setelah mendaftar.
                 </p>
 
-                <Link 
-                  href="/sign-in"
-                  className="inline-flex h-[46px] items-center justify-center rounded-lg bg-brand px-7 text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
+                <Link
+                  href="/streamers"
+                  className="mt-8 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
+                    bg-brand text-ui font-semibold text-white transition-colors hover:bg-brand-hover
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:ring-offset-2"
                 >
-                  Mulai Cari Host Untuk Saya
+                  Mulai cari host
                 </Link>
 
-                {/* Trust Badges */}
-                <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap mt-6 sm:mt-8 md:mt-10">
-                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-hairline">
-                    <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
-                    <span className="text-[10px] sm:text-xs font-medium text-ink-muted">Pembayaran Aman</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-hairline">
-                    <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
-                    <span className="text-[10px] sm:text-xs font-medium text-ink-muted">Rating 4.9/5</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-hairline">
-                    <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
-                    <span className="text-[10px] sm:text-xs font-medium text-ink-muted">250+ Host Aktif</span>
-                  </div>
-                </div>
+                {/*
+                  Replaces three "trust badges" that asserted "Rating 4.9/5" and
+                  "250+ Host Aktif" as facts. Neither is a number this product
+                  computes. This one is checkable: signing up is free, and you
+                  are charged at booking.
+                */}
+                <p className="mt-5 text-mini text-ink-soft">
+                  Gratis mendaftar · bayar hanya saat booking
+                </p>
               </motion.div>
 
               {/* Streamer Cards Carousel */}
-              <div className="relative w-screen -mx-4 overflow-hidden mb-6 sm:mb-12 md:mb-16 mt-8 sm:mt-10 min-h-[350px] sm:min-h-[500px] md:min-h-[600px] z-20">
+              <div id="host" className="relative w-screen -mx-4 overflow-hidden mb-6 sm:mb-12 md:mb-16 mt-8 sm:mt-10 min-h-[350px] sm:min-h-[500px] md:min-h-[600px] z-20">
                 <motion.div
                   animate={{
                     x: [0, -100 * Math.ceil(streamers.length / 3)],

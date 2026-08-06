@@ -48,19 +48,20 @@ export default function FAQ() {
   ];
 
   return (
-    <section className="relative py-16 sm:py-20 md:py-24 bg-surface overflow-hidden">
+    <section id="faq" className="relative py-16 sm:py-20 md:py-24 bg-surface overflow-hidden">
       <div className="container mx-auto px-3 sm:px-4">
         <div className="max-w-[1000px] mx-auto">
           {/* Section Header */}
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif mb-4 sm:mb-6 tracking-[-0.02em]">
-              Pertanyaan yang Sering{" "}
-              <span className="text-brand">
-                Ditanyakan
-              </span>
+            <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">04 / FAQ</p>
+            {/* One accent per section, and on this one it is spent on the
+                support link at the bottom — so the heading is plain ink rather
+                than the half-blue it used to be. */}
+            <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
+              Pertanyaan yang sering ditanyakan.
             </h2>
-            <p className="text-xs sm:text-sm md:text-base text-ink-muted leading-relaxed font-light max-w-2xl mx-auto">
-              Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya
+            <p className="mx-auto mt-3.5 max-w-[46ch] text-lede text-ink-muted">
+              Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya.
             </p>
           </div>
 

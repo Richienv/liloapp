@@ -205,6 +205,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* The nav is fixed and 64-72px tall, so an anchor jump would otherwise land
+     with the section heading tucked underneath it. */
+  scroll-padding-top: 88px;
 }
 
 @media (prefers-reduced-motion: reduce) {

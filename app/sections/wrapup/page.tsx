@@ -57,16 +57,22 @@ export default function Wrapup() {
   }, [controls, isHovered]);
 
   return (
-    <section className="py-12 md:py-24 bg-surface relative overflow-hidden">
+    <section id="testimoni" className="py-12 md:py-24 bg-surface relative overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-[1200px] mx-auto">
           {/* Section Header */}
           <div className="text-center mb-8 md:mb-16">
-            <h2 className="text-[1.5rem] sm:text-[2rem] md:text-[3.25rem] leading-tight font-serif mb-4 md:mb-6 text-ink">
-              Apa kata mereka
+            {/* The numbered eyebrow ties this to the other sections; the
+                heading and sub are the reference's, split across the two lines
+                it splits them across. */}
+            <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">
+              03 / Apa kata mereka
+            </p>
+            <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
+              Kita udah ngebantu mereka.
             </h2>
-            <p className="text-sm md:text-lg text-ink-muted">
-              Kita udah ngebantu mereka. Sekarang kita ingin ngebantu kamu.
+            <p className="mt-3.5 text-lede text-ink-muted">
+              Sekarang kita ingin ngebantu kamu.
             </p>
           </div>
         </div>
