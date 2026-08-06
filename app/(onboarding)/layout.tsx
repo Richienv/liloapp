@@ -18,8 +18,11 @@ export default function OnboardingLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // `bg-canvas` here, not just on the pages: the tour columns are sized in
+  // viewport units, and on a short viewport the page ends before the screen
+  // does. Without it the gap under the fold renders as the root white.
   return (
-    <div className="w-full min-h-screen">
+    <div className="min-h-screen w-full bg-canvas">
       {children}
     </div>
   );

@@ -6,8 +6,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertCircle, CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import { createClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 
 /**
  * Post-signup introduction for brands. Reached from signUpAction's redirect —
@@ -29,10 +30,20 @@ type OnboardingStep = {
   video: string;
 };
 
+/**
+ * Copy is sentence case, `kamu`, and carries no emoji — the headings render in
+ * Playfair, and a colour-font glyph in the middle of a serif line is the one
+ * thing that makes a display size look like a chat message.
+ *
+ * The figures on steps 1, 6 and 7 ("250+ host", "3-5x lipat", "10x", "30%")
+ * are inherited marketing claims with nothing behind them in the data this
+ * page loads. They are left exactly as they were rather than being restyled
+ * into something that looks more authoritative than it is; see the report.
+ */
 const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
-    title: "Selamat Datang di Salda! 👋",
+    title: "Selamat datang di Salda",
     description: "Platform yang menghubungkan brand kamu dengan host live shopping terbaik.",
     points: [
       "Akses ke 250+ host profesional terlatih",
@@ -43,29 +54,29 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Host Berkualitas 🌟",
+    title: "Host berkualitas",
     description: "Tim host profesional yang siap membantu penjualan kamu.",
     points: [
       "Host terlatih dengan pengalaman live shopping",
       "Spesialisasi di berbagai kategori produk",
-      "Rating dan review terbuka dari client sebelumnya"
+      "Rating dan ulasan terbuka dari brand sebelumnya"
     ],
     video: "/videos/c2.mp4"
   },
   {
     kind: "feature",
-    title: "Keamanan Terjamin 🔒",
+    title: "Keamanan terjamin",
     description: "Sistem yang melindungi transaksi dan kepentingan brand kamu.",
     points: [
       "Verifikasi ketat untuk setiap host",
-      "Perlindungan dari penipuan dan fraud",
+      "Perlindungan dari penipuan",
       "Kontrak digital yang mengikat secara hukum"
     ],
     video: "/videos/c3.mp4"
   },
   {
     kind: "feature",
-    title: "Transaksi Transparan 💎",
+    title: "Transaksi transparan",
     description: "Pembayaran yang aman dan terpantau dengan jelas.",
     points: [
       "Sistem escrow untuk keamanan pembayaran",
@@ -76,10 +87,10 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Notifikasi Real-time 📱",
+    title: "Notifikasi langsung",
     description: "Pantau setiap perkembangan live shopping kamu.",
     points: [
-      "Update status booking secara langsung",
+      "Pembaruan status booking secara langsung",
       "Notifikasi performa selama live",
       "Laporan hasil penjualan otomatis"
     ],
@@ -87,7 +98,7 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Pilihan Host Terlengkap 🎯",
+    title: "Pilihan host terlengkap",
     description: "Temukan host yang tepat untuk produk kamu.",
     points: [
       "250+ host aktif dari berbagai platform",
@@ -98,29 +109,31 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Tingkatkan Revenue 📈",
+    title: "Tingkatkan pendapatan",
     description: "Bukti nyata peningkatan penjualan dengan live shopping.",
     points: [
       "Rata-rata peningkatan penjualan 3-5x lipat",
-      "Engagement rate 10x lebih tinggi",
+      "Tingkat interaksi 10x lebih tinggi",
       "Konversi penjualan hingga 30%"
     ],
     video: "/videos/c7.mp4"
   },
   {
     kind: "feature",
-    title: "Harga Kompetitif 💰",
+    title: "Harga kompetitif",
     description: "Investasi yang sepadan untuk pertumbuhan bisnis kamu.",
     points: [
       "Tarif yang bersaing di industri",
       "Paket booking yang fleksibel",
-      "Program loyalitas untuk client regular"
+      "Program loyalitas untuk brand langganan"
     ],
     video: "/videos/c8.mp4"
   },
   {
     kind: "safety",
-    title: "⚠️ PENTING ⚠️",
+    // Rendered as the caution eyebrow above the heading, not as the heading —
+    // "Penting" in 34px serif says less than the sentence it introduces.
+    title: "Penting",
     description: "Pastikan keamanan transaksi kamu di Salda.",
     points: [
       "Selalu gunakan sistem pembayaran Salda",
@@ -137,7 +150,7 @@ const onboardingSteps: OnboardingStep[] = [
  */
 const brandProfileStep: OnboardingStep = {
   kind: "brand-profile",
-  title: "Ceritakan tentang brand kamu ✍️",
+  title: "Ceritakan tentang brand kamu",
   description:
     "Host membaca ini sebelum menerima booking. Boleh dilewati — kamu tetap bisa mulai mencari host sekarang.",
   points: [],
@@ -269,223 +282,127 @@ export default function ClientOnboarding() {
   if (authState === "checking") {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-canvas">
-        <div className="flex flex-col items-center gap-3 text-ink-soft">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <p className="text-sm">Menyiapkan akun kamu...</p>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-ink-ghost" />
+          <p className="text-meta text-ink-soft">Menyiapkan akun kamu…</p>
         </div>
       </div>
     );
   }
 
+  const isSafety = step.kind === "safety";
+  const isBrandProfile = step.kind === "brand-profile";
+
+  /**
+   * The body of one step: eyebrow, heading, and whatever the step is actually
+   * for. The navigation pair lives outside it so the two buttons sit in the
+   * same place on every step instead of moving with the content above them.
+   */
   const renderStepBody = () => {
-    if (step.kind === "brand-profile") {
+    if (isBrandProfile) {
       return (
-        <div className="space-y-6 lg:space-y-8">
-          <h1 className="text-2xl lg:text-4xl font-bold text-ink">{step.title}</h1>
-          <p className="text-base lg:text-lg text-ink-muted">{step.description}</p>
+        <>
+          <h1 className="font-serif text-section font-semibold text-ink sm:text-display">
+            {step.title}
+          </h1>
+          <p className="mt-3 text-lede text-ink-soft">{step.description}</p>
 
           <Textarea
             value={brandDescription}
             onChange={(e) => setBrandDescription(e.target.value)}
             placeholder="Cerita, misi, dan target audiens brand kamu"
-            className="min-h-[140px] resize-none rounded-panel border-hairline-input bg-surface text-base
-              focus:border-blue-500 focus:ring-blue-500"
+            className="mt-6 min-h-[150px] resize-none rounded-field border-hairline-input bg-surface px-4 py-3 text-copy text-ink placeholder:text-ink-ghost focus-visible:border-hairline-strong focus-visible:ring-1 focus-visible:ring-ink focus-visible:ring-offset-0"
           />
 
           {brandError && (
-            <p className="flex items-start gap-2 text-sm text-red-600">
-              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p className="mt-3 flex items-start gap-2 text-meta text-destructive-emphasis">
+              <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               {brandError}
             </p>
           )}
-
-          <div className="flex gap-3 lg:gap-4">
-            <Button
-              onClick={handlePrevious}
-              variant="outline"
-              disabled={savingBrand}
-              className="flex-1 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Kembali
-            </Button>
-            <Button
-              onClick={saveBrandProfile}
-              disabled={savingBrand}
-              className="flex-1 bg-brand hover:bg-brand-hover flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
-            >
-              {savingBrand ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  Simpan & Mulai
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        </>
       );
     }
 
-    const isSafety = step.kind === "safety";
-
     return (
-      <div className="space-y-6 lg:space-y-8">
-        <div className={isSafety ? "flex items-center gap-3 text-blue-600" : undefined}>
-          {isSafety && (
-            <svg
-              className="w-6 h-6 lg:w-8 lg:h-8"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+      <>
+        {isSafety && (
+          <p className="flex items-center gap-2 font-mono text-tiny uppercase text-caution">
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            {step.title}
+          </p>
+        )}
+
+        {/*
+          On the safety step the sentence IS the headline — a serif "Penting"
+          over a smaller sentence buries the only instruction in the tour that
+          costs money to ignore.
+        */}
+        <h1
+          className={cn(
+            "font-serif font-semibold text-ink",
+            isSafety ? "mt-4 text-section" : "text-section sm:text-display",
           )}
-          <h1 className="text-2xl lg:text-4xl font-bold text-ink">{step.title}</h1>
-        </div>
+        >
+          {isSafety ? step.description : step.title}
+        </h1>
 
-        <p className="text-base lg:text-lg text-ink-muted">{step.description}</p>
+        {!isSafety && <p className="mt-3 text-lede text-ink-soft">{step.description}</p>}
 
-        <div className="space-y-3 lg:space-y-4 mt-6 lg:mt-8">
+        {/*
+          A numbered list on hairline rules, not a stack of tinted cards with a
+          coloured tick in each one. Three blue circles is three accents in a
+          section that is allowed one, and the ticks confirmed nothing — the
+          reader has not done these things yet.
+        */}
+        <ul className="mt-8 border-t border-hairline-soft">
           {step.points.map((point, index) => (
-            <motion.div
+            <motion.li
               key={index}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{
                 opacity: 1,
                 y: 0,
-                transition: { delay: index * 0.2 }
+                transition: { delay: index * 0.06 }
               }}
-              className={
-                isSafety
-                  ? "flex items-center gap-3 text-ink-body bg-blue-50 p-3 lg:p-4 rounded-lg border border-blue-200"
-                  : "flex items-center gap-3 text-ink-body"
-              }
+              className="flex items-baseline gap-3 border-b border-hairline-soft py-3"
             >
-              <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-blue-500" />
-              </div>
-              <span className="text-sm lg:text-base">{point}</span>
-            </motion.div>
+              <span className="numeric shrink-0 font-mono text-mini text-ink-ghost">
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span
+                className={cn(
+                  "text-copy",
+                  isSafety ? "font-medium text-ink" : "text-ink-body",
+                )}
+              >
+                {point}
+              </span>
+            </motion.li>
           ))}
-        </div>
+        </ul>
 
         {isSafety && (
-          <div className="mt-4 lg:mt-6 p-3 lg:p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-xs lg:text-sm text-blue-600 font-medium">
+          <div className="mt-6 rounded-panel border border-caution-line bg-caution-tint px-4 py-3">
+            <p className="text-meta text-caution">
               Catatan: Salda tidak bertanggung jawab atas kerugian yang timbul akibat
               transaksi di luar platform atau pembagian informasi pribadi kepada pihak lain.
             </p>
           </div>
         )}
-
-        {/* Navigation */}
-        <div className="space-y-6 lg:space-y-8 mt-8">
-          <div className="flex gap-3 lg:gap-4">
-            <Button
-              onClick={handlePrevious}
-              variant="outline"
-              className="flex-1 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
-              disabled={currentStep === 0}
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Kembali
-            </Button>
-            <Button
-              onClick={handleNext}
-              className="flex-1 bg-brand hover:bg-brand-hover flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
-            >
-              {isLastStep ? "Mulai" : "Lanjut"}
-              <ArrowRight className="w-4 h-4" />
-            </Button>
-          </div>
-
-          <div className="text-center pt-4 lg:pt-0">
-            <button
-              onClick={goToApp}
-              className="group inline-flex flex-col items-center gap-2"
-            >
-              <Image
-                src="/images/salda-logoB.png"
-                alt="Salda Logo"
-                width={40}
-                height={40}
-                className="opacity-50 group-hover:opacity-100 transition-opacity lg:w-[60px] lg:h-[60px]"
-              />
-              <span className="text-xs lg:text-sm text-ink-soft underline group-hover:text-ink-body">
-                Lewati semua pengenalan
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
+      </>
     );
   };
 
   return (
-    <div className="relative flex flex-col lg:flex-row w-full min-h-screen">
-      {/* Always-visible escape hatch — nobody should feel trapped in a tour. */}
-      <button
-        onClick={goToApp}
-        className="absolute right-4 top-4 z-20 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-ink-muted backdrop-blur transition-colors hover:text-ink"
-      >
-        Lewati
-      </button>
-
-      {/* Left Content */}
-      <div className="w-full lg:w-[45%] bg-canvas p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
-        <div className="w-full max-w-2xl">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentStep}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="space-y-6 lg:space-y-8"
-            >
-              {/* Progress Bar */}
-              <div className="flex items-center gap-1 lg:gap-2 mb-8 lg:mb-12 px-4 lg:px-0">
-                {steps.map((_, index) => (
-                  <div key={index} className="flex-1 relative">
-                    <div
-                      className={`h-1.5 lg:h-2 rounded-full transition-all duration-500 ${
-                        index <= currentStep ? "bg-blue-500" : "bg-surface-deep"
-                      }`}
-                    />
-                    {index <= currentStep && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -right-1 -top-1 hidden lg:block"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                      </motion.div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Content */}
-              <div className="px-4 lg:px-0">
-                {renderStepBody()}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Right Content - Video Section */}
-      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-surface order-1 lg:order-2">
+    <div className="flex min-h-screen w-full flex-col bg-canvas lg:flex-row">
+      {/*
+        The brand side of the product, so the media panel is the warm quiet
+        fill the role picker uses for brands — not white. A white panel beside
+        a warm canvas draws a seam down the middle of the screen that reads as
+        two pages stitched together.
+      */}
+      <div className="relative order-1 h-[38vh] w-full shrink-0 border-b border-hairline bg-surface-tint lg:order-2 lg:h-auto lg:flex-1 lg:border-b-0 lg:border-l">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -502,23 +419,119 @@ export default function ClientOnboarding() {
                 muted
                 loop
                 playsInline
-                className="w-full h-full object-contain"
+                className="h-full w-full object-contain"
               />
             ) : (
               // The closing steps have no video; an empty <video src=""> renders
               // as a broken player, so show the brand mark instead.
-              <div className="flex h-full w-full items-center justify-center bg-canvas">
+              <div className="flex h-full w-full items-center justify-center">
                 <Image
                   src="/images/salda-logoB.png"
                   alt="Salda"
                   width={120}
                   height={120}
-                  className="opacity-40"
+                  className="opacity-25"
                 />
               </div>
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      {/* Content column. 452px is the reading measure the auth screens use. */}
+      <div className="order-2 flex w-full items-center justify-center px-5 py-10 sm:px-8 lg:order-1 lg:w-[46%] lg:px-12 lg:py-16">
+        <div className="w-full max-w-[452px]">
+          {/*
+            Step count and the escape hatch on one line, above the rail. The
+            skip used to be a floating white pill over the video and a logo
+            with an underlined caption at the very bottom — two controls doing
+            the same navigation, neither of them part of the system.
+          */}
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="font-mono text-tiny uppercase text-ink-ghost">
+              Langkah {currentStep + 1} dari {steps.length}
+            </span>
+            <button
+              type="button"
+              onClick={goToApp}
+              className="shrink-0 text-meta text-ink-soft underline decoration-hairline-strong underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+            >
+              Lewati pengenalan
+            </button>
+          </div>
+
+          {/*
+            Flat 2px segments in ink, not blue: the one accent on this screen is
+            the button that moves you forward. A progress bar that competes with
+            it for attention is the second blue the brief forbids.
+          */}
+          <div className="mt-3 flex items-center gap-1" aria-hidden="true">
+            {steps.map((_, index) => (
+              <span
+                key={index}
+                className={cn(
+                  "h-[2px] flex-1 transition-colors duration-500",
+                  index <= currentStep ? "bg-ink" : "bg-surface-deep",
+                )}
+              />
+            ))}
+          </div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="mt-10"
+            >
+              {renderStepBody()}
+            </motion.div>
+          </AnimatePresence>
+
+          {/*
+            The pair never stacks: `action-secondary` and `action` share the row
+            below 640px and take their fixed 168/220 widths above it.
+          */}
+          <div className="mt-10 flex items-center gap-3">
+            <Button
+              variant="quiet"
+              size="action-secondary"
+              onClick={handlePrevious}
+              disabled={currentStep === 0 || savingBrand}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Kembali
+            </Button>
+
+            {isBrandProfile ? (
+              <Button
+                variant="brand"
+                size="action"
+                onClick={saveBrandProfile}
+                disabled={savingBrand}
+              >
+                {savingBrand ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Menyimpan…
+                  </>
+                ) : (
+                  <>
+                    Simpan & mulai
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button variant="brand" size="action" onClick={handleNext}>
+                {isLastStep ? "Mulai" : "Lanjut"}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

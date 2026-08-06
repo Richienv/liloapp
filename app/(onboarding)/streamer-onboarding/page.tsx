@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
+import { cn } from "@/lib/utils";
 
 /**
  * Post-signup introduction for streamers. Reached from streamerSignUpAction's
@@ -29,10 +30,15 @@ type OnboardingStep = {
   video: string;
 };
 
+/**
+ * Sentence case, `kamu`, no emoji, and `brand` rather than `client` — that is
+ * the word the host dashboard and the reject modal already use for the other
+ * side of a booking, and a host should not have to learn two names for it.
+ */
 const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
-    title: "Selamat Bergabung di Salda! 👋",
+    title: "Selamat bergabung di Salda",
     description: "Platform yang menghubungkan kamu dengan brand-brand terbaik untuk live shopping.",
     points: [
       "Dapatkan akses ke berbagai brand ternama",
@@ -43,10 +49,10 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Komunikasi yang Aman 💬",
-    description: "Berkomunikasi dengan client melalui platform Salda yang terpercaya.",
+    title: "Komunikasi yang aman",
+    description: "Berkomunikasi dengan brand melalui platform Salda yang terpercaya.",
     points: [
-      "Chat langsung dengan client melalui platform",
+      "Kirim pesan langsung ke brand lewat aplikasi",
       "Diskusikan detail live shopping dengan aman",
       "Semua percakapan tercatat dalam sistem"
     ],
@@ -54,10 +60,10 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Dukungan Admin 🤝",
+    title: "Dukungan admin",
     description: "Tim admin Salda siap membantu melancarkan setiap sesi live shopping kamu.",
     points: [
-      "Mediasi komunikasi dengan client",
+      "Mediasi komunikasi dengan brand",
       "Bantuan teknis selama live shopping",
       "Penyelesaian masalah dengan cepat"
     ],
@@ -65,66 +71,67 @@ const onboardingSteps: OnboardingStep[] = [
   },
   {
     kind: "feature",
-    title: "Mulai Live dengan Mudah 🎥",
+    title: "Mulai live dengan mudah",
     description: "Sistem live shopping yang simpel dan mudah digunakan.",
     points: [
       "Mulai live streaming dengan satu klik",
-      "Interface yang user-friendly",
+      "Tampilan yang mudah dipakai",
       "Panduan langkah demi langkah"
     ],
     video: "/videos/s4.mp4"
   },
   {
     kind: "feature",
-    title: "Sistem Audit Otomatis ⚡",
+    title: "Sistem audit otomatis",
     description: "Pantau dan rekam setiap sesi live shopping dengan akurat.",
     points: [
       "Pencatatan waktu mulai dan selesai otomatis",
-      "Monitoring status live secara real-time",
+      "Pantau status live secara langsung",
       "Laporan performa setiap sesi"
     ],
     video: "/videos/s5.mp4"
   },
   {
     kind: "feature",
-    title: "Pembayaran Terjamin 💰",
+    title: "Pembayaran terjamin",
     description: "Sistem pembayaran yang aman dan transparan.",
     points: [
-      "Pembayaran terlindungi dari penipuan dan fraud",
-      "Rincian fee yang jelas dengan struktur komisi yang jelas",
-      "Histori transaksi lengkap dan tidak terlihat oleh pihak lain"
+      "Pembayaran terlindungi dari penipuan",
+      "Rincian biaya dan struktur komisi yang jelas",
+      "Riwayat transaksi lengkap dan tidak terlihat oleh pihak lain"
     ],
     video: "/videos/s6.mp4"
   },
   {
     kind: "feature",
-    title: "Kelola Booking dengan Mudah 📅",
+    title: "Kelola booking dengan mudah",
     description: "Terima atau tolak permintaan booking sesuai jadwal kamu.",
     points: [
       "Atur harga dan durasi ketersediaan kamu sesuai keinginan",
-      "Dapatkan permintaan langsung dari brand-brand terpercaya",
+      "Dapatkan permintaan langsung dari brand terpercaya",
       "Kelola sesi live kamu dengan fleksibel"
     ],
     video: "/videos/s7.mp4"
   },
   {
     kind: "feature",
-    title: "Atur Jadwal Fleksibel ⏰",
+    title: "Atur jadwal fleksibel",
     description: "Tentukan waktu ketersediaan sesuai kenyamanan kamu.",
     points: [
-      "Set jadwal aktif kamu dengan detail jam ketersediaan kamu",
+      "Atur jadwal aktif kamu sampai ke jam ketersediaan",
       "Blokir waktu untuk keperluan pribadi",
-      "Semua jadwal kamu dapat dijadwalkan dengan mudah"
+      "Semua jadwal kamu bisa diatur dengan mudah"
     ],
     video: "/videos/s8.mp4"
   },
   {
     kind: "safety",
-    title: "⚠️ PENTING ⚠️",
+    // Rendered as the caution eyebrow above the heading, not as the heading.
+    title: "Penting",
     description: "Lindungi diri kamu dengan mengikuti protokol keamanan Salda.",
     points: [
       "Jangan bagikan data pribadi di luar platform",
-      "Semua transaksi WAJIB melalui Salda",
+      "Semua transaksi wajib melalui Salda",
       "Laporkan aktivitas mencurigakan ke admin"
     ],
     video: ""
@@ -222,139 +229,97 @@ export default function StreamerOnboarding() {
   if (authState === "checking") {
     return (
       <div className="flex min-h-screen w-full items-center justify-center bg-canvas">
-        <div className="flex flex-col items-center gap-3 text-ink-soft">
-          <Loader2 className="h-6 w-6 animate-spin text-red-500" />
-          <p className="text-sm">Menyiapkan akun kamu...</p>
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="h-5 w-5 animate-spin text-ink-ghost" />
+          <p className="text-meta text-ink-soft">Menyiapkan akun kamu…</p>
         </div>
       </div>
     );
   }
 
-  const renderStepBody = () => {
-    if (step.kind === "safety") {
-      return (
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="relative"
-        >
-          <motion.div
+  const isSafety = step.kind === "safety";
+
+  /**
+   * The body of one step. The navigation pair lives outside it so the two
+   * buttons sit in the same place on every step rather than moving with the
+   * content above them.
+   */
+  const renderStepBody = () => (
+    <>
+      {isSafety && (
+        <p className="flex items-center gap-2 font-mono text-tiny uppercase text-caution">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          {step.title}
+        </p>
+      )}
+
+      {/*
+        On the safety step the sentence IS the headline. What used to be here —
+        a pulsing red glow behind a white card with a 2px red border, red-tinted
+        rows and a red note — spent five different reds on the one screen that
+        needed to be read calmly and did not look like the rest of the product.
+      */}
+      <h1
+        className={cn(
+          "font-serif font-semibold text-ink",
+          isSafety ? "mt-4 text-section" : "text-section sm:text-display",
+        )}
+      >
+        {isSafety ? step.description : step.title}
+      </h1>
+
+      {!isSafety && <p className="mt-3 text-lede text-ink-soft">{step.description}</p>}
+
+      {/*
+        A numbered list on hairline rules. The tick in a coloured circle
+        confirmed nothing — the host has not done any of these yet.
+      */}
+      <ul className="mt-8 border-t border-hairline-soft">
+        {step.points.map((point, index) => (
+          <motion.li
+            key={index}
+            initial={{ opacity: 0, y: 6 }}
             animate={{
-              scale: [1, 1.02, 1],
-              opacity: [0.5, 0.8, 0.5],
+              opacity: 1,
+              y: 0,
+              transition: { delay: index * 0.06 }
             }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-            className="absolute inset-0 bg-red-100 rounded-lg lg:rounded-panel"
-          />
-
-          <div className="relative bg-white/95 backdrop-blur-sm rounded-lg lg:rounded-panel border-2 border-red-500 p-4 lg:p-8 space-y-4 lg:space-y-6">
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2 }}
-              className="flex items-center gap-3 text-red-600"
+            className="flex items-baseline gap-3 border-b border-hairline-soft py-3"
+          >
+            <span className="numeric shrink-0 font-mono text-mini text-ink-ghost">
+              {String(index + 1).padStart(2, '0')}
+            </span>
+            <span
+              className={cn(
+                "text-copy",
+                isSafety ? "font-medium text-ink" : "text-ink-body",
+              )}
             >
-              <svg
-                className="w-6 h-6 lg:w-8 lg:h-8 animate-pulse"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-              <h1 className="text-2xl lg:text-4xl font-bold">{step.title}</h1>
-            </motion.div>
+              {point}
+            </span>
+          </motion.li>
+        ))}
+      </ul>
 
-            <motion.p
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.3 }}
-              className="text-base lg:text-lg text-ink-body"
-            >
-              {step.description}
-            </motion.p>
-
-            <div className="space-y-3 lg:space-y-4">
-              {step.points.map((point, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-3 text-ink bg-red-50 p-3 lg:p-4 rounded-lg border border-red-200"
-                >
-                  <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
-                  </div>
-                  <span className="text-sm lg:text-base font-medium">{point}</span>
-                </motion.div>
-              ))}
-            </div>
-
-            <motion.div
-              initial={{ y: 10, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.7 }}
-              className="mt-4 lg:mt-6 p-3 lg:p-4 bg-red-50 rounded-lg border border-red-200"
-            >
-              <p className="text-xs lg:text-sm text-red-600 font-medium">
-                Catatan: Salda tidak bertanggung jawab atas kerugian yang timbul akibat
-                transaksi di luar platform atau pembagian informasi pribadi kepada pihak lain.
-              </p>
-            </motion.div>
-          </div>
-        </motion.div>
-      );
-    }
-
-    return (
-      <div className="space-y-6 lg:space-y-8">
-        <h1 className="text-2xl lg:text-4xl font-bold text-ink">{step.title}</h1>
-        <p className="text-base lg:text-lg text-ink-muted">{step.description}</p>
-        <div className="space-y-3 lg:space-y-4">
-          {step.points.map((point, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{
-                opacity: 1,
-                y: 0,
-                transition: { delay: index * 0.2 }
-              }}
-              className="flex items-center gap-3 text-ink-body"
-            >
-              <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
-              </div>
-              <span className="text-sm lg:text-base">{point}</span>
-            </motion.div>
-          ))}
+      {isSafety && (
+        <div className="mt-6 rounded-panel border border-caution-line bg-caution-tint px-4 py-3">
+          <p className="text-meta text-caution">
+            Catatan: Salda tidak bertanggung jawab atas kerugian yang timbul akibat
+            transaksi di luar platform atau pembagian informasi pribadi kepada pihak lain.
+          </p>
         </div>
-      </div>
-    );
-  };
+      )}
+    </>
+  );
 
   return (
-    <div className="relative flex flex-col lg:flex-row w-full min-h-screen">
-      {/* Always-visible escape hatch — nobody should feel trapped in a tour. */}
-      <button
-        onClick={goToApp}
-        className="absolute right-4 top-4 z-20 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-ink-muted backdrop-blur transition-colors hover:text-ink"
-      >
-        Lewati
-      </button>
-
-      {/* Video Section */}
-      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-surface order-1 lg:order-2">
+    <div className="flex min-h-screen w-full flex-col bg-canvas lg:flex-row">
+      {/*
+        Ink, the way the role picker's host panel is ink. It is what tells a
+        host at a glance that this is their side of the product — the job the
+        red used to do, done with a surface instead of a second accent colour.
+      */}
+      <div className="relative order-1 h-[38vh] w-full shrink-0 bg-ink lg:order-2 lg:h-auto lg:flex-1">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -371,18 +336,19 @@ export default function StreamerOnboarding() {
                 muted
                 loop
                 playsInline
-                className="w-full h-full object-contain"
+                className="h-full w-full object-contain"
               />
             ) : (
               // The safety step has no video; an empty <video src=""> renders as
-              // a broken player, so show the brand mark instead.
-              <div className="flex h-full w-full items-center justify-center bg-canvas">
+              // a broken player, so show the brand mark instead. The white mark,
+              // because the panel it sits on is #171717.
+              <div className="flex h-full w-full items-center justify-center">
                 <Image
-                  src="/images/salda-logoB.png"
+                  src="/images/salda-iconW.png"
                   alt="Salda"
                   width={120}
                   height={120}
-                  className="opacity-40"
+                  className="opacity-30"
                 />
               </div>
             )}
@@ -390,86 +356,76 @@ export default function StreamerOnboarding() {
         </AnimatePresence>
       </div>
 
-      {/* Content Section */}
-      <div className="w-full lg:w-[45%] bg-canvas p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
-        <div className="w-full max-w-2xl">
+      {/* Content column. 452px is the reading measure the auth screens use. */}
+      <div className="order-2 flex w-full items-center justify-center px-5 py-10 sm:px-8 lg:order-1 lg:w-[46%] lg:px-12 lg:py-16">
+        <div className="w-full max-w-[452px]">
+          {/*
+            Step count and the escape hatch on one line, above the rail. The
+            skip used to be a floating white pill over the video and a logo with
+            an underlined caption at the very bottom — two controls doing the
+            same navigation, neither of them part of the system.
+          */}
+          <div className="flex items-baseline justify-between gap-4">
+            <span className="font-mono text-tiny uppercase text-ink-ghost">
+              Langkah {currentStep + 1} dari {onboardingSteps.length}
+            </span>
+            <button
+              type="button"
+              onClick={goToApp}
+              className="shrink-0 text-meta text-ink-soft underline decoration-hairline-strong underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
+            >
+              Lewati pengenalan
+            </button>
+          </div>
+
+          {/*
+            Flat 2px segments in ink. The one accent on this screen is the
+            button that moves you forward.
+          */}
+          <div className="mt-3 flex items-center gap-1" aria-hidden="true">
+            {onboardingSteps.map((_, index) => (
+              <span
+                key={index}
+                className={cn(
+                  "h-[2px] flex-1 transition-colors duration-500",
+                  index <= currentStep ? "bg-ink" : "bg-surface-deep",
+                )}
+              />
+            ))}
+          </div>
+
           <AnimatePresence mode="wait">
             <motion.div
               key={currentStep}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 20 }}
-              className="space-y-6 lg:space-y-8"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="mt-10"
             >
-              {/* Progress Bar */}
-              <div className="flex items-center gap-1 lg:gap-2 mb-8 lg:mb-12 px-4 lg:px-0">
-                {onboardingSteps.map((_, index) => (
-                  <div key={index} className="flex-1 relative">
-                    <div
-                      className={`h-1.5 lg:h-2 rounded-full transition-all duration-500 ${
-                        index <= currentStep ? "bg-red-500" : "bg-surface-deep"
-                      }`}
-                    />
-                    {index <= currentStep && (
-                      <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="absolute -right-1 -top-1 hidden lg:block"
-                      >
-                        <CheckCircle2 className="w-4 h-4 text-red-500" />
-                      </motion.div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Content */}
-              <div className="px-4 lg:px-0">
-                {renderStepBody()}
-              </div>
-
-              {/* Navigation */}
-              <div className="space-y-6 lg:space-y-8 px-4 lg:px-0">
-                <div className="flex gap-3 lg:gap-4">
-                  <Button
-                    onClick={handlePrevious}
-                    variant="outline"
-                    className="flex-1 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
-                    disabled={currentStep === 0}
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    Kembali
-                  </Button>
-                  <Button
-                    onClick={handleNext}
-                    className="flex-1 bg-destructive-emphasis hover:bg-destructive-emphasis/90 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
-                  >
-                    {isLastStep ? "Mulai" : "Lanjut"}
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </div>
-
-                {/* Skip button */}
-                <div className="text-center">
-                  <button
-                    onClick={goToApp}
-                    className="group inline-flex flex-col items-center gap-2"
-                  >
-                    <Image
-                      src="/images/salda-logoB.png"
-                      alt="Salda Logo"
-                      width={40}
-                      height={40}
-                      className="opacity-50 group-hover:opacity-100 transition-opacity lg:w-[60px] lg:h-[60px]"
-                    />
-                    <span className="text-xs lg:text-sm text-ink-soft underline group-hover:text-ink-body">
-                      Lewati semua pengenalan
-                    </span>
-                  </button>
-                </div>
-              </div>
+              {renderStepBody()}
             </motion.div>
           </AnimatePresence>
+
+          {/*
+            The pair never stacks: `action-secondary` and `action` share the row
+            below 640px and take their fixed 168/220 widths above it.
+          */}
+          <div className="mt-10 flex items-center gap-3">
+            <Button
+              variant="quiet"
+              size="action-secondary"
+              onClick={handlePrevious}
+              disabled={currentStep === 0}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Kembali
+            </Button>
+            <Button variant="brand" size="action" onClick={handleNext}>
+              {isLastStep ? "Mulai" : "Lanjut"}
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
     </div>
