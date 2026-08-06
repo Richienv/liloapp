@@ -33,11 +33,11 @@ export const NOTIFICATION_TEMPLATES: NotificationTemplates = {
   },
   booking_accepted: {
     client: "{streamer_name} telah menerima booking kamu untuk {start_time} pada platform {platform}.",
-    streamer: "kamu telah menerima booking dari {client_name} untuk {start_time}."
+    streamer: "Kamu telah menerima booking dari {client_name} untuk {start_time}."
   },
   booking_rejected: {
     client: "{streamer_name} telah menolak booking kamu untuk {start_time} pada platform {platform}.",
-    streamer: "kamu telah menolak booking dari {client_name} untuk {start_time}."
+    streamer: "Kamu telah menolak booking dari {client_name} untuk {start_time}."
   },
   booking_cancelled: {
     client: "Booking kamu dengan {streamer_name} untuk {start_time} telah dibatalkan.",
@@ -45,31 +45,31 @@ export const NOTIFICATION_TEMPLATES: NotificationTemplates = {
   },
   stream_started: {
     client: "{streamer_name} telah memulai live stream untuk booking kamu pada {start_time}.[[stream_link]]",
-    streamer: "kamu telah memulai live stream dengan {client_name}."
+    streamer: "Kamu telah memulai live stream dengan {client_name}."
   },
   stream_ended: {
     client: "{streamer_name} telah mengakhiri live stream untuk booking kamu.",
-    streamer: "kamu telah mengakhiri live stream dengan {client_name}."
+    streamer: "Kamu telah mengakhiri live stream dengan {client_name}."
   },
   reschedule_request: {
     client: "{streamer_name} mengajukan perubahan jadwal untuk sesi live streaming kamu. Alasan: {reason}",
-    streamer: "kamu mengajukan perubahan jadwal untuk sesi dengan {client_name}. Alasan: {reason}"
+    streamer: "Kamu mengajukan perubahan jadwal untuk sesi dengan {client_name}. Alasan: {reason}"
   },
   reschedule_accepted: {
     client: "Permintaan perubahan jadwal telah diterima oleh {streamer_name}.",
-    streamer: "kamu telah menerima permintaan perubahan jadwal dari {client_name}."
+    streamer: "Kamu telah menerima permintaan perubahan jadwal dari {client_name}."
   },
   reschedule_rejected: {
     client: "Permintaan perubahan jadwal telah ditolak oleh {streamer_name}.",
-    streamer: "kamu telah menolak permintaan perubahan jadwal dari {client_name}."
+    streamer: "Kamu telah menolak permintaan perubahan jadwal dari {client_name}."
   },
   item_received: {
     client: "{streamer_name} telah menerima barang kamu dan siap untuk memulai live streaming.",
-    streamer: "kamu telah menerima barang dari {client_name} untuk sesi live streaming."
+    streamer: "Kamu telah menerima barang dari {client_name} untuk sesi live streaming."
   },
   new_message: {
-    client: "kamu menerima pesan baru dari {streamer_name}",
-    streamer: "kamu menerima pesan baru dari {client_name}"
+    client: "Kamu menerima pesan baru dari {streamer_name}",
+    streamer: "Kamu menerima pesan baru dari {client_name}"
   },
   info: {
     client: "{message}",

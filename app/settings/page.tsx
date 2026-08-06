@@ -524,7 +524,7 @@ function SettingsContent() {
         // Check for specific error types and show appropriate messages
         if (errorMessage.includes('24 hours')) {
           const nextUpdate = nextAvailableUpdate ? format(new Date(nextAvailableUpdate), 'HH:mm, dd MMMM yyyy') : 'besok';
-          toast.error(`kamu sudah mengubah harga hari ini. Silakan coba lagi pada ${nextUpdate} WIB`);
+          toast.error(`Kamu sudah mengubah harga hari ini. Silakan coba lagi pada ${nextUpdate} WIB`);
         } else if (errorMessage.includes('25%')) {
           const minPrice = calculatePriceLimits(price).minPrice;
           const maxPrice = calculatePriceLimits(price).maxPrice;
@@ -554,7 +554,7 @@ function SettingsContent() {
       case 'Price can only be updated once every 24 hours':
         const nextUpdateTime = nextAvailableUpdate ? format(new Date(nextAvailableUpdate), 'HH:mm') : '';
         const nextUpdateDate = nextAvailableUpdate ? format(new Date(nextAvailableUpdate), 'dd MMMM yyyy') : '';
-        return `kamu sudah mengubah harga hari ini. Perubahan harga berikutnya dapat dilakukan besok pada ${nextUpdateTime} WIB, ${nextUpdateDate}`;
+        return `Kamu sudah mengubah harga hari ini. Perubahan harga berikutnya dapat dilakukan besok pada ${nextUpdateTime} WIB, ${nextUpdateDate}`;
       case 'Price change cannot exceed 25%':
         const minPrice = calculatePriceLimits(price).minPrice;
         const maxPrice = calculatePriceLimits(price).maxPrice;

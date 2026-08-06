@@ -2733,17 +2733,42 @@ function NowCard({
     return start <= now && end >= now;
   });
 
+  /**
+   * A session whose end time has passed but which nobody has ended.
+   *
+   * Without this it fell out of every bucket — past its window so not `live`,
+   * not in the future so not `next` — and the card cheerfully announced "tidak
+   * ada yang menunggu jawaban" to a host whose stream was still open and
+   * unbilled. Bounded to the last twelve hours so a session forgotten last week
+   * does not sit at the top of the dashboard forever.
+   */
+  const overdue = live
+    ? undefined
+    : bookings.find((booking) => {
+        if (booking.status !== 'accepted' && booking.status !== 'live') return false;
+        const end = new Date(booking.end_time).getTime();
+        return end < now.getTime() && now.getTime() - end < 12 * 60 * 60 * 1000;
+      });
+
   const next = bookings
     .filter((booking) => booking.status === 'accepted' && new Date(booking.start_time) > now)
     .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())[0];
 
-  const stage = live ? 'live' : pendingCount > 0 ? 'pending' : next ? 'next' : 'clear';
-  const subject = live ?? next;
+  const stage = live
+    ? 'live'
+    : overdue
+      ? 'overdue'
+      : pendingCount > 0
+        ? 'pending'
+        : next
+          ? 'next'
+          : 'clear';
+  const subject = live ?? overdue ?? next;
 
   return (
     <section className="mt-6 overflow-hidden rounded-panel border border-hairline bg-surface">
       <div className="flex items-center gap-2 border-b border-hairline-soft px-5 py-3.5">
-        {stage === 'live' && (
+        {(stage === 'live' || stage === 'overdue') && (
           <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-critical" />
         )}
         <h2 className="font-serif text-title font-semibold text-ink">
@@ -2794,7 +2819,9 @@ function NowCard({
             ))}
           </div>
           <p className="mt-4 text-meta text-ink-soft">
-            {stage === 'live'
+            {stage === 'overdue'
+              ? 'Jam sesi ini sudah lewat tapi belum ditutup. Akhiri sesi supaya bayaran kamu bisa diproses.'
+              : stage === 'live'
               ? 'Sesi ini sedang berlangsung. Tempel tautan siaran kamu supaya brand bisa menonton.'
               : `Sesi berikutnya ${format(new Date(subject.start_time), 'EEEE, d MMMM', { locale: idLocale })}.`}
           </p>
