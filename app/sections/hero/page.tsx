@@ -1,14 +1,12 @@
 "use client";
 
-import { Star, TrendingUp, Users, ShoppingBag, Shield, Award, MapPin, Clock } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import Image from "next/image";
 import { subtotalWithPlatformFee } from "@/lib/pricing";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
-import { CustomBackground } from "@/components/structured-data/spotlight-new";
 
 // Profiles are completed after the account exists, so an approved streamer can
 // still be missing any of these columns.
@@ -52,155 +50,56 @@ function formatPrice(price: number): string {
   return `Rp ${Math.round(priceWithPlatformFee).toLocaleString('id-ID')}`;
 }
 
-function RatingStars({ rating }: { rating: number | null | undefined }) {
+/**
+ * Rating as a figure, not as five glyphs.
+ *
+ * The five-star row was drawn in `yellow-400`, a colour that exists nowhere in
+ * this palette, and four of the five stars carried no information — the number
+ * is the whole payload. One outline mark plus the value in tabular figures
+ * says the same thing in a quarter of the width, which is what lets the meta
+ * line stay on one row next to the city.
+ *
+ * An unrated host is not a zero-rated host, so it says so in words.
+ */
+function HostRating({ rating }: { rating: number | null | undefined }) {
   const hasRating = typeof rating === 'number' && Number.isFinite(rating) && rating > 0;
 
+  if (!hasRating) {
+    return <span className="shrink-0 text-mini text-white/50">Belum ada rating</span>;
+  }
+
   return (
-    <div className="flex items-center gap-1">
-      {[...Array(5)].map((_, i) => (
-        <Star
-          key={i}
-          className={`w-3 h-3 ${
-            hasRating && i < Math.floor(rating)
-              ? "fill-yellow-400 text-yellow-400"
-              : "text-white/30"
-          }`}
-        />
-      ))}
-      {/* white/70, like every other label on this card. It was text-gray-600 —
-          invisible on the dark photo scrim these cards sit on. Nobody had seen
-          it because until the fabricated ratings were removed, `hasRating` was
-          always true and this branch was unreachable. */}
-      <span className="ml-1 text-xs text-white/70">
-        {hasRating ? rating.toFixed(1) : "Belum ada rating"}
-      </span>
-    </div>
+    <span className="flex shrink-0 items-center gap-1 text-mini text-white/80">
+      <Star className="h-3 w-3 fill-white/90 text-white/90" />
+      <span className="numeric">{rating.toFixed(1)}</span>
+    </span>
   );
 }
 
-// Skeleton component for streamer cards
+/**
+ * Loading state for one carousel card.
+ *
+ * It is the card's own frame, pulsing — not a second layout. The version this
+ * replaces built a glass panel out of `bg-white/10` and `bg-white/20` bars over
+ * nothing, so the skeleton and the loaded card did not even share a silhouette
+ * and the marquee jumped as the data arrived.
+ */
 const StreamerCardSkeleton = () => (
-  <div className="relative flex-shrink-0 w-[calc((100vw-3rem)/1.5)] sm:w-[calc((100vw-8rem)/2)] md:w-[calc((100vw-8rem)/3)] min-w-[220px] sm:min-w-[280px] max-w-[400px] group">
-    {/* Card spotlight effect */}
-    
-    
-    {/* Image Container with Floating Effect */}
-    <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-panel sm:rounded-frame overflow-hidden sm: transition-all duration-500 group-hover:-translate-y-2 bg-surface-deep animate-pulse" />
-
-    {/* Floating Content Container */}
-    <div className="relative -mt-32 sm:-mt-40 md:-mt-48 mx-2 sm:mx-4 z-10">
-      <div className="backdrop-blur-md bg-white/10 rounded-lg sm:rounded-panel p-2.5 sm:p-4 border border-white/20">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-          <div className="h-5 bg-white/20 rounded w-2/3 animate-pulse"></div>
-          <div className="h-5 bg-white/20 rounded-full w-1/4 animate-pulse"></div>
-        </div>
-
-        {/* Location and Rating */}
-        <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-          <div className="flex items-center gap-1 sm:gap-1.5 w-1/2">
-            <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-white/20 animate-pulse"></div>
-            <div className="h-3 bg-white/20 rounded w-full animate-pulse"></div>
-          </div>
-          <div className="flex items-center gap-1 w-1/3">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="w-3 h-3 rounded-full bg-white/20 animate-pulse"></div>
-            ))}
-          </div>
-        </div>
-
-        {/* Key Stats */}
-        <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-          <div className="flex items-center gap-1 sm:gap-2">
-            <div className="w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full bg-white/20 animate-pulse"></div>
-            <div>
-              <div className="h-2 bg-white/20 rounded w-12 mb-1 animate-pulse"></div>
-              <div className="h-3 bg-white/20 rounded w-8 animate-pulse"></div>
-            </div>
-          </div>
-          <div className="flex items-center gap-1 sm:gap-2">
-            <div className="w-2.5 h-2.5 sm:w-4 sm:h-4 rounded-full bg-white/20 animate-pulse"></div>
-            <div>
-              <div className="h-2 bg-white/20 rounded w-12 mb-1 animate-pulse"></div>
-              <div className="h-3 bg-white/20 rounded w-16 animate-pulse"></div>
-            </div>
-          </div>
-        </div>
-
-        {/* Specialties */}
-        <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-4 bg-white/20 rounded w-12 animate-pulse"></div>
-          ))}
-        </div>
+  <div className="relative w-[calc((100vw-3rem)/1.5)] min-w-[220px] max-w-[400px] flex-shrink-0 sm:w-[calc((100vw-8rem)/2)] sm:min-w-[280px] md:w-[calc((100vw-8rem)/3)]">
+    <div className="relative aspect-[4/5] w-full overflow-hidden rounded-panel bg-surface-deep sm:aspect-[3/4] sm:rounded-frame">
+      <div className="absolute inset-x-0 bottom-0 space-y-2 p-3 sm:p-4">
+        <div className="h-4 w-2/3 animate-pulse rounded-chip bg-surface-tint" />
+        <div className="h-3 w-1/2 animate-pulse rounded-chip bg-surface-tint" />
+        <div className="h-4 w-1/3 animate-pulse rounded-chip bg-surface-tint" />
       </div>
     </div>
   </div>
 );
 
-const allCards = [
-  { 
-    label: "Livestreamer Aktif", 
-    value: "250+",
-    icon: Users,
-    iconColor: "text-blue-600",
-    description: null
-  },
-  { 
-    label: "Total Penjualan", 
-    value: "Rp 5M+",
-    icon: ShoppingBag,
-    iconColor: "text-purple-600",
-    description: null
-  },
-  { 
-    label: "Rating Kepuasan", 
-    value: "4.9/5.0",
-    icon: Star,
-    iconColor: "text-yellow-500",
-    description: null
-  },
-  { 
-    label: "Live Sessions", 
-    value: "10,000+",
-    icon: Award,
-    iconColor: "text-emerald-600",
-    description: null
-  },
-  {
-    label: "Host Terverifikasi",
-    value: null,
-    icon: Shield,
-    iconColor: "text-blue-600",
-    description: "Portfolio & track record terbukti"
-  },
-  {
-    label: "Konversi Tinggi",
-    value: null,
-    icon: ShoppingBag,
-    iconColor: "text-purple-600",
-    description: "2-3x lipat penjualan normal"
-  },
-  {
-    label: "Support 24/7",
-    value: null,
-    icon: Award,
-    iconColor: "text-pink-600",
-    description: "Tim profesional siap membantu"
-  }
-];
-
-const partners = [
-  { name: "Shopee", logo: "/images/shopee-logo.png" },
-  { name: "TikTok Shop", logo: "/images/tiktok-logo.png" },
-  // Add more partner logos as needed
-];
-
 /** The headline's rotating tail. Same meaning, three ways a brand says it. */
 const ROTATING_WORDS = ['produk kamu.', 'brand kamu.', 'toko kamu.'] as const;
 
 export default function Hero() {
-  const router = useRouter();
   const [rotatingIndex, setRotatingIndex] = useState(0);
 
   useEffect(() => {
@@ -266,21 +165,27 @@ export default function Hero() {
   useEffect(() => {
     setDuplicatedStreamers([...streamers, ...streamers, ...streamers]);
   }, [streamers]);
-  
+
   // Generate skeleton streamer cards
   const generateSkeletonStreamers = (count: number) => {
     return Array(count).fill(0).map((_, index) => (
       <StreamerCardSkeleton key={`skeleton-${index}`} />
     ));
   };
-  
+
   return (
-    <section className="relative min-h-screen overflow-hidden bg-canvas pt-24 sm:pt-32" aria-label="Platform Live Commerce #1 di Indonesia">
-      {/* Background layer with dot pattern and spotlights */}
-      <div className="absolute inset-0 z-0 h-full">
-        <CustomBackground />
-      </div>
-      
+    /*
+      Warm canvas, nothing behind it.
+
+      `<CustomBackground />` used to paint two blue radial glows across the top
+      of the page on a #faf9f5 base — a decoration gradient, half a shade off
+      the canvas token, and two more blue things in the one section that already
+      spends its accent on the CTA. The page is the canvas now.
+    */
+    <section
+      className="relative min-h-screen overflow-hidden bg-canvas pt-24 sm:pt-32"
+      aria-label="Platform Live Commerce #1 di Indonesia"
+    >
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -306,176 +211,175 @@ export default function Hero() {
           })
         }}
       />
-      
-      {/* Content layer */}
-      <div className="relative z-10">
-        <div className="container mx-auto px-3 sm:px-4 pt-8 sm:pt-16 md:pt-24">
-          <div className="max-w-[1200px] mx-auto">
-            <div className="flex flex-col items-center">
-              {/* Text Content */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-center w-full max-w-5xl mx-auto mb-4 sm:mb-6 md:mb-8 px-2 relative z-20"
-              >
-                <div className="mb-5 flex items-center justify-center">
-                  <span className="rounded-pill border border-hairline bg-surface px-3 py-1.5 text-mini font-medium text-ink-muted">
-                    Shopee &amp; TikTok Live-Seller Supported
-                  </span>
-                </div>
 
-                {/*
-                  The headline is one sentence with a rotating tail. The three
-                  words all mean the same thing to a brand — produk, brand, toko
-                  — which is the point: it reads as the product knowing who is
-                  looking, not as a slogan.
-                */}
-                <h1 className="mx-auto max-w-[16ch] font-serif text-hero font-medium text-balance text-ink">
-                  <span className="sr-only">Salda by TROLIVE — </span>
-                  Host livestreamer terlatih untuk{' '}
-                  <span className="text-brand">{ROTATING_WORDS[rotatingIndex]}</span>
-                </h1>
+      <div className="mx-auto flex w-full max-w-[1180px] flex-col items-center px-5 pt-8 sm:px-8 sm:pt-14 lg:px-12">
+        {/*
+          No mount animation on the first thing a visitor sees.
 
-                <p className="mx-auto mt-6 max-w-[52ch] text-lede text-ink-muted">
-                  Booking host yang sudah terverifikasi, atur jadwal live, dan bayar di satu
-                  tempat. Rata-rata brand mulai live dalam tiga hari setelah mendaftar.
-                </p>
-
-                <Link
-                  href="/streamers"
-                  className="mt-8 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
-                    bg-brand text-ui font-semibold text-white transition-colors hover:bg-brand-hover
-                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
-                    focus-visible:ring-offset-2"
-                >
-                  Mulai cari host
-                </Link>
-
-                {/*
-                  Replaces three "trust badges" that asserted "Rating 4.9/5" and
-                  "250+ Host Aktif" as facts. Neither is a number this product
-                  computes. This one is checkable: signing up is free, and you
-                  are charged at booking.
-                */}
-                <p className="mt-5 text-mini text-ink-soft">
-                  Gratis mendaftar · bayar hanya saat booking
-                </p>
-              </motion.div>
-
-              {/* Streamer Cards Carousel */}
-              <div id="host" className="relative w-screen -mx-4 overflow-hidden mb-6 sm:mb-12 md:mb-16 mt-8 sm:mt-10 min-h-[350px] sm:min-h-[500px] md:min-h-[600px] z-20">
-                <motion.div
-                  animate={{
-                    x: [0, -100 * Math.ceil(streamers.length / 3)],
-                  }}
-                  transition={{
-                    x: {
-                      repeat: Infinity,
-                      repeatType: "loop",
-                      duration: 20,
-                      ease: "linear",
-                    },
-                  }}
-                  className="flex gap-3 sm:gap-6 md:gap-8 px-3 sm:px-6 md:px-8 lg:px-16 py-4 sm:py-6 md:py-8"
-                >
-                  {isLoadingStreamers 
-                    ? generateSkeletonStreamers(15) // Display 15 skeleton cards while loading
-                    : duplicatedStreamers.map((streamer, index) => (
-                      <div
-                        key={`${streamer.id}-${index}`}
-                        className="relative flex-shrink-0 w-[calc((100vw-3rem)/1.5)] sm:w-[calc((100vw-8rem)/2)] md:w-[calc((100vw-8rem)/3)] min-w-[220px] sm:min-w-[280px] max-w-[400px] group"
-                      >
-                        {/* Card spotlight effect */}
-                        
-                        {/* Image Container with Floating Effect */}
-                        <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-panel sm:rounded-frame overflow-hidden sm: transition-all duration-500 group-hover:-translate-y-2">
-                          <Image
-                            src={streamer.image_url || PLACEHOLDER_AVATAR}
-                            alt={formatName(streamer.first_name, streamer.last_name)}
-                            fill
-                            className="object-cover"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/0" />
-                        </div>
-
-                        {/* Floating Content Container */}
-                        <div className="relative -mt-32 sm:-mt-40 md:-mt-48 mx-2 sm:mx-4 z-10">
-                          <div className="backdrop-blur-md bg-white/10 rounded-lg sm:rounded-panel p-2.5 sm:p-4 border border-white/20">
-                            {/* Header */}
-                            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                              <h3 className="text-sm sm:text-lg font-medium text-white">
-                                {formatName(streamer.first_name, streamer.last_name)}
-                              </h3>
-                              {/* No platform set yet: render no pill at all
-                                  rather than an empty floating chip */}
-                              {streamer.platform && (
-                                <span className="px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-white/10 text-white border border-white/20">
-                                  {streamer.platform}
-                                </span>
-                              )}
-                            </div>
-
-                            {/* Location and Rating */}
-                            <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                              <div className="flex items-center gap-1 sm:gap-1.5">
-                                <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white/80" />
-                                <span className="text-[10px] sm:text-sm text-white/80">
-                                  {streamer.location || streamer.city_slug || 'Lokasi belum diatur'}
-                                </span>
-                              </div>
-                              <RatingStars rating={streamer.rating} />
-                            </div>
-
-                            {/*
-                              An "Orders" count, an "Experience" figure and three
-                              specialty chips used to sit here, all read from a
-                              five-row hardcoded table indexed by position in the
-                              carousel. They described nobody. The price is the
-                              one number on this card that is actually this
-                              host's, so it is the one the card shows.
-                            */}
-                            {typeof streamer.price === 'number' && streamer.price > 0 && (
-                              <p className="numeric mt-1.5 text-[11px] font-semibold text-white sm:mt-2 sm:text-copy">
-                                {`Rp ${Math.round(subtotalWithPlatformFee(streamer.price)).toLocaleString('id-ID')}`}
-                                <span className="ml-1 font-normal text-white/60">/ jam</span>
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  }
-                </motion.div>
-
-                {/* Gradient Overlays */}
-                <div className="absolute inset-y-0 left-0 w-[15%] sm:w-[10%] bg-gradient-to-r from-canvas via-canvas/80 to-transparent pointer-events-none z-30" />
-                <div className="absolute inset-y-0 right-0 w-[15%] sm:w-[10%] bg-gradient-to-l from-canvas via-canvas/80 to-transparent pointer-events-none z-30" />
-              </div>
-
-              {/* Static Achievement Badges */}
-              <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 mb-8 sm:mb-12 md:mb-16 relative z-20">
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3 md:gap-4">
-                  {allCards.map((card, index) => (
-                    <div key={index} className="bg-surface p-3 sm:p-4 rounded-lg sm:rounded-panel border border-hairline transition-all duration-300">
-                      <div className="flex flex-col items-center text-center">
-                        <card.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${card.iconColor} mb-1.5 sm:mb-2`} />
-                        {card.value && (
-                          <p className="text-xs sm:text-sm font-semibold text-ink">{card.value}</p>
-                        )}
-                        <p className="text-[10px] sm:text-xs text-ink-soft">{card.label}</p>
-                        {card.description && (
-                          <p className="text-[8px] sm:text-[10px] text-ink-faint mt-0.5">{card.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
+          This block used to be a `motion.div` starting at `opacity: 0`, which
+          is the server-rendered state too — so a hydration failure left the
+          headline, the sub and the CTA permanently invisible. Same contract as
+          the scroll reveal in globals.css: content is visible by default, and
+          motion is only ever allowed to take something away that script is
+          already alive to give back.
+        */}
+        <div className="w-full text-center">
+          <div className="mb-6 flex items-center justify-center">
+            <span className="rounded-pill border border-hairline bg-surface px-3 py-1.5 text-mini font-medium text-ink-muted">
+              Shopee &amp; TikTok Live-Seller Supported
+            </span>
           </div>
+
+          {/*
+            The headline is one sentence with a rotating tail. The three
+            words all mean the same thing to a brand — produk, brand, toko
+            — which is the point: it reads as the product knowing who is
+            looking, not as a slogan.
+
+            The tail is ink, not accent. The section's one blue is the CTA
+            below it; a blue rotating word made two, and the word is already
+            the only thing on the line that moves.
+          */}
+          <h1 className="mx-auto max-w-[16ch] font-serif text-hero font-medium text-balance text-ink">
+            <span className="sr-only">Salda by TROLIVE — </span>
+            Host livestreamer terlatih untuk{' '}
+            <span className="text-ink">{ROTATING_WORDS[rotatingIndex]}</span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-[52ch] text-lede text-ink-muted">
+            Booking host yang sudah terverifikasi, atur jadwal live, dan bayar di satu
+            tempat. Rata-rata brand mulai live dalam tiga hari setelah mendaftar.
+          </p>
+
+          <Link
+            href="/streamers"
+            className="mt-8 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
+              bg-brand text-ui font-semibold text-white transition-colors hover:bg-brand-hover
+              focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+              focus-visible:ring-offset-2"
+          >
+            Mulai cari host
+          </Link>
+
+          {/*
+            Replaces three "trust badges" that asserted "Rating 4.9/5" and
+            "250+ Host Aktif" as facts. Neither is a number this product
+            computes. This one is checkable: signing up is free, and you
+            are charged at booking.
+          */}
+          <p className="mt-5 text-mini text-ink-soft">
+            Gratis mendaftar · bayar hanya saat booking
+          </p>
         </div>
+
+        {/* Streamer Cards Carousel */}
+        <div
+          id="host"
+          className="relative -mx-4 mt-12 mb-6 min-h-[350px] w-screen overflow-hidden sm:mt-16 sm:mb-12 sm:min-h-[500px] md:mb-16 md:min-h-[600px]"
+        >
+          <motion.div
+            animate={{
+              x: [0, -100 * Math.ceil(streamers.length / 3)],
+            }}
+            transition={{
+              x: {
+                repeat: Infinity,
+                repeatType: "loop",
+                duration: 20,
+                ease: "linear",
+              },
+            }}
+            className="flex gap-3 px-3 py-4 sm:gap-6 sm:px-6 sm:py-6 md:gap-8 md:px-8 md:py-8 lg:px-16"
+          >
+            {isLoadingStreamers
+              ? generateSkeletonStreamers(15) // Display 15 skeleton cards while loading
+              : duplicatedStreamers.map((streamer, index) => (
+                <div
+                  key={`${streamer.id}-${index}`}
+                  className="group relative w-[calc((100vw-3rem)/1.5)] min-w-[220px] max-w-[400px] flex-shrink-0 sm:w-[calc((100vw-8rem)/2)] sm:min-w-[280px] md:w-[calc((100vw-8rem)/3)]"
+                >
+                  {/*
+                    Photo, scrim, text — no frosted panel.
+
+                    The card used to float a `bg-white/10` glass box with a
+                    `border-white/20` edge over the bottom of the photo, hung
+                    there on a -mt-48. A translucent white fill is not a surface
+                    in this system, and the box was there only to buy contrast
+                    the scrim already provides. The scrim is the one gradient the
+                    brief allows: white text over a photograph.
+                  */}
+                  <div className="relative aspect-[4/5] w-full overflow-hidden rounded-panel bg-surface-deep transition-transform duration-500 group-hover:-translate-y-2 sm:aspect-[3/4] sm:rounded-frame">
+                    <Image
+                      src={streamer.image_url || PLACEHOLDER_AVATAR}
+                      alt={formatName(streamer.first_name, streamer.last_name)}
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
+
+                    <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
+                      {/* One row, always. The name truncates; the platform
+                          label never drops to a second line. */}
+                      <div className="flex min-w-0 items-baseline gap-2">
+                        <h3 className="min-w-0 flex-1 truncate text-copy font-medium text-white sm:text-title">
+                          {formatName(streamer.first_name, streamer.last_name)}
+                        </h3>
+                        {/* No platform set yet: render no label at all rather
+                            than an empty floating chip */}
+                        {streamer.platform && (
+                          <span className="shrink-0 font-mono text-micro uppercase text-white/70">
+                            {streamer.platform}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-1.5 flex min-w-0 items-center gap-2">
+                        <MapPin className="h-3 w-3 shrink-0 text-white/50" />
+                        <span className="min-w-0 flex-1 truncate text-mini text-white/70">
+                          {streamer.location || streamer.city_slug || 'Lokasi belum diatur'}
+                        </span>
+                        <HostRating rating={streamer.rating} />
+                      </div>
+
+                      {/*
+                        An "Orders" count, an "Experience" figure and three
+                        specialty chips used to sit here, all read from a
+                        five-row hardcoded table indexed by position in the
+                        carousel. They described nobody. The price is the
+                        one number on this card that is actually this
+                        host's, so it is the one the card shows.
+                      */}
+                      {typeof streamer.price === 'number' && streamer.price > 0 && (
+                        <p className="numeric mt-2.5 whitespace-nowrap text-copy font-semibold text-white sm:text-ui">
+                          {formatPrice(streamer.price)}
+                          <span className="ml-1 font-normal text-white/60">/ jam</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
+          </motion.div>
+
+          {/* Edge fades. The other gradient the brief allows: a marquee has to
+              run off the page rather than stop at a hard edge. */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 z-30 w-[15%] bg-gradient-to-r from-canvas via-canvas/80 to-transparent sm:w-[10%]" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 z-30 w-[15%] bg-gradient-to-l from-canvas via-canvas/80 to-transparent sm:w-[10%]" />
+        </div>
+
+        {/*
+          The "Static Achievement Badges" row is gone.
+
+          Seven cards, seven icons in seven different colours, asserting
+          "250+ Livestreamer Aktif", "Rp 5M+ Total Penjualan", "4.9/5.0 Rating
+          Kepuasan", "10,000+ Live Sessions" and "2-3x lipat penjualan normal".
+          Not one of those figures is computed anywhere in this product — they
+          were literals in an array — and they were the same three claims the
+          trust badges above were already deleted for. The checkable line under
+          the CTA is what replaces them.
+        */}
       </div>
     </section>
   );
-} 
+}

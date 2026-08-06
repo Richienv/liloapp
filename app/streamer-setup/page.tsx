@@ -5,11 +5,11 @@ import {
   BadgeCheck,
   CalendarClock,
   Check,
-  Sparkles,
   Store,
   Wallet,
 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import {
   milestoneProgress,
@@ -52,7 +52,11 @@ const ICONS: Record<MilestoneId, typeof Store> = {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10">{children}</main>
+    <div className="min-h-screen bg-canvas">
+      <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+        {children}
+      </main>
+    </div>
   );
 }
 
@@ -90,19 +94,19 @@ export default async function StreamerSetupHubPage() {
   if (!streamer && userType === "client") {
     return (
       <Shell>
-        <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
-          <h1 className="text-xl font-semibold text-ink">Halaman khusus host</h1>
-          <p className="mt-2 text-ink-muted">
+        <div className="rounded-frame border border-hairline bg-surface p-5 sm:p-8">
+          <h1 className="font-serif text-title font-semibold text-ink">
+            Halaman khusus host
+          </h1>
+          <p className="mt-2 text-copy text-ink-muted">
             Akun ini terdaftar sebagai brand, bukan host. Kamu bisa langsung mencari dan
             memesan host live streaming dari beranda.
           </p>
-          <Link
-            href="/protected"
-            className="mt-6 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
-              bg-brand px-4 text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
-          >
-            Kembali ke beranda
-          </Link>
+          <div className="mt-6">
+            <Button asChild variant="brand" size="action">
+              <Link href="/protected">Kembali ke beranda</Link>
+            </Button>
+          </div>
         </div>
       </Shell>
     );
@@ -151,31 +155,34 @@ export default async function StreamerSetupHubPage() {
 
   return (
     <Shell>
-      <div className="mb-6">
-        <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-          <Sparkles className="h-4 w-4" /> Setup host
-        </span>
-        <h1 className="mt-4 text-2xl font-semibold text-ink">
+      <header>
+        <p className="font-mono text-tiny uppercase text-ink-ghost">Setup host</p>
+        <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
           {allDone ? "Semua langkah selesai" : "Tiga langkah, bisa dicicil"}
         </h1>
-        <p className="mt-2 text-ink-muted">
+        <p className="mt-2 text-lede text-ink-soft">
           {allDone
             ? "Profil kamu tayang, identitas terverifikasi, dan penghasilan siap dicairkan."
             : "Setiap langkah cuma butuh beberapa menit dan progresnya tersimpan. Kamu boleh berhenti kapan saja lalu lanjut lagi dari sini."}
         </p>
-      </div>
+      </header>
 
       {/* Progress meter. The number is the point: "1 dari 3" is a finishable
-          amount of work in a way that a list of empty checkboxes is not. */}
-      <div className="mb-6 rounded-frame border border-hairline bg-surface p-5">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm font-medium text-ink-body">
-            {finished} dari {milestones.length} langkah selesai
+          amount of work in a way that a list of empty checkboxes is not. The
+          fill is ink, not brand — the one accent on this page belongs to the
+          single button that says what to do next. */}
+      <div className="mt-8 rounded-frame border border-hairline bg-surface p-4 sm:p-5">
+        <div className="flex min-w-0 items-baseline gap-4">
+          <p className="min-w-0 flex-1 truncate text-copy text-ink-body">
+            <span className="numeric font-medium text-ink">
+              {finished} dari {milestones.length}
+            </span>{" "}
+            langkah selesai
           </p>
-          <p className="text-sm font-semibold text-blue-700">{progress}%</p>
+          <p className="numeric shrink-0 text-copy font-medium text-ink">{progress}%</p>
         </div>
         <div
-          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-tint"
+          className="mt-3 h-1 w-full overflow-hidden rounded-chip bg-surface-deep"
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
@@ -183,113 +190,87 @@ export default async function StreamerSetupHubPage() {
           aria-label="Progres setup host"
         >
           <div
-            className="h-full rounded-full bg-brand transition-all duration-500"
+            className="h-full rounded-chip bg-ink transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      <ol className="space-y-3">
+      {/* One card, hairline-divided rows. Three separate bordered cards drew
+          three frames inside a page that already has one. */}
+      <ol className="mt-6 overflow-hidden rounded-frame border border-hairline bg-surface">
         {milestones.map((milestone, index) => {
           const Icon = ICONS[milestone.id];
           const href = actionHref(milestone);
 
           return (
-            <li key={milestone.id}>
-              <div
-                className={`rounded-frame border bg-surface p-5 transition-colors ${
-                  milestone.current
-                    ? "border-blue-200"
-                    : "border-hairline"
-                }`}
-              >
-                <div className="flex items-start gap-4">
-                  <span
-                    aria-hidden="true"
-                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-panel ${
-                      milestone.done
-                        ? "bg-green-50 text-green-600"
-                        : milestone.current
-                          ? "bg-blue-50 text-blue-600"
-                          : "bg-surface-tint text-ink-faint"
-                    }`}
-                  >
-                    {milestone.done ? (
-                      <Check className="h-5 w-5" />
-                    ) : (
-                      <Icon className="h-5 w-5" />
-                    )}
+            <li
+              key={milestone.id}
+              className="border-b border-hairline-soft px-4 py-5 last:border-b-0 sm:px-5"
+            >
+              {/* Index, title and state on one line that cannot wrap: the
+                  status is a word in the margin, not a filled chip. */}
+              <div className="flex min-w-0 items-center gap-3">
+                <span className="numeric shrink-0 text-mini font-semibold text-ink-ghost">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <span
+                  aria-hidden="true"
+                  className="shrink-0 text-ink-faint"
+                >
+                  {milestone.done ? (
+                    <Check className="h-4 w-4 text-positive" />
+                  ) : (
+                    <Icon className="h-4 w-4" />
+                  )}
+                </span>
+                <h2 className="min-w-0 flex-1 truncate font-serif text-title font-semibold text-ink">
+                  {milestone.title}
+                </h2>
+                {milestone.done ? (
+                  <span className="shrink-0 text-mini text-positive">Selesai</span>
+                ) : milestone.current ? (
+                  <span className="shrink-0 text-mini text-caution">
+                    Langkah berikutnya
                   </span>
+                ) : null}
+              </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-ink">
-                        {index + 1}. {milestone.title}
-                      </h2>
-                      {milestone.done && (
-                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                          Selesai
-                        </span>
-                      )}
-                      {milestone.current && (
-                        <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                          Langkah berikutnya
-                        </span>
-                      )}
-                    </div>
+              <div className="mt-2 sm:pl-9">
+                <p className="text-copy text-ink-muted">{milestone.description}</p>
 
-                    <p className="mt-1 text-sm text-ink-muted">{milestone.description}</p>
+                <p className="mt-1.5 flex items-start gap-1.5 text-meta text-ink-soft">
+                  <ArrowRight className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-ink-ghost" />
+                  <span>
+                    {milestone.done ? "Sudah terbuka: " : "Membuka: "}
+                    <span className="text-ink-body">{milestone.unlocks}</span>
+                  </span>
+                </p>
 
-                    <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-soft">
-                      <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-ink-faint" />
-                      <span>
-                        {milestone.done ? "Sudah terbuka: " : "Membuka: "}
-                        <span className="font-medium text-ink-body">
-                          {milestone.unlocks}
-                        </span>
-                      </span>
-                    </p>
+                {/* Only the publish step can say precisely what is missing —
+                    verification and payout are all-or-nothing. */}
+                {milestone.id === "publish" && !milestone.done && missing.length > 0 && (
+                  <p className="mt-1.5 text-meta text-ink-soft">
+                    Masih kosong:{" "}
+                    <span className="text-ink-body">{missing.join(", ")}</span>
+                  </p>
+                )}
 
-                    {/* Only the publish step can say precisely what is missing —
-                        verification and payout are all-or-nothing. */}
-                    {milestone.id === "publish" && !milestone.done && missing.length > 0 && (
-                      <p className="mt-2 text-sm text-ink-soft">
-                        Masih kosong:{" "}
-                        <span className="font-medium text-ink-body">
-                          {missing.join(", ")}
-                        </span>
-                      </p>
-                    )}
-
-                    <div className="mt-4">
-                      {milestone.done ? (
-                        <Link
-                          href={href}
-                          className="inline-flex h-10 items-center justify-center rounded-panel border-2
-                            border-hairline-input px-4 text-sm font-medium text-ink-body transition-colors
-                            hover:bg-surface-tint"
-                        >
-                          Ubah
-                        </Link>
-                      ) : (
-                        <Link
-                          href={href}
-                          className={
-                            milestone.current
-                              ? `inline-flex h-10 items-center justify-center gap-2 rounded-panel
-                                 bg-brand px-4 text-sm font-medium
-                                 text-white transition-all`
-                              : `inline-flex h-10 items-center justify-center gap-2 rounded-panel border-2
-                                 border-hairline-input px-4 text-sm font-medium text-ink-body transition-colors
-                                 hover:bg-surface-tint`
-                          }
-                        >
-                          {milestone.current ? "Lanjutkan" : "Buka"}
-                          <ArrowRight className="h-4 w-4" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
+                <div className="mt-4">
+                  <Button
+                    asChild
+                    variant={milestone.current ? "brand" : "quiet"}
+                    size="action-compact"
+                  >
+                    <Link href={href}>
+                      {milestone.done
+                        ? "Ubah"
+                        : milestone.current
+                          ? "Lanjutkan"
+                          : "Buka"}
+                      {!milestone.done && <ArrowRight className="ml-2 h-4 w-4" />}
+                    </Link>
+                  </Button>
                 </div>
               </div>
             </li>
@@ -298,37 +279,37 @@ export default async function StreamerSetupHubPage() {
       </ol>
 
       {showScheduleWarning && (
-        <div className="mt-4 rounded-frame border border-amber-200 bg-amber-50/70 p-5">
-          <div className="flex items-start gap-4">
-            <span
+        <div className="mt-6 rounded-frame border border-caution-line bg-caution-tint p-4 sm:p-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <CalendarClock
               aria-hidden="true"
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-panel bg-amber-100 text-amber-700"
-            >
-              <CalendarClock className="h-5 w-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <h2 className="font-semibold text-amber-900">Jadwal live belum aktif</h2>
-              <p className="mt-1 text-sm text-amber-800">
-                Brand hanya bisa memilih tanggal yang kamu tandai siap. Selama jadwalmu
-                kosong, kalender di profilmu tertutup semua dan kamu tidak bisa dipesan.
-              </p>
-              <Link
-                href="/streamer-schedule"
-                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-panel
-                  border-2 border-amber-300 bg-surface px-4 text-sm font-medium text-amber-900
-                  transition-colors hover:bg-amber-50"
-              >
+              className="h-4 w-4 shrink-0 text-caution"
+            />
+            <h2 className="min-w-0 flex-1 truncate font-serif text-title font-semibold text-ink">
+              Jadwal live belum aktif
+            </h2>
+          </div>
+          <p className="mt-2 text-copy text-ink-body sm:pl-7">
+            Brand hanya bisa memilih tanggal yang kamu tandai siap. Selama jadwalmu
+            kosong, kalender di profilmu tertutup semua dan kamu tidak bisa dipesan.
+          </p>
+          <div className="mt-4 sm:pl-7">
+            <Button asChild variant="quiet" size="action-compact">
+              <Link href="/streamer-schedule">
                 Atur jadwal
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
-            </div>
+            </Button>
           </div>
         </div>
       )}
 
-      <p className="mt-6 text-center text-sm text-ink-soft">
+      <p className="mt-8 text-center text-meta text-ink-soft">
         Sudah selesai untuk sekarang?{" "}
-        <Link href="/streamer-dashboard" className="font-medium text-blue-700 hover:underline">
+        <Link
+          href="/streamer-dashboard"
+          className="font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
+        >
           Buka dashboard
         </Link>
       </p>

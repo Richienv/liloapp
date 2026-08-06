@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
+import { Section } from "../section-heading";
+
 interface FAQItem {
   question: string;
   answer: string;
@@ -48,47 +50,62 @@ export default function FAQ() {
   ];
 
   return (
-    <section id="faq" className="relative py-16 sm:py-20 md:py-24 bg-surface overflow-hidden">
-      <div className="container mx-auto px-3 sm:px-4">
-        <div className="max-w-[1000px] mx-auto">
-          {/* Section Header */}
-          <div className="text-center mb-8 sm:mb-12 md:mb-16">
-            <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">04 / FAQ</p>
-            {/* One accent per section, and on this one it is spent on the
-                support link at the bottom — so the heading is plain ink rather
-                than the half-blue it used to be. */}
-            <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
-              Pertanyaan yang sering ditanyakan.
-            </h2>
-            <p className="mx-auto mt-3.5 max-w-[46ch] text-lede text-ink-muted">
-              Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya.
-            </p>
-          </div>
+    /*
+      The section sits on the canvas like every other one.
 
-          {/* FAQ List */}
-          <div className="space-y-3 sm:space-y-4">
-            {faqs.map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-10%" }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="border border-hairline-input rounded-lg sm:rounded-panel overflow-hidden bg-surface hover:border-hairline-strong transition-all duration-300"
-              >
+      It used to paint itself `bg-surface` — a full-bleed white band across a
+      warm page, which is the one background the brief rules out. The white is
+      the panel the questions live in; the page stays #faf9f6.
+    */
+    <Section id="faq">
+      <div className="mx-auto max-w-[860px]">
+        {/* Section Header */}
+        <div className="mx-auto max-w-[46ch] text-center">
+          <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">04 / FAQ</p>
+          {/* One accent per section, and on this one it is spent on the
+              support link at the bottom — so the heading is plain ink rather
+              than the half-blue it used to be. */}
+          <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
+            Pertanyaan yang sering ditanyakan.
+          </h2>
+          <p className="mx-auto mt-3.5 text-lede text-ink-muted">
+            Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya.
+          </p>
+        </div>
+
+        {/*
+          One panel, hairline dividers — not eight floating cards.
+
+          Eight separately-bordered boxes with a gap between them draw sixteen
+          horizontal lines down the page and give every question the visual
+          weight of a card. A single framed list draws one edge and one hairline
+          per seam, so the eye reads a list of questions rather than a stack of
+          objects.
+
+          The per-item `whileInView` fade is gone with them: it started at
+          `opacity: 0` and staggered to 0.7s on the last item, so a failed
+          observer left the answers to a page of questions invisible.
+        */}
+        <div className="mt-12 overflow-hidden rounded-frame border border-hairline bg-surface">
+          {faqs.map((faq, index) => {
+            const isOpen = openIndex === index;
+            return (
+              <div key={index} className="border-b border-hairline-soft last:border-b-0">
                 <button
-                  className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between gap-4"
-                  onClick={() => setOpenIndex(openIndex === index ? null : index)}
+                  type="button"
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-surface-raised sm:px-5"
+                  onClick={() => setOpenIndex(isOpen ? null : index)}
                 >
-                  <span className="text-sm sm:text-base font-medium text-ink pr-4">{faq.question}</span>
+                  <span className="text-ui font-medium text-ink">{faq.question}</span>
                   <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-ink-soft transition-transform flex-shrink-0 ${
-                      openIndex === index ? "rotate-180" : ""
+                    className={`h-4 w-4 shrink-0 text-ink-ghost transition-transform ${
+                      isOpen ? "rotate-180" : ""
                     }`}
                   />
                 </button>
                 <AnimatePresence>
-                  {openIndex === index && (
+                  {isOpen && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
@@ -96,38 +113,30 @@ export default function FAQ() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 sm:px-6 pb-4 text-xs sm:text-sm text-ink-muted font-light">
+                      <p className="px-4 pb-4 text-copy leading-relaxed text-ink-muted sm:px-5">
                         {faq.answer}
-                      </div>
+                      </p>
                     </motion.div>
                   )}
                 </AnimatePresence>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Support Link */}
-          <div className="text-center mt-8 sm:mt-10 md:mt-12">
-            <p className="text-xs sm:text-sm text-ink-muted">
-              Masih punya pertanyaan?{" "}
-              <a
-                href="https://wa.me/62895700120901"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                Hubungi tim support kami
-              </a>
-            </p>
-          </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Background Decorations */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        
-        
+        {/* Support Link — the section's one accent. */}
+        <p className="mt-8 text-center text-meta text-ink-soft">
+          Masih punya pertanyaan?{" "}
+          <a
+            href="https://wa.me/62895700120901"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-brand transition-colors hover:text-brand-hover"
+          >
+            Hubungi tim support kami
+          </a>
+        </p>
       </div>
-    </section>
+    </Section>
   );
-} 
+}

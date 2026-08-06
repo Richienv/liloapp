@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Wallet } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { listPayoutBanks } from "../actions";
 import { PayoutForm } from "./payout-form";
@@ -44,21 +45,23 @@ export default async function StreamerPayoutPage() {
 
   if (!streamer) {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
-          <h1 className="text-xl font-semibold text-ink">Halaman khusus host</h1>
-          <p className="mt-2 text-ink-muted">
-            Rekening payout hanya untuk akun host. Akun ini terdaftar sebagai brand.
-          </p>
-          <Link
-            href="/protected"
-            className="mt-6 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
-              bg-brand px-4 text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
-          >
-            Kembali ke beranda
-          </Link>
-        </div>
-      </main>
+      <div className="min-h-screen bg-canvas">
+        <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+          <div className="rounded-frame border border-hairline bg-surface p-5 sm:p-8">
+            <h1 className="font-serif text-title font-semibold text-ink">
+              Halaman khusus host
+            </h1>
+            <p className="mt-2 text-copy text-ink-muted">
+              Rekening payout hanya untuk akun host. Akun ini terdaftar sebagai brand.
+            </p>
+            <div className="mt-6">
+              <Button asChild variant="brand" size="action">
+                <Link href="/protected">Kembali ke beranda</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -74,45 +77,45 @@ export default async function StreamerPayoutPage() {
   const banks = await listPayoutBanks();
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <Link
-        href="/streamer-setup"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Kembali ke setup
-      </Link>
+    <div className="min-h-screen bg-canvas">
+      <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+        <header>
+          <Link
+            href="/streamer-setup"
+            className="-ml-1 inline-flex items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Kembali ke setup
+          </Link>
 
-      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
-        <div className="p-6 sm:p-8">
-          <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-            <Wallet className="h-4 w-4" /> Langkah 3 dari 3
-          </span>
-          <h1 className="mt-4 text-xl font-semibold text-ink">
+          <p className="mt-4 font-mono text-tiny uppercase text-ink-ghost">
+            Langkah 3 dari 3
+          </p>
+          <h1 className="mt-2 font-serif text-section font-semibold text-ink sm:text-display">
             {account ? "Rekening payout kamu" : "Tambah rekening payout"}
           </h1>
-          <p className="mt-2 text-ink-muted">
+          <p className="mt-2 text-lede text-ink-soft">
             Ke sinilah penghasilan dari setiap sesi live dikirim. Tiga isian, kurang dari satu
             menit.
           </p>
+        </header>
 
-          <div className="mt-6">
-            <PayoutForm
-              banks={banks}
-              existingAccount={
-                account
-                  ? {
-                      bankName: account.bank_name,
-                      maskedNumber: maskAccountNumber(account.account_number),
-                      holderName: account.account_holder_name,
-                      verified: Boolean(account.verified_at),
-                    }
-                  : null
-              }
-            />
-          </div>
+        <div className="mt-8 rounded-frame border border-hairline bg-surface p-4 sm:p-6">
+          <PayoutForm
+            banks={banks}
+            existingAccount={
+              account
+                ? {
+                    bankName: account.bank_name,
+                    maskedNumber: maskAccountNumber(account.account_number),
+                    holderName: account.account_holder_name,
+                    verified: Boolean(account.verified_at),
+                  }
+                : null
+            }
+          />
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
