@@ -195,28 +195,34 @@ export default async function FunnelPage({
   const finalStage = stages[stages.length - 1];
 
   return (
-    <div className="p-8">
+    <div className="px-8 py-8">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-ink">
-            Funnel Pendaftaran
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0 max-w-[560px]">
+          <h1 className="font-serif text-section font-semibold text-ink">
+            Funnel pendaftaran
           </h1>
-          <p className="mt-1 text-sm text-ink-soft">
+          <p className="mt-2 text-lede text-ink-soft">
             Berapa banyak orang yang lolos di setiap tahap, dan di tahap mana
             mereka berhenti. Dihitung dari jumlah pengguna unik, bukan jumlah
             kejadian.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-hairline-input bg-surface p-1">
+        {/*
+          A segmented control, not an accent. Selecting a time window is
+          navigation, not the one thing on the page worth pressing — a blue pill
+          here would spend the section's single accent on a filter and leave the
+          numbers competing with it.
+        */}
+        <div className="flex shrink-0 items-center gap-0.5 rounded-field border border-hairline-input bg-surface p-0.5">
           {WINDOWS.map((option) => (
             <Link
               key={option}
               href={`${FUNNEL_PATH}?days=${option}`}
               className={
                 option === days
-                  ? "rounded-md bg-[#0066FF] px-3 py-1.5 text-sm font-medium text-white"
-                  : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-tint"
+                  ? "numeric rounded-chip bg-surface-deep px-3 py-1.5 text-ui font-medium text-ink"
+                  : "numeric rounded-chip px-3 py-1.5 text-ui text-ink-soft transition-colors hover:text-ink"
               }
             >
               {option} hari
@@ -226,18 +232,18 @@ export default async function FunnelPage({
       </div>
 
       {error && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
-          <p className="text-sm text-red-800">
+        <div className="mb-5 flex items-start gap-2.5 rounded-panel border border-destructive-emphasis/20 bg-destructive-subtle px-4 py-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive-emphasis" />
+          <p className="text-copy text-destructive-emphasis">
             Gagal memuat data funnel: {error.message}
           </p>
         </div>
       )}
 
       {truncated && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-          <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
-          <p className="text-sm text-amber-800">
+        <div className="mb-5 flex items-start gap-2.5 rounded-panel border border-caution-line bg-caution-tint px-4 py-3">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-caution" />
+          <p className="text-copy text-caution-strong">
             Data dipotong: {rows.length.toLocaleString("id-ID")} dari{" "}
             {totalEvents.toLocaleString("id-ID")} kejadian terbaru yang dihitung.
             Angka di bawah adalah batas bawah — persempit rentang waktunya untuk
@@ -246,40 +252,52 @@ export default async function FunnelPage({
         </div>
       )}
 
-      {/* Ringkasan */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-6">
-        <div className="rounded-panel border border-hairline-input bg-surface p-6">
-          <p className="text-sm font-medium text-ink-muted">Masuk funnel</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">
+      {/*
+        Ringkasan. A gapless grid with `shadow-cell` rather than three bordered
+        cards: a border on every cell double-draws against its neighbour and the
+        seam reads 2px, which is the exact bug the token exists to fix.
+      */}
+      <div className="mb-5 grid grid-cols-1 overflow-hidden rounded-frame border border-hairline bg-surface md:grid-cols-3">
+        <div className="p-5 shadow-cell">
+          <p className="font-mono text-tiny uppercase text-ink-ghost">
+            Masuk funnel
+          </p>
+          <p className="numeric mt-2 text-price font-semibold text-ink">
             {stages[0].users.toLocaleString("id-ID")}
           </p>
-          <p className="mt-1 text-xs text-ink-soft">
+          <p className="mt-1 text-mini text-ink-soft">
             Akun dibuat dalam {days} hari terakhir
           </p>
         </div>
-        <div className="rounded-panel border border-hairline-input bg-surface p-6">
-          <p className="text-sm font-medium text-ink-muted">Selesai sampai akhir</p>
-          <p className="mt-1 text-2xl font-semibold text-ink">
-            {finalStage.users.toLocaleString("id-ID")}
-            <span className="ml-2 text-sm font-normal text-ink-soft">
+        <div className="p-5 shadow-cell">
+          <p className="font-mono text-tiny uppercase text-ink-ghost">
+            Selesai sampai akhir
+          </p>
+          <p className="mt-2 flex items-baseline gap-2 whitespace-nowrap">
+            <span className="numeric text-price font-semibold text-ink">
+              {finalStage.users.toLocaleString("id-ID")}
+            </span>
+            <span className="numeric text-mini font-normal text-ink-soft">
               {finalStage.share === null
-                ? "(belum ada data)"
-                : `(${formatPercent(finalStage.share)})`}
+                ? "belum ada data"
+                : formatPercent(finalStage.share)}
             </span>
           </p>
-          <p className="mt-1 text-xs text-ink-soft">{finalStage.label}</p>
+          <p className="mt-1 text-mini text-ink-soft">{finalStage.label}</p>
         </div>
-        <div className="rounded-panel border border-hairline-input bg-surface p-6">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-ink-muted">Kebocoran terbesar</p>
-            <TrendingDown className="h-4 w-4 text-ink-faint" />
+        <div className="p-5 shadow-cell">
+          <div className="flex items-center justify-between gap-3">
+            <p className="font-mono text-tiny uppercase text-ink-ghost">
+              Kebocoran terbesar
+            </p>
+            <TrendingDown className="h-3.5 w-3.5 shrink-0 text-ink-ghost" />
           </div>
-          <p className="mt-1 text-2xl font-semibold text-ink">
+          <p className="numeric mt-2 text-price font-semibold text-ink">
             {worstDropOff && worstDropOff.dropOff > 0
               ? worstDropOff.dropOff.toLocaleString("id-ID")
-              : "-"}
+              : "—"}
           </p>
-          <p className="mt-1 text-xs text-ink-soft">
+          <p className="mt-1 text-mini text-ink-soft">
             {worstDropOff && worstDropOff.dropOff > 0
               ? `Berhenti sebelum "${worstDropOff.label}"`
               : "Belum ada kebocoran yang terukur"}
@@ -288,25 +306,33 @@ export default async function FunnelPage({
       </div>
 
       {/* Tabel funnel */}
-      <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
         <Table>
           <TableHeader>
-            <TableRow className="bg-surface-tint/50">
-              <TableHead className="font-medium w-[280px]">Tahap</TableHead>
-              <TableHead className="font-medium">Pengguna</TableHead>
-              <TableHead className="font-medium">Konversi dari tahap sebelumnya</TableHead>
-              <TableHead className="font-medium">Berhenti di sini</TableHead>
-              <TableHead className="font-medium w-[220px]">
+            <TableRow className="border-hairline hover:bg-transparent">
+              <TableHead className="h-10 w-[300px] font-mono text-tiny uppercase text-ink-ghost">
+                Tahap
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Pengguna
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Konversi dari tahap sebelumnya
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Berhenti di sini
+              </TableHead>
+              <TableHead className="h-10 w-[220px] font-mono text-tiny uppercase text-ink-ghost">
                 Porsi dari pendaftar
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {!hasData && (
-              <TableRow>
+              <TableRow className="border-hairline-soft hover:bg-transparent">
                 <TableCell
                   colSpan={5}
-                  className="py-10 text-center text-sm text-ink-soft"
+                  className="px-4 py-12 text-center text-copy text-ink-soft"
                 >
                   Belum ada kejadian onboarding pada rentang ini. Data mulai
                   terkumpul setelah pengguna berikutnya mendaftar.
@@ -315,58 +341,68 @@ export default async function FunnelPage({
             )}
             {hasData &&
               stages.map((stage, index) => (
-                <TableRow key={stage.event} className="hover:bg-surface-tint/50">
-                  <TableCell>
-                    <div className="font-medium text-ink">
-                      {index + 1}. {stage.label}
+                <TableRow
+                  key={stage.event}
+                  className="border-hairline-soft transition-colors hover:bg-surface-raised"
+                >
+                  <TableCell className="px-4 py-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="numeric font-mono text-mini text-ink-ghost">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span className="text-ui font-medium text-ink">
+                        {stage.label}
+                      </span>
                     </div>
-                    <div className="mt-0.5 text-xs text-ink-soft">
+                    <div className="mt-0.5 text-mini text-ink-soft">
                       {stage.hint}
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold text-ink">
+                  <TableCell className="numeric px-4 py-3 text-ui font-semibold text-ink">
                     {stage.users.toLocaleString("id-ID")}
                   </TableCell>
-                  <TableCell className="text-sm">
+                  <TableCell className="px-4 py-3">
                     {stage.conversion === null ? (
-                      <span className="text-ink-faint">-</span>
+                      <span className="text-copy text-ink-ghost">—</span>
                     ) : (
                       <span
                         className={
                           stage.conversion < 0.5
-                            ? "font-medium text-red-600"
-                            : "font-medium text-ink-body"
+                            ? "numeric text-copy font-medium text-critical"
+                            : "numeric text-copy font-medium text-ink-body"
                         }
                       >
                         {formatPercent(stage.conversion)}
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-ink-muted">
+                  <TableCell className="numeric px-4 py-3 text-copy text-ink-muted">
                     {index === 0 ? (
-                      <span className="text-ink-faint">-</span>
+                      <span className="text-ink-ghost">—</span>
                     ) : (
-                      `-${stage.dropOff.toLocaleString("id-ID")}`
+                      `−${stage.dropOff.toLocaleString("id-ID")}`
                     )}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="px-4 py-3">
                     {stage.share === null ? (
                       // No signups in this window to divide by. An empty bar
                       // labelled "0%" would read as a stage everybody skipped.
-                      <span className="text-sm text-ink-faint">
+                      <span className="text-copy text-ink-ghost">
                         Belum ada data
                       </span>
                     ) : (
                       <>
                         {/* Deliberately a plain div, not a chart library: one
-                            bar per row, width = share of the first stage. */}
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-tint">
+                            bar per row, width = share of the first stage. Ink,
+                            not accent — seven blue bars would be seven accents
+                            in one section. */}
+                        <div className="h-1.5 w-full overflow-hidden rounded-pill bg-surface-deep">
                           <div
-                            className="h-full rounded-full bg-[#0066FF]"
+                            className="h-full rounded-pill bg-ink"
                             style={{ width: `${Math.round(stage.share * 100)}%` }}
                           />
                         </div>
-                        <div className="mt-1 text-xs text-ink-soft">
+                        <div className="numeric mt-1.5 text-mini text-ink-soft">
                           {formatPercent(stage.share)}
                         </div>
                       </>
@@ -377,18 +413,18 @@ export default async function FunnelPage({
           </TableBody>
         </Table>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline-input px-4 py-4 text-sm text-ink-soft">
-          <span>
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1.5 border-t border-hairline px-4 py-3.5 text-mini text-ink-soft">
+          <span className="numeric">
             Rentang {days} hari terakhir · {totalEvents.toLocaleString("id-ID")}{" "}
             kejadian tercatat
           </span>
-          <span>
+          <span className="numeric">
             {REJECTED_STAGE.label}: {rejected.toLocaleString("id-ID")} pengguna
           </span>
         </div>
       </div>
 
-      <p className="mt-4 text-xs text-ink-soft">
+      <p className="mt-4 max-w-[720px] text-mini text-ink-soft">
         Satu pengguna dihitung sekali per tahap, walaupun ia mengulang langkah
         tersebut. Tahap yang lebih jauh bisa terlihat lebih besar dari tahap
         sebelumnya jika pengguna mendaftar sebelum rentang waktu ini dimulai.
