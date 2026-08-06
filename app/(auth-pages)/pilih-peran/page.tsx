@@ -6,7 +6,7 @@ import { FormMessage } from "@/components/form-message";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { nextPathFor, ROLE_PICKER_PATH, type UserRole } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, ArrowRight, Loader2, Radio, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Radio, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -54,6 +54,78 @@ function asRole(value: unknown): UserRole | null {
   return value === "client" || value === "streamer" ? value : null;
 }
 
+
+/**
+ * The proof panel, one per role.
+ *
+ * A role picker asks someone to commit before it has told them anything, so
+ * the panel answers "what do I get" for whichever card they are pointing at.
+ * It reacts to hover and focus rather than to selection, because the moment a
+ * role IS selected the panel has done its job and the screen has moved on.
+ *
+ * The two are styled as opposites on purpose — a brand is buying and gets the
+ * warm quiet surface, a host is earning and gets the dark one. Same layout,
+ * different weight, so switching between them reads as switching sides of a
+ * marketplace rather than switching pages.
+ */
+const ROLE_PANELS: Record<UserRole, {
+  eyebrow: string;
+  title: string;
+  sub: string;
+  points: string[];
+  stats: { value: string; label: string }[];
+  dark: boolean;
+}> = {
+  client: {
+    eyebrow: 'Untuk brand',
+    title: 'Host yang siap live, tanpa cari sana-sini.',
+    sub: 'Lihat harga di depan, pilih jadwal, bayar sekali. Semua di satu tempat.',
+    points: [
+      'Semua host sudah diverifikasi dan punya rekam jejak sesi.',
+      'Harga dan jadwal terlihat sebelum kamu memesan.',
+      'Dana ditahan sampai sesi selesai — aman untuk dua pihak.',
+    ],
+    stats: [
+      { value: '250+', label: 'Host aktif' },
+      { value: '4,9', label: 'Rating rata-rata' },
+      { value: '3 hari', label: 'Rata-rata mulai live' },
+    ],
+    dark: false,
+  },
+  streamer: {
+    eyebrow: 'Untuk host',
+    title: 'Isi jadwal kosong kamu dengan sesi berbayar.',
+    sub: 'Brand datang ke kamu. Kamu tinggal atur tarif dan hari kerja.',
+    points: [
+      'Kamu tentukan sendiri tarif per jam dan hari yang tersedia.',
+      'Bayaran cair tiap Senin, tanpa biaya penarikan.',
+      'Tidak ada biaya bergabung — Salda ambil fee dari sisi brand.',
+    ],
+    stats: [
+      { value: 'Rp 443rb', label: 'Rata-rata per sesi' },
+      { value: '76 jam', label: 'Siaran per bulan' },
+      { value: '0%', label: 'Potongan dari kamu' },
+    ],
+    dark: true,
+  },
+};
+
+/**
+ * "Langkah 1 dari 2" / "Langkah 2 dari 2".
+ *
+ * The old screen said "Akun kamu sudah aktif 🎉" and then, one screen later,
+ * "Satu langkah lagi" — so the first screen never admitted a second one was
+ * coming. Naming both ends of the count up front is what stops the city
+ * question feeling like the flow moved the goalposts.
+ */
+function StepCount({ step }: { step: 1 | 2 }) {
+  return (
+    <p className="text-micro font-semibold tracking-normal text-ink-faint">
+      LANGKAH {step} DARI 2
+    </p>
+  );
+}
+
 export default function RolePicker() {
   const router = useRouter();
   const [status, setStatus] = useState<GateStatus>("checking");
@@ -68,6 +140,13 @@ export default function RolePicker() {
    */
   const [step, setStep] = useState<"choose" | "client-city">("choose");
   const [citySlug, setCitySlug] = useState("");
+  /**
+   * Which panel to show. Seeded from the intent the visitor already expressed
+   * on /streamer-sign-up so the first paint is not a coin toss, then driven by
+   * pointer and keyboard focus. Never null — an empty half-screen while the
+   * mouse is between two cards is worse than showing either one.
+   */
+  const [previewRole, setPreviewRole] = useState<UserRole>("client");
   /**
    * Set once a role has been recorded. The pending flag clears in `finally`,
    * before the navigation lands, so this is what stops a second submission.
@@ -135,9 +214,12 @@ export default function RolePicker() {
   useEffect(() => {
     if (status !== "ready") return;
     try {
-      setIntentRole(
-        asRole(window.sessionStorage.getItem(ROLE_INTENT_STORAGE_KEY)),
-      );
+      const stored = asRole(window.sessionStorage.getItem(ROLE_INTENT_STORAGE_KEY));
+      setIntentRole(stored);
+      // Seed the proof panel from the same signal, so someone who arrived via
+      // "Daftar sebagai host" opens on the host panel rather than being shown
+      // the brand pitch they already declined.
+      if (stored) setPreviewRole(stored);
     } catch {
       // Private mode / storage disabled: no highlight, nothing else changes.
     }
@@ -210,8 +292,8 @@ export default function RolePicker() {
   if (status === "checking") {
     return (
       <div className="w-full max-w-[560px]">
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
-          <div className="flex items-center gap-3 text-gray-600">
+        <div className="rounded-frame border border-hairline bg-surface p-8">
+          <div className="flex items-center gap-3 text-ink-soft">
             <Loader2 className="h-5 w-5 animate-spin" />
             <span>Menyiapkan akun kamu…</span>
           </div>
@@ -226,7 +308,7 @@ export default function RolePicker() {
   if (step === "client-city") {
     return (
       <div className="w-full max-w-[560px]">
-        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+        <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
           <div className="p-8">
             <button
               type="button"
@@ -243,11 +325,11 @@ export default function RolePicker() {
             </button>
 
             <div className="mb-6">
-              <p className="text-sm font-medium text-blue-600">Satu langkah lagi</p>
-              <h1 className="mt-2 text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <StepCount step={2} />
+              <h1 className="mt-2 font-serif text-section font-medium text-ink">
                 Brand kamu ada di kota mana?
               </h1>
-              <p className="mt-2 text-gray-600">
+              <p className="mt-2 text-copy text-ink-soft">
                 Kami pakai ini untuk menghitung perkiraan pengiriman produk ke host.
                 Tanpa kota, setiap pesanan otomatis dihitung kirim luar kota dan kamu
                 harus memesan 3 hari lebih awal — walaupun host-nya satu kota denganmu.
@@ -266,7 +348,7 @@ export default function RolePicker() {
 
               <label
                 htmlFor="client-city"
-                className="mb-2 block text-sm font-medium text-gray-700"
+                className="mb-2 block text-copy font-medium text-ink"
               >
                 Kota
               </label>
@@ -285,7 +367,7 @@ export default function RolePicker() {
                 aria-describedby="client-city-help"
                 aria-invalid={Boolean(error) && !citySlug}
               />
-              <p id="client-city-help" className="mt-2 text-sm text-gray-500">
+              <p id="client-city-help" className="mt-2 text-meta text-ink-soft">
                 Bisa diubah kapan saja lewat pengaturan akun.
               </p>
 
@@ -293,10 +375,10 @@ export default function RolePicker() {
                 type="submit"
                 disabled={busy}
                 aria-busy={pendingRole === "client"}
-                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl
-                  bg-gradient-to-r from-blue-600 to-indigo-600 px-5 font-medium text-white
-                  transition-all hover:from-blue-700 hover:to-indigo-700
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100
+                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg
+                  bg-brand px-5 text-lede font-semibold text-white transition-colors
+                  hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2
+                  focus-visible:ring-ring focus-visible:ring-offset-2
                   disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {pendingRole === "client" || status === "leaving" ? (
@@ -340,100 +422,157 @@ export default function RolePicker() {
     },
   ];
 
+  const panel = ROLE_PANELS[previewRole];
+
   return (
-    <div className="w-full max-w-[560px]">
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
-        <div className="p-8">
-          <div className="mb-6">
-            <p className="text-sm font-medium text-blue-600">
-              Akun kamu sudah aktif 🎉
-            </p>
-            <h1 className="mt-2 text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-              Saya ingin…
-            </h1>
-            <p className="mt-2 text-gray-600">
-              Pilih satu, dan kami siapkan langkah berikutnya sesuai pilihan itu.
-            </p>
+    // Split layout: the question on the left, the answer to "why should I care"
+    // on the right. The form column is capped at 452px because a two-option
+    // choice set any wider stops reading as a pair. The panel is hidden below
+    // `lg` rather than stacked — on a phone it would push the actual decision
+    // off the first screen, which is the opposite of what it is for.
+    <div className="grid w-full max-w-[1080px] overflow-hidden rounded-frame border border-hairline bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <div className="mx-auto w-full max-w-[452px] p-8">
+        <StepCount step={1} />
+        <h1 className="mt-2 font-serif text-section font-medium text-ink">Saya ingin…</h1>
+        <p className="mt-2 text-copy text-ink-soft">
+          Pilih satu, dan kami siapkan langkah berikutnya sesuai pilihan itu.
+        </p>
+
+        {/* Above the cards, i.e. above the buttons that submit. */}
+        {error && (
+          <div className="mt-5">
+            <FormMessage message={{ error }} className="max-w-none" />
           </div>
+        )}
 
-          {/* Above the cards, i.e. above the buttons that submit. */}
-          {error && (
-            <div className="mb-5">
-              <FormMessage message={{ error }} className="max-w-none" />
-            </div>
-          )}
+        <div className="mt-6 space-y-3">
+          {cards.map(({ role, title, outcome, Icon }) => {
+            const isPending = pendingRole === role;
+            const isSuggested = intentRole === role;
+            const isPreviewing = previewRole === role;
 
-          <div className="space-y-4">
-            {cards.map(({ role, title, outcome, Icon }) => {
-              const isPending = pendingRole === role;
-              const isSuggested = intentRole === role;
-
-              return (
-                // One form per card: each card is a genuine submit with its own
-                // `role` value, so nothing depends on reading the submitter.
-                <form key={role} onSubmit={(event) => handleSubmit(event, role)}>
-                  <input type="hidden" name="role" value={role} />
-                  <button
-                    type="submit"
-                    disabled={busy}
-                    aria-busy={isPending}
-                    className={`group flex w-full items-start gap-4 rounded-2xl border-2 p-5 text-left
-                      transition-all duration-200
-                      ${
-                        isSuggested
-                          ? "border-blue-500 bg-blue-50/40"
-                          : "border-gray-200 bg-white"
-                      }
-                      hover:border-blue-500 hover:bg-blue-50/40 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08)]
-                      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100
-                      focus-visible:border-blue-600
-                      disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:border-gray-200
-                      disabled:hover:bg-white disabled:hover:shadow-none`}
+            return (
+              // One form per card: each card is a genuine submit with its own
+              // `role` value, so nothing depends on reading the submitter.
+              <form key={role} onSubmit={(event) => handleSubmit(event, role)}>
+                <input type="hidden" name="role" value={role} />
+                <button
+                  type="submit"
+                  disabled={busy}
+                  aria-busy={isPending}
+                  // Pointer and keyboard both drive the panel. Focus matters as
+                  // much as hover: tabbing between two cards with a static panel
+                  // means a keyboard user never sees the second pitch at all.
+                  onMouseEnter={() => setPreviewRole(role)}
+                  onFocus={() => setPreviewRole(role)}
+                  className={`group flex w-full items-start gap-3.5 rounded-panel border p-4 text-left
+                    transition-colors
+                    ${
+                      isPreviewing || isSuggested
+                        ? "border-brand bg-brand-tint"
+                        : "border-hairline-input bg-surface hover:bg-surface-raised"
+                    }
+                    focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
+                    focus-visible:ring-offset-2
+                    disabled:cursor-not-allowed disabled:opacity-60`}
+                >
+                  <span
+                    className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-field ${
+                      isPreviewing || isSuggested
+                        ? "bg-brand text-white"
+                        : "bg-surface-tint text-ink-faint"
+                    }`}
                   >
-                    <span
-                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50
-                        text-blue-600 transition-colors group-hover:bg-blue-100"
-                    >
-                      {isPending ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <Icon className="h-5 w-5" />
+                    {isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Icon className="h-4 w-4" />
+                    )}
+                  </span>
+
+                  <span className="min-w-0 flex-1">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <span className="text-ui font-semibold text-ink">{title}</span>
+                      {isSuggested && (
+                        <span className="rounded-chip bg-brand px-1.5 py-0.5 text-micro font-semibold tracking-normal text-white">
+                          Pilihan kamu tadi
+                        </span>
                       )}
                     </span>
-
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-base font-semibold text-gray-900">
-                          {title}
-                        </span>
-                        {isSuggested && (
-                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                            Sesuai pilihan kamu tadi
-                          </span>
-                        )}
-                      </span>
-                      <span className="mt-1.5 block text-sm leading-relaxed text-gray-600">
-                        {outcome}
-                      </span>
+                    <span className="mt-1 block text-meta leading-relaxed text-ink-soft">
+                      {outcome}
                     </span>
+                  </span>
 
-                    <ArrowRight className="mt-1 h-5 w-5 shrink-0 text-gray-400 transition-colors group-hover:text-blue-600" />
-                  </button>
-                </form>
-              );
-            })}
-          </div>
-
-          {/* Clear about the consequence without making it feel permanent: the
-              choice routes the next screen, it is not a contract. */}
-          <p className="mt-6 border-t border-gray-100 pt-5 text-sm leading-relaxed text-gray-500">
-            Pilihan ini menentukan tampilan Salda untuk kamu dan langkah setup
-            berikutnya. Belum ada yang dikirim ke siapa pun, dan kalau ternyata
-            salah pilih, tim Salda bisa memindahkan akun kamu — cukup hubungi
-            dukungan lewat WhatsApp.
-          </p>
+                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-ink-ghost transition-colors group-hover:text-brand" />
+                </button>
+              </form>
+            );
+          })}
         </div>
+
+        {/* Clear about the consequence without making it feel permanent: the
+            choice routes the next screen, it is not a contract. */}
+        <p className="mt-6 border-t border-hairline-soft pt-5 text-meta leading-relaxed text-ink-soft">
+          Pilihan ini menentukan tampilan Salda untuk kamu dan langkah setup
+          berikutnya. Belum ada yang dikirim ke siapa pun, dan kalau ternyata
+          salah pilih, tim Salda bisa memindahkan akun kamu — cukup hubungi
+          dukungan lewat WhatsApp.
+        </p>
       </div>
+
+      {/* ------------------------------------------------- the proof panel */}
+      <aside
+        className={`hidden flex-col justify-center p-10 lg:flex ${
+          panel.dark ? "bg-ink text-white" : "bg-surface-tint text-ink"
+        }`}
+      >
+        <p
+          className={`text-micro font-semibold tracking-normal ${
+            panel.dark ? "text-white/55" : "text-ink-faint"
+          }`}
+        >
+          {panel.eyebrow.toUpperCase()}
+        </p>
+        <h2 className="mt-3 max-w-[22ch] font-serif text-display font-medium">{panel.title}</h2>
+        <p
+          className={`mt-3 max-w-[38ch] text-lede ${
+            panel.dark ? "text-white/70" : "text-ink-muted"
+          }`}
+        >
+          {panel.sub}
+        </p>
+
+        <ul className="mt-7 flex flex-col gap-3">
+          {panel.points.map((point) => (
+            <li key={point} className="flex items-start gap-2.5">
+              <Check
+                className={`mt-0.5 h-4 w-4 shrink-0 ${
+                  panel.dark ? "text-white/60" : "text-positive"
+                }`}
+              />
+              <span className={`text-copy ${panel.dark ? "text-white/80" : "text-ink-body"}`}>
+                {point}
+              </span>
+            </li>
+          ))}
+        </ul>
+
+        <div
+          className={`mt-8 grid grid-cols-3 gap-4 border-t pt-6 ${
+            panel.dark ? "border-white/15" : "border-hairline"
+          }`}
+        >
+          {panel.stats.map((stat) => (
+            <div key={stat.label}>
+              <p className="numeric text-title font-semibold">{stat.value}</p>
+              <p className={`mt-0.5 text-mini ${panel.dark ? "text-white/55" : "text-ink-soft"}`}>
+                {stat.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      </aside>
     </div>
   );
 }

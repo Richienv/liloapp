@@ -4,8 +4,13 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <main className="relative flex min-h-screen w-full flex-col p-6">
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-blue-100 -z-10" />
+    <main className="relative flex min-h-screen w-full flex-col bg-canvas p-6">
+      {/*
+        A blue-to-blue wash used to sit behind every auth screen. It made the
+        white card float on a coloured field, which is the look the redesign
+        removes: the card should be the only bright surface, sitting on the
+        warm canvas the rest of the product uses.
+      */}
       {/*
         Centred with auto margins, not `items-center justify-center`. Centring a
         flex child on the cross/main axis makes the overflowing top of an
