@@ -1,3 +1,5 @@
+import { SITE_URL } from '@/lib/site';
+
 /**
  * WebSite JSON-LD.
  *
@@ -16,12 +18,12 @@ export function WebsiteStructuredData() {
           "@context": "https://schema.org",
           "@type": "WebSite",
           name: "Salda",
-          url: "https://salda.id",
+          url: SITE_URL,
           inLanguage: "id-ID",
           publisher: {
             "@type": "Organization",
             name: "Salda",
-            url: "https://salda.id"
+            url: SITE_URL
           }
         })
       }}

@@ -1,25 +1,38 @@
-"use client";
-
+import type { Metadata } from "next";
+import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { absoluteUrl } from "@/lib/site";
+
+// This page used to be a client component purely so a "Back" button could call
+// `router.push`. A client component cannot export `metadata`, which is why this
+// route had no canonical of its own and silently inherited the root layout's —
+// claiming to be a duplicate of the homepage. A <Link> does the same job.
+export const metadata: Metadata = {
+  title: "Syarat & Ketentuan | Salda",
+  description:
+    "Syarat dan ketentuan penggunaan platform Salda untuk brand dan host live streaming.",
+  alternates: {
+    canonical: absoluteUrl("/terms"),
+  },
+};
 
 export default function TermsPage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => router.push('/sign-up')}
+            <Button
+              asChild
+              variant="ghost"
+              size="sm"
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Back
+              <Link href="/sign-up">
+                <ChevronLeft className="h-4 w-4 mr-1" />
+                Kembali
+              </Link>
             </Button>
             <h1 className="text-xl font-semibold">Syarat & Ketentuan</h1>
           </div>

@@ -10,20 +10,26 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { CustomBackground } from "@/components/structured-data/spotlight-new";
 
+// Profiles are completed after the account exists, so an approved streamer can
+// still be missing any of these columns.
 interface Streamer {
   id: number;
   first_name: string;
   last_name: string;
-  platform: string;
-  location: string;
-  price: number;
-  image_url: string;
-  rating?: number;
+  platform: string | null;
+  location: string | null;
+  city_slug?: string | null;
+  price: number | null;
+  image_url: string | null;
+  rating?: number | null;
   experience?: string;
   total_sales?: number;
   total_hours?: number;
   specialties?: string[];
 }
+
+/** Same stand-in avatar the rest of the app falls back to. */
+const PLACEHOLDER_AVATAR = '/default-avatar.png';
 
 function formatName(firstName: string, lastName: string, index: number): string {
   return `Streamer ${String.fromCharCode(65 + (index % 26))}`;
@@ -34,20 +40,24 @@ function formatPrice(price: number): string {
   return `Rp ${Math.round(priceWithPlatformFee).toLocaleString('id-ID')}`;
 }
 
-function RatingStars({ rating }: { rating: number }) {
+function RatingStars({ rating }: { rating: number | null | undefined }) {
+  const hasRating = typeof rating === 'number' && Number.isFinite(rating) && rating > 0;
+
   return (
     <div className="flex items-center gap-1">
       {[...Array(5)].map((_, i) => (
         <Star
           key={i}
           className={`w-3 h-3 ${
-            i < Math.floor(rating)
+            hasRating && i < Math.floor(rating)
               ? "fill-yellow-400 text-yellow-400"
               : "text-gray-300"
           }`}
         />
       ))}
-      <span className="text-xs text-gray-600 ml-1">{rating.toFixed(1)}</span>
+      <span className="text-xs text-gray-600 ml-1">
+        {hasRating ? rating.toFixed(1) : "Belum ada rating"}
+      </span>
     </div>
   );
 }
@@ -354,7 +364,7 @@ export default function Hero() {
                         {/* Image Container with Floating Effect */}
                         <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl transition-all duration-500 group-hover:-translate-y-2">
                           <Image
-                            src={streamer.image_url}
+                            src={streamer.image_url || PLACEHOLDER_AVATAR}
                             alt={formatName(streamer.first_name, streamer.last_name, index)}
                             fill
                             className="object-cover"
@@ -370,18 +380,24 @@ export default function Hero() {
                               <h3 className="text-sm sm:text-lg font-medium text-white">
                                 {formatName(streamer.first_name, streamer.last_name, index)}
                               </h3>
-                              <span className="px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-white/10 text-white border border-white/20">
-                                {streamer.platform}
-                              </span>
+                              {/* No platform set yet: render no pill at all
+                                  rather than an empty floating chip */}
+                              {streamer.platform && (
+                                <span className="px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-medium bg-white/10 text-white border border-white/20">
+                                  {streamer.platform}
+                                </span>
+                              )}
                             </div>
 
                             {/* Location and Rating */}
                             <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                               <div className="flex items-center gap-1 sm:gap-1.5">
                                 <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-white/80" />
-                                <span className="text-[10px] sm:text-sm text-white/80">{streamer.location}</span>
+                                <span className="text-[10px] sm:text-sm text-white/80">
+                                  {streamer.location || streamer.city_slug || 'Lokasi belum diatur'}
+                                </span>
                               </div>
-                              <RatingStars rating={streamer.rating || 4.5} />
+                              <RatingStars rating={streamer.rating} />
                             </div>
 
                             {/* Key Stats */}

@@ -1,8 +1,12 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@supabase/supabase-js'
 import { getCityBySlug, resolveCity, type City } from '@/lib/cities'
+import { SITE_URL } from '@/lib/site'
 
-const BASE_URL = 'https://salda.id'
+// Every URL in a sitemap must be on the same origin the site is served from, or
+// Google ignores the whole document. This used to be a hardcoded `salda.id`,
+// which stopped resolving when the domain expired.
+const BASE_URL = SITE_URL
 
 // The sitemap is regenerated hourly rather than on every crawl: it fans out over
 // the whole streamer table, and Google refetches it far more often than the data

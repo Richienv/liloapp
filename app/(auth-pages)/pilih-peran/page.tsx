@@ -3,9 +3,10 @@
 import { selectRoleAction } from "@/app/actions";
 import { readAccountState, type AuthActionResponse } from "@/app/types/auth";
 import { FormMessage } from "@/components/form-message";
+import { CityCombobox } from "@/components/ui/city-combobox";
 import { nextPathFor, ROLE_PICKER_PATH, type UserRole } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowRight, Loader2, Radio, Search } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2, Radio, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -13,9 +14,20 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
  * "Saya ingin…" — the one question signup no longer asks up front.
  *
  * The account already exists by the time anyone sees this page, which is the
- * whole point: an abandonment here costs us a profile, not a person. Nothing on
- * this screen is typed, only chosen, and the choice decides which setup flow
- * runs next.
+ * whole point: an abandonment here costs us a profile, not a person. The role
+ * itself is chosen, never typed.
+ *
+ * A brand then answers exactly one more question — which city they are in — on
+ * a second screen. It is the only field here, and it is here because leaving it
+ * out is not free: `components/streamer-card` reads `users.location` /
+ * `users.city_slug` to work out how long shipping a product to the host takes,
+ * and with no city on file every brand is quietly charged the out-of-town
+ * 3-day lead time, even for a host in their own city. One picker beats two
+ * silently wasted days on every booking.
+ *
+ * It is a second step rather than a field inside the brand card because each
+ * card is itself the submit button, and a combobox is a button too — nesting
+ * one inside the other is invalid HTML and unusable with a keyboard.
  */
 
 /**
@@ -48,6 +60,14 @@ export default function RolePicker() {
   const [intentRole, setIntentRole] = useState<UserRole | null>(null);
   const [pendingRole, setPendingRole] = useState<UserRole | null>(null);
   const [error, setError] = useState<string | null>(null);
+  /**
+   * "choose" is the two cards; "client-city" is the brand's one follow-up
+   * question. A host never sees the second screen — their city is part of the
+   * profile they are about to build, and asking twice would be the kind of
+   * duplicate the revamp existed to remove.
+   */
+  const [step, setStep] = useState<"choose" | "client-city">("choose");
+  const [citySlug, setCitySlug] = useState("");
   /**
    * Set once a role has been recorded. The pending flag clears in `finally`,
    * before the navigation lands, so this is what stops a second submission.
@@ -135,6 +155,21 @@ export default function RolePicker() {
     // is recycled. The `role` key comes from the hidden input in the form.
     const formData = new FormData(event.currentTarget);
 
+    // A brand still owes us a city. Nothing is written yet; this only moves the
+    // screen on, so backing out costs nothing.
+    if (role === "client" && step === "choose") {
+      setError(null);
+      setStep("client-city");
+      return;
+    }
+
+    // Mirrors the server's check so a missed pick costs no round trip. The
+    // server re-validates: this is a hint, not the rule.
+    if (role === "client" && !citySlug) {
+      setError("Pilih kota brand kamu dari daftar.");
+      return;
+    }
+
     setError(null);
     setPendingRole(role);
 
@@ -187,6 +222,102 @@ export default function RolePicker() {
 
   const busy = pendingRole !== null || status === "leaving";
 
+  // Step two, brands only: one field, then straight into the marketplace.
+  if (step === "client-city") {
+    return (
+      <div className="w-full max-w-[560px]">
+        <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+          <div className="p-8">
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setStep("choose");
+              }}
+              disabled={busy}
+              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-600
+                transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Kembali
+            </button>
+
+            <div className="mb-6">
+              <p className="text-sm font-medium text-blue-600">Satu langkah lagi</p>
+              <h1 className="mt-2 text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                Brand kamu ada di kota mana?
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Kami pakai ini untuk menghitung perkiraan pengiriman produk ke host.
+                Tanpa kota, setiap pesanan otomatis dihitung kirim luar kota dan kamu
+                harus memesan 3 hari lebih awal — walaupun host-nya satu kota denganmu.
+              </p>
+            </div>
+
+            {/* Above the submit button, like everywhere else in the flow. */}
+            {error && (
+              <div className="mb-5">
+                <FormMessage message={{ error }} className="max-w-none" />
+              </div>
+            )}
+
+            <form onSubmit={(event) => handleSubmit(event, "client")}>
+              <input type="hidden" name="role" value="client" />
+
+              <label
+                htmlFor="client-city"
+                className="mb-2 block text-sm font-medium text-gray-700"
+              >
+                Kota
+              </label>
+              {/* `name` makes the combobox emit a hidden input, so the slug is in
+                  the FormData this form submits without any manual wiring. */}
+              <CityCombobox
+                id="client-city"
+                name="city_slug"
+                value={citySlug}
+                onChange={(slug) => {
+                  setError(null);
+                  setCitySlug(slug);
+                }}
+                disabled={busy}
+                placeholder="Pilih kota brand kamu"
+                aria-describedby="client-city-help"
+                aria-invalid={Boolean(error) && !citySlug}
+              />
+              <p id="client-city-help" className="mt-2 text-sm text-gray-500">
+                Bisa diubah kapan saja lewat pengaturan akun.
+              </p>
+
+              <button
+                type="submit"
+                disabled={busy}
+                aria-busy={pendingRole === "client"}
+                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl
+                  bg-gradient-to-r from-blue-600 to-indigo-600 px-5 font-medium text-white
+                  transition-all hover:from-blue-700 hover:to-indigo-700
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100
+                  disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {pendingRole === "client" || status === "leaving" ? (
+                  <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    Menyimpan…
+                  </>
+                ) : (
+                  <>
+                    Mulai cari host
+                    <ArrowRight className="h-5 w-5" />
+                  </>
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const cards: Array<{
     role: UserRole;
     title: string;
@@ -197,7 +328,7 @@ export default function RolePicker() {
       role: "client",
       title: "Cari host untuk brand saya",
       outcome:
-        "Berikutnya: lengkapi profil brand singkat, lalu kamu langsung bisa menelusuri dan membooking host.",
+        "Berikutnya: pilih kota brand kamu, lalu kamu langsung bisa menelusuri dan membooking host.",
       Icon: Search,
     },
     {

@@ -82,6 +82,24 @@ export interface GoogleButtonProps {
   className?: string;
 }
 
+/**
+ * Whether to offer Google sign-in at all.
+ *
+ * This has to be a build-time flag rather than a runtime check, because there
+ * is no runtime check available: `supabase.auth.signInWithOAuth()` performs no
+ * network call — it builds the consent URL locally and always returns
+ * `error: null`. The "provider is not enabled" response only exists after the
+ * browser has already left our site, so a misconfigured provider strands the
+ * user on a bare JSON error page on supabase.co with no way back.
+ *
+ * Since the failure cannot be caught, it has to be prevented: the button is
+ * only rendered where the provider is known to be configured. Set
+ * NEXT_PUBLIC_GOOGLE_AUTH_ENABLED=true once Google is enabled in the Supabase
+ * dashboard AND the callback URL is allowlisted there.
+ */
+export const isGoogleAuthEnabled =
+  process.env.NEXT_PUBLIC_GOOGLE_AUTH_ENABLED === "true";
+
 export function GoogleButton({
   label = "Lanjutkan dengan Google",
   onError,
@@ -144,6 +162,11 @@ export function GoogleButton({
   };
 
   const busy = isRedirecting || leaving;
+
+  // Belt and braces alongside the callers' own checks: if the provider is not
+  // configured, rendering nothing is strictly better than rendering a button
+  // that navigates the user off the site into a raw error page.
+  if (!isGoogleAuthEnabled) return null;
 
   return (
     <div className="space-y-3">

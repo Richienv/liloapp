@@ -1,4 +1,5 @@
 import { CITIES } from '@/lib/cities';
+import { SITE_URL, absoluteUrl } from '@/lib/site';
 
 /**
  * Organization-level JSON-LD describing where Salda operates.
@@ -22,11 +23,13 @@ export function LocalBusinessStructuredData() {
         __html: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
-          "@id": "https://salda.id/#organization",
+          // The `@id` is the entity's stable identifier and other nodes join on
+          // it, so it has to be on the origin the site is actually served from.
+          "@id": `${SITE_URL}/#organization`,
           name: "Salda",
-          url: "https://salda.id",
-          image: "https://salda.id/icon-salda.png",
-          logo: "https://salda.id/icon-salda.png",
+          url: SITE_URL,
+          image: absoluteUrl("/icon-salda.png"),
+          logo: absoluteUrl("/icon-salda.png"),
           description:
             "Platform yang menghubungkan UMKM dengan host live streaming profesional untuk Shopee Live dan TikTok Live.",
           address: {
@@ -38,7 +41,7 @@ export function LocalBusinessStructuredData() {
             ...CITIES.map((city) => ({
               "@type": "City",
               name: city.name,
-              url: `https://salda.id/location/${city.slug}`
+              url: absoluteUrl(`/location/${city.slug}`)
             }))
           ],
           makesOffer: {

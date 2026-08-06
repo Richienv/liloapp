@@ -39,8 +39,27 @@ const isProtectedPath = (pathname: string) =>
 // /auth/callback is deliberately excluded: it must run the code exchange even
 // for an already-authenticated user (e.g. a password-recovery link), and it
 // sets its own cookies, so the middleware has nothing to add there.
-const isAuthPath = (pathname: string) =>
-  pathname.startsWith("/auth") && !pathname.startsWith("/auth/callback");
+// Matched literally, because these pages live in the `(auth-pages)` ROUTE GROUP
+// and a route group contributes nothing to the URL. The previous test was
+// `pathname.startsWith("/auth")`, which reads as if it covers them but matches
+// none of them — /sign-in, /sign-up and the rest do not begin with "/auth". The
+// only thing it ever caught was /auth/error, so a signed-in user was never
+// moved off the sign-up form, and re-submitting it silently replaced their
+// session with a brand-new account.
+//
+// /reset-password is deliberately absent: it is reached WITH a recovery session
+// already established, so treating it as an auth page would bounce the user off
+// the very form they were sent there to use. /auth/callback is absent for the
+// same reason — it must run its code exchange even when a session exists.
+const AUTH_PAGES = new Set([
+  "/sign-in",
+  "/sign-up",
+  "/streamer-sign-up",
+  "/forgot-password",
+  "/auth/error",
+]);
+
+const isAuthPath = (pathname: string) => AUTH_PAGES.has(pathname);
 
 const passThrough = (request: NextRequest) =>
   NextResponse.next({

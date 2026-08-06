@@ -4,7 +4,7 @@ import { createAccountAction } from "@/app/actions";
 import type { AuthActionResponse } from "@/app/types/auth";
 import { FormMessage, type MessageLike } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
-import { GoogleButton } from "@/components/ui/google-button";
+import { GoogleButton, isGoogleAuthEnabled } from "@/components/ui/google-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { PhoneInput } from "@/components/ui/phone-input";
@@ -222,7 +222,7 @@ export default function SignUp({
             </p>
           </div>
 
-          {step === 1 && (
+          {step === 1 && isGoogleAuthEnabled && (
             <>
               <GoogleButton disabled={isSubmitting} onError={setError} />
 

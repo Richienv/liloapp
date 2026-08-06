@@ -1,4 +1,5 @@
 import { resolveCity } from '@/lib/cities';
+import { absoluteUrl } from '@/lib/site';
 
 interface StreamerRichData {
   first_name: string | null;
@@ -60,7 +61,7 @@ export function StreamerRichStructuredData({ streamer }: { streamer: StreamerRic
           ...(streamer.bio ? { description: streamer.bio } : {}),
           ...(streamer.profile_picture_url ? { image: streamer.profile_picture_url } : {}),
           jobTitle: 'Professional Live Streamer',
-          ...(username ? { url: `https://salda.id/${encodeURIComponent(username)}` } : {}),
+          ...(username ? { url: absoluteUrl(`/${encodeURIComponent(username)}`) } : {}),
           ...(city
             ? {
                 // `homeLocation` is the Person-valid property; plain `location`

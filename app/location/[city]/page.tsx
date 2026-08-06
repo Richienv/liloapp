@@ -1,3 +1,4 @@
+import { SITE_URL } from '@/lib/site'
 import { Metadata } from 'next'
 import Link from 'next/link'
 import { createClient } from '@supabase/supabase-js'
@@ -14,7 +15,9 @@ import {
   type City,
 } from '@/lib/cities'
 
-const BASE_URL = 'https://salda.id'
+// Sourced from one place: the previous hardcoded host had expired, so every
+// page advertising it was telling Google to de-index the live site.
+const BASE_URL = SITE_URL
 
 // Pre-render one page per registry city at build time and refresh hourly.
 // Unknown params still hit this route (dynamicParams stays on by default) so the
@@ -37,8 +40,12 @@ interface LocationStreamer {
   profile_picture_url: string | null
 }
 
+// The avatar lives in `streamers.image_url`. `profile_picture_url` is a column
+// on `users`, not on this table, so selecting it by that name made PostgREST
+// reject the whole query — which surfaced as "this city has no hosts" rather
+// than as an error. Aliased so the rows keep the shape the component expects.
 const STREAMER_COLUMNS =
-  'id, first_name, last_name, username, location, city_slug, category, price, profile_picture_url'
+  'id, first_name, last_name, username, location, city_slug, category, price, profile_picture_url:image_url'
 
 /**
  * Read-only Supabase client with no cookie access.

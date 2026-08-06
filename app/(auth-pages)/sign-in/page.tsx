@@ -3,7 +3,7 @@
 import { signInAction } from "@/app/actions";
 import { FormMessage } from "@/components/form-message";
 import { Button } from "@/components/ui/button";
-import { GoogleButton } from "@/components/ui/google-button";
+import { GoogleButton, isGoogleAuthEnabled } from "@/components/ui/google-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
@@ -90,22 +90,28 @@ export default function Login({
             renders its own failure message directly above itself, so the form's
             FormMessage below stays about credentials only.
           */}
-          <GoogleButton
-            label="Masuk dengan Google"
-            // The same deep link the form below carries, so choosing Google
-            // does not cost the user the page they were headed to.
-            redirectTo={redirectTo || undefined}
-            disabled={isSigningIn}
-          />
+          {/* Divider hidden with the button: a lone "atau" above a single form
+              reads as a rendering fault. */}
+          {isGoogleAuthEnabled && (
+            <>
+              <GoogleButton
+                label="Masuk dengan Google"
+                // The same deep link the form below carries, so choosing Google
+                // does not cost the user the page they were headed to.
+                redirectTo={redirectTo || undefined}
+                disabled={isSigningIn}
+              />
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-4 text-gray-500">atau</span>
-            </div>
-          </div>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-gray-200" />
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="bg-white px-4 text-gray-500">atau</span>
+                </div>
+              </div>
+            </>
+          )}
 
           {/*
             One form, one credential path. Brands and streamers used to have

@@ -184,52 +184,70 @@ export default function ProtectedPage() {
   };
 
   // Update filteredStreamers computation
+  //
+  // Profiles are filled in after the account exists, so platform, category,
+  // price, location and rating are all nullable. Every predicate below treats a
+  // missing value as "does not match" rather than reading through it — one null
+  // used to take the whole page down with a TypeError.
   const filteredStreamers = streamers.filter((streamer) => {
     // Text search filter
     const lowercasedFilter = filter.toLowerCase();
-    const matchesTextFilter = 
-      streamer.first_name.toLowerCase().includes(lowercasedFilter) ||
-      streamer.last_name.toLowerCase().includes(lowercasedFilter) ||
-      streamer.platform.toLowerCase().includes(lowercasedFilter) ||
-      streamer.category.toLowerCase().includes(lowercasedFilter);
-    
+    const matchesTextFilter =
+      !lowercasedFilter ||
+      [streamer.first_name, streamer.last_name, streamer.platform, streamer.category]
+        .some((field) => String(field ?? '').toLowerCase().includes(lowercasedFilter));
+
     // Category filter
-    const matchesCategoryFilter = !categoryFilter || 
-      streamer.category.toLowerCase().split(',').map((cat: string) => 
-        cat.trim().toLowerCase()
+    const matchesCategoryFilter = !categoryFilter ||
+      String(streamer.category ?? '').toLowerCase().split(',').map((cat: string) =>
+        cat.trim()
       ).includes(categoryFilter.toLowerCase());
 
-    // Price range filter
-    const matchesPriceRange = 
-      streamer.price >= activeFilters.priceRange[0] && 
-      streamer.price <= activeFilters.priceRange[1];
+    // Price range filter. The default range is the whole scale, i.e. "no
+    // filter" — a price-less profile only drops out once a real range is set,
+    // so it stays browsable while its owner finishes setting up.
+    const price = typeof streamer.price === 'number' ? streamer.price : null;
+    const priceFilterActive =
+      activeFilters.priceRange[0] > 0 || activeFilters.priceRange[1] < 1000000;
+    const matchesPriceRange = price === null
+      ? !priceFilterActive
+      : price >= activeFilters.priceRange[0] && price <= activeFilters.priceRange[1];
 
     // Location filter
-    const matchesLocation = 
-      !activeFilters.location || 
-      streamer.location.toLowerCase().includes(activeFilters.location.toLowerCase());
+    const matchesLocation =
+      !activeFilters.location ||
+      String(streamer.location ?? streamer.city_slug ?? '')
+        .toLowerCase()
+        .includes(activeFilters.location.toLowerCase());
 
     // Platform filter
-    const matchesPlatform = 
-      activeFilters.platforms.length === 0 || 
+    const matchesPlatform =
+      activeFilters.platforms.length === 0 ||
       (() => {
         // Split streamer's platforms into an array and normalize
-        const streamerPlatforms = streamer.platform.toLowerCase().split(',').map((p: string) => p.trim());
-        
+        const streamerPlatforms = String(streamer.platform ?? '')
+          .toLowerCase()
+          .split(',')
+          .map((p: string) => p.trim())
+          .filter(Boolean);
+
         // Check if any of the selected platforms match
         return activeFilters.platforms.every(p => streamerPlatforms.includes(p.toLowerCase()));
       })();
 
-    // Rating filter
-    const matchesRating = 
-      streamer.rating >= activeFilters.minRating;
+    // Rating filter. An unrated streamer has no score to compare, so it can
+    // never satisfy a minimum — but it is not excluded when none is asked for.
+    const rating = typeof streamer.rating === 'number' ? streamer.rating : null;
+    const matchesRating = activeFilters.minRating <= 0
+      ? true
+      : rating !== null && rating >= activeFilters.minRating;
 
     return (
-      matchesTextFilter && 
-      matchesCategoryFilter && 
-      matchesPriceRange && 
-      matchesLocation && 
-      matchesPlatform && 
+      matchesTextFilter &&
+      matchesCategoryFilter &&
+      matchesPriceRange &&
+      matchesLocation &&
+      matchesPlatform &&
       matchesRating
     );
   });

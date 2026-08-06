@@ -6,9 +6,10 @@ import { defaultMetadata } from '../metadata'
 import { BreadcrumbStructuredData } from '@/components/structured-data/breadcrumb-data'
 import { CityListStructuredData } from '@/components/structured-data/city-list-data'
 import { getCityBySlug, resolveCity, type City } from '@/lib/cities'
+import { SITE_URL, absoluteUrl } from '@/lib/site'
 
-const BASE_URL = 'https://salda.id'
-const CANONICAL_URL = `${BASE_URL}/locations`
+const BASE_URL = SITE_URL
+const CANONICAL_URL = absoluteUrl('/locations')
 
 export const revalidate = 3600
 

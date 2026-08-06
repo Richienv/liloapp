@@ -1,8 +1,20 @@
-"use client";
-
+import type { Metadata } from "next";
 import { ArrowLeft, Video, Sun, Mic, Upload, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { absoluteUrl } from "@/lib/site";
+
+// Nothing here was ever interactive — the "use client" directive only meant the
+// route could not export `metadata`, so it inherited the root layout's canonical
+// and declared itself a duplicate of the homepage.
+export const metadata: Metadata = {
+  title: "Cara Membuat Video Perkenalan yang Menarik | Salda",
+  description:
+    "Panduan lengkap membuat video perkenalan yang profesional untuk calon host live streaming di Salda: persiapan, konten, teknis perekaman, dan cara upload.",
+  alternates: {
+    canonical: absoluteUrl("/tutorial/video-guide"),
+  },
+};
 
 export default function VideoGuide() {
   return (
