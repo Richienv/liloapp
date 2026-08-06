@@ -73,7 +73,7 @@ interface PaymentMetadata {
 }
 
 // Add a new type for processing steps
-type ProcessingStep = 'creating' | 'completed' | 'redirecting';
+type ProcessingStep = 'creating' | 'completed';
 
 export default function BookingDetailPage() {
   return (
@@ -193,7 +193,6 @@ function BookingDetailContent() {
   const [appliedVoucher, setAppliedVoucher] = useState<AppliedVoucher | null>(null);
   const [isProcessingBooking, setIsProcessingBooking] = useState(false);
   const [processingStep, setProcessingStep] = useState<ProcessingStep>('creating');
-  const [redirectCountdown, setRedirectCountdown] = useState(3);
 
   // Add helper function to calculate hours between times
   const calculateHoursBetween = (start: string, end: string): number => {
@@ -447,22 +446,19 @@ function BookingDetailContent() {
       const bookingData = await response.json();
       console.log('Booking created:', JSON.stringify(bookingData, null, 2));
 
-      // Update to completed state with success message
       setProcessingStep('completed');
 
-      // Start countdown for redirect
-      setProcessingStep('redirecting');
-
-      let countdown = 3;
-      const countdownInterval = setInterval(() => {
-        countdown--;
-        setRedirectCountdown(countdown);
-
-        if (countdown <= 0) {
-          clearInterval(countdownInterval);
-          window.location.href = '/client-bookings';
-        }
-      }, 1000);
+      // Straight to the confirmation screen — no countdown.
+      //
+      // This used to hold a "Pembayaran diterima" card for three seconds and
+      // then drop the brand on /client-bookings. /payment-success now says
+      // "Pembayaran diterima" itself and offers the two ways out the reference
+      // specifies, so counting down to it meant showing the same sentence
+      // twice, three seconds apart, with no choice in between.
+      //
+      // The booking row already exists at this point — `response.json()` above
+      // resolved — so there is nothing the delay was waiting for.
+      window.location.href = '/payment-success';
 
     } catch (error) {
       console.error('=== Payment Success Error ===');
@@ -556,29 +552,18 @@ function BookingDetailContent() {
               <Loader2 className="mx-auto mb-5 h-6 w-6 animate-spin text-ink-ghost" />
             )}
 
+            {/*
+              Two states, not three. The overlay covers the wait while the
+              booking is written, then the browser leaves for /payment-success —
+              so it never has to announce the outcome itself.
+            */}
             <h2 className="font-serif text-title font-semibold text-ink">
               {processingStep === 'creating' ? 'Memproses pembayaran' : 'Pembayaran diterima'}
             </h2>
 
             <p className="mt-2 text-meta text-ink-soft">
-              {processingStep === 'creating' ? (
-                'Jangan tutup halaman ini.'
-              ) : (
-                <>
-                  Membuka Booking saya dalam{' '}
-                  <span className="numeric">{Math.max(redirectCountdown, 0)}</span> detik.
-                </>
-              )}
+              {processingStep === 'creating' ? 'Jangan tutup halaman ini.' : 'Membuka konfirmasi.'}
             </p>
-
-            {processingStep === 'redirecting' && (
-              <div className="mt-6 h-px w-full overflow-hidden bg-hairline">
-                <div
-                  className="h-px bg-ink-ghost transition-all duration-300"
-                  style={{ width: `${((3 - redirectCountdown) / 3) * 100}%` }}
-                />
-              </div>
-            )}
           </div>
         </div>
       )}
