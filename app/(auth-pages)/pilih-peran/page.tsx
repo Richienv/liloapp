@@ -6,12 +6,14 @@ import { FormMessage } from "@/components/form-message";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { nextPathFor, ROLE_PICKER_PATH, type UserRole } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/client";
+
+import { type AuthPanel, AuthProofPanel } from "../auth-shell";
 import { ArrowLeft, ArrowRight, Check, Loader2, Radio, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 /**
- * "Saya ingin…" — the one question signup no longer asks up front.
+ * "Kamu daftar sebagai apa?" — the one question signup no longer asks up front.
  *
  * The account already exists by the time anyone sees this page, which is the
  * whole point: an abandonment here costs us a profile, not a person. The role
@@ -68,14 +70,7 @@ function asRole(value: unknown): UserRole | null {
  * different weight, so switching between them reads as switching sides of a
  * marketplace rather than switching pages.
  */
-const ROLE_PANELS: Record<UserRole, {
-  eyebrow: string;
-  title: string;
-  sub: string;
-  points: string[];
-  stats: { value: string; label: string }[];
-  dark: boolean;
-}> = {
+const ROLE_PANELS: Record<UserRole, AuthPanel> = {
   client: {
     eyebrow: 'Untuk brand',
     title: 'Host yang siap live, tanpa cari sana-sini.',
@@ -433,7 +428,7 @@ export default function RolePicker() {
     <div className="grid w-full max-w-[1080px] overflow-hidden rounded-frame border border-hairline bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
       <div className="mx-auto w-full max-w-[452px] p-8">
         <StepCount step={1} />
-        <h1 className="mt-2 font-serif text-section font-medium text-ink">Saya ingin…</h1>
+        <h1 className="mt-2 font-serif text-section font-medium text-ink">Kamu daftar sebagai apa?</h1>
         <p className="mt-2 text-copy text-ink-soft">
           Pilih satu, dan kami siapkan langkah berikutnya sesuai pilihan itu.
         </p>
@@ -528,60 +523,10 @@ export default function RolePicker() {
         </p>
       </div>
 
-      {/* ------------------------------------------------- the proof panel */}
-      <aside
-        className={`hidden flex-col justify-center p-10 lg:flex ${
-          panel.dark ? "bg-ink text-white" : "bg-surface-tint text-ink"
-        }`}
-      >
-        <p
-          className={`text-micro font-semibold tracking-normal ${
-            // ink-faint (#8a8880) on the #f2f1ee panel is ~3.0:1 — under the
-            // 4.5:1 floor this 10px label needs. ink-muted clears it at ~6.9:1.
-            panel.dark ? "text-white/55" : "text-ink-muted"
-          }`}
-        >
-          {panel.eyebrow.toUpperCase()}
-        </p>
-        <h2 className="mt-3 max-w-[22ch] font-serif text-display font-medium">{panel.title}</h2>
-        <p
-          className={`mt-3 max-w-[38ch] text-lede ${
-            panel.dark ? "text-white/70" : "text-ink-muted"
-          }`}
-        >
-          {panel.sub}
-        </p>
-
-        <ul className="mt-7 flex flex-col gap-3">
-          {panel.points.map((point) => (
-            <li key={point} className="flex items-start gap-2.5">
-              <Check
-                className={`mt-0.5 h-4 w-4 shrink-0 ${
-                  panel.dark ? "text-white/60" : "text-positive"
-                }`}
-              />
-              <span className={`text-copy ${panel.dark ? "text-white/80" : "text-ink-body"}`}>
-                {point}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <div
-          className={`mt-8 grid grid-cols-3 gap-4 border-t pt-6 ${
-            panel.dark ? "border-white/15" : "border-hairline"
-          }`}
-        >
-          {panel.stats.map((stat) => (
-            <div key={stat.label}>
-              <p className="numeric text-title font-semibold">{stat.value}</p>
-              <p className={`mt-0.5 text-mini ${panel.dark ? "text-white/55" : "text-ink-soft"}`}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </aside>
+      {/* The panel is the shared one now. This file kept its own copy of the
+          markup, which is exactly how the two auth screens ended up disagreeing
+          about the card radius and the form column width. */}
+      <AuthProofPanel panel={panel} />
     </div>
   );
 }

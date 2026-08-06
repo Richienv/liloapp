@@ -7,6 +7,8 @@ import { GoogleButton, isGoogleAuthEnabled } from "@/components/ui/google-button
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+
+import { AuthShell, SIGN_IN_PANEL } from "../auth-shell";
 import { useState, type FormEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -66,18 +68,24 @@ export default function Login({
   };
 
   return (
-    <div className="relative w-full max-w-[420px]">
-      <div className="overflow-hidden rounded-frame bg-surface border border-hairline">
-        <div className="p-8">
+    <AuthShell panel={SIGN_IN_PANEL}>
+      <>
           <div className="mb-8">
             <h1 className="font-serif text-section font-medium text-ink">
-              Selamat datang kembali
+              Masuk ke akun kamu
             </h1>
-            <p className="mt-2 text-ink-muted">
+            {/* The reference's line, and it earns its place: the product used to
+                have two login boxes that signed you out for picking the wrong
+                one, so "satu akun" is the thing a returning user most needs to
+                stop worrying about. */}
+            <p className="mt-2 text-copy text-ink-muted">
+              Satu akun untuk brand dan host. Kami arahkan otomatis sesuai peran kamu.
+            </p>
+            <p className="mt-3 text-copy text-ink-soft">
               Baru di Salda?{" "}
               <Link
                 href="/sign-up"
-                className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                className="font-medium text-brand transition-colors hover:text-brand-hover"
               >
                 Buat akun
               </Link>
@@ -237,20 +245,15 @@ export default function Login({
                   Mau jadi streamer?{" "}
                   <Link
                     href="/streamer-sign-up"
-                    className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                    className="font-medium text-brand transition-colors hover:text-brand-hover"
                   >
                     Daftar sebagai streamer
                   </Link>
                 </p>
-                <p className="text-xs text-ink-soft">
-                  Brand dan streamer masuk lewat form yang sama. Kami arahkan
-                  otomatis ke dashboard-mu.
-                </p>
               </div>
             </div>
           </form>
-        </div>
-      </div>
-    </div>
+      </>
+    </AuthShell>
   );
 }
