@@ -27,6 +27,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --ignore-scripts
 
+      # Before the build, not after. The build is slow and these are fast, so a
+      # broken booking rule should fail in seconds rather than two minutes in.
+      # It is also the check that has teeth: `next build` type-checks, and a
+      # booking that bills the wrong number of hours type-checks perfectly.
+      - name: Test (booking rules)
+        run: npm test
+
       # Placeholder Supabase env vars: the values only need to be present so the
       # @supabase/ssr client can be constructed during static prerender. No real
       # secrets are required to type-check and compile.
