@@ -8,8 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { updateUserProfile, updateStreamerProfile, updateStreamerPrice } from "@/app/actions";
 import { createClient } from "@/utils/supabase/client";
 import Image from 'next/image';
-import { Loader2, User, Mail, FileText, Camera, Youtube, AlertCircle, ChevronLeft, Upload, MapPin, AlertTriangle, DollarSign, XCircle, Monitor, ImageIcon, ChevronDown } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Loader2, User, FileText, Camera, AlertCircle, ChevronLeft, XCircle, ChevronDown } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { Toaster } from 'react-hot-toast';
@@ -18,6 +17,153 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB in bytes
+
+/* -------------------------------------------------------------------------
+   Shared field dressing.
+
+   The shadcn primitives are still written against Tailwind's own scale
+   (`text-sm`, `rounded-md`, `border-input`). `cn` knows both scales, so a
+   className here actually replaces those rather than racing them in the
+   stylesheet — which is why these are constants and not a fork of the
+   primitives.
+   ------------------------------------------------------------------------- */
+
+const LABEL = "text-meta font-medium text-ink-muted";
+const FIELD =
+  "h-11 rounded-field border-hairline-input bg-surface text-ui text-ink placeholder:text-ink-ghost";
+const AREA =
+  "rounded-field border-hairline-input bg-surface text-copy text-ink placeholder:text-ink-ghost";
+
+/**
+ * Chip state carries no colour.
+ *
+ * Selected used to be blue for platform and purple for category — two accents
+ * in one form, neither of them the one the design allows. Weight and fill do
+ * the same job: a selected chip sits on the pressed quiet fill with a strong
+ * hairline, an unselected one is a plain field edge.
+ */
+const CHIP_ON =
+  "border-hairline-strong bg-surface-deep text-ink font-medium";
+const CHIP_OFF =
+  "border-hairline-input bg-surface text-ink-muted hover:bg-surface-raised hover:text-ink";
+
+/** Values are what gets persisted — only the labels are translated. */
+const PLATFORM_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'tiktok', label: 'TikTok' },
+  { value: 'shopee', label: 'Shopee' },
+];
+
+const CATEGORY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'gaming', label: 'Gaming' },
+  { value: 'lifestyle', label: 'Gaya hidup' },
+  { value: 'education', label: 'Edukasi' },
+  { value: 'entertainment', label: 'Hiburan' },
+  { value: 'music', label: 'Musik' },
+  { value: 'sports', label: 'Olahraga' },
+  { value: 'food', label: 'Makanan' },
+  { value: 'travel', label: 'Jalan-jalan' },
+  { value: 'technology', label: 'Teknologi' },
+  { value: 'beauty', label: 'Kecantikan' },
+  { value: 'fashion', label: 'Fashion' },
+  { value: 'other', label: 'Lainnya' },
+];
+
+/**
+ * A section header: mono index, serif title, and the description pushed to the
+ * far end of the same baseline. Identical to the one on `/client-bookings` so
+ * the two screens read as one product.
+ */
+function SectionHeading({
+  index,
+  title,
+  description,
+}: {
+  index: number;
+  title: string;
+  description?: string;
+}) {
+  return (
+    <>
+      <span className="numeric text-mini font-semibold text-ink-ghost">
+        {String(index).padStart(2, '0')}
+      </span>
+      <h2 className="font-serif text-title font-semibold text-ink">{title}</h2>
+      {description && (
+        <p className="w-full text-meta text-ink-soft sm:w-auto sm:flex-1 sm:text-right">
+          {description}
+        </p>
+      )}
+    </>
+  );
+}
+
+/** A plain section: hairline frame, no disclosure. */
+function Section({
+  index,
+  title,
+  description,
+  children,
+}: {
+  index: number;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="overflow-hidden rounded-frame border border-hairline bg-surface">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline-soft px-4 py-4 sm:px-5">
+        <SectionHeading index={index} title={title} description={description} />
+      </div>
+      <div className="p-4 sm:p-5">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * The same frame with a disclosure.
+ *
+ * The divider lives on the CONTENT, not the header: a closed card that still
+ * draws a line under its own title reads as a section whose body failed to
+ * render.
+ */
+function FoldSection({
+  index,
+  title,
+  description,
+  defaultOpen,
+  children,
+}: {
+  index: number;
+  title: string;
+  description?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Collapsible
+      defaultOpen={defaultOpen}
+      className="overflow-hidden rounded-frame border border-hairline bg-surface"
+    >
+      <CollapsibleTrigger className="group flex w-full items-baseline gap-3 px-4 py-4 text-left transition-colors hover:bg-surface-raised sm:px-5">
+        <span className="numeric text-mini font-semibold text-ink-ghost">
+          {String(index).padStart(2, '0')}
+        </span>
+        <h2 className="min-w-0 flex-1 truncate font-serif text-title font-semibold text-ink">
+          {title}
+        </h2>
+        {description && (
+          <p className="hidden min-w-0 truncate text-meta text-ink-soft sm:block">
+            {description}
+          </p>
+        )}
+        <ChevronDown className="h-4 w-4 shrink-0 self-center text-ink-ghost transition-transform duration-200 group-data-[state=open]:rotate-180" />
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <div className="border-t border-hairline-soft p-4 sm:p-5">{children}</div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
 
 // First, let's define the response types at the top of the file
 interface BaseResponse {
@@ -292,7 +438,7 @@ function SettingsContent() {
 
         if (userError) {
           console.error('Error fetching user data:', userError);
-          toast.error('Failed to fetch user data');
+          toast.error('Gagal memuat data kamu');
           return;
         }
 
@@ -307,7 +453,7 @@ function SettingsContent() {
       }
     } catch (error) {
       console.error('Error in fetchUserData:', error);
-      toast.error('Failed to fetch profile data');
+      toast.error('Gagal memuat data profil');
     } finally {
       setLoading(false);
     }
@@ -391,7 +537,7 @@ function SettingsContent() {
         setCategory(formData.get('category') as string);
         setFullAddress(formData.get('fullAddress') as string);
 
-        toast.success('Profile berhasil diupdate');
+        toast.success('Profil berhasil disimpan');
         await fetchUserData(); // Refresh the data
       } else {
         // Handle client-specific updates
@@ -408,7 +554,7 @@ function SettingsContent() {
 
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('Gagal mengupdate profile: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      toast.error('Gagal menyimpan profil: ' + (error instanceof Error ? error.message : 'kesalahan tidak diketahui'));
     } finally {
       setIsLoading(false);
     }
@@ -422,7 +568,7 @@ function SettingsContent() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > MAX_FILE_SIZE) {
-        setImageError('Image size exceeds 1MB. Please choose a smaller image.');
+        setImageError('Ukuran foto lebih dari 1MB. Pilih foto yang lebih kecil.');
         return;
       }
 
@@ -440,7 +586,7 @@ function SettingsContent() {
     if (files) {
       const remainingSlots = maxGalleryPhotos - galleryPhotos.length;
       if (remainingSlots <= 0) {
-        setGalleryError(`Maximum ${maxGalleryPhotos} photos allowed`);
+        setGalleryError(`Maksimal ${maxGalleryPhotos} foto.`);
         return;
       }
 
@@ -479,12 +625,12 @@ function SettingsContent() {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setBrandGuidelineError('File size should not exceed 5MB');
+        setBrandGuidelineError('Ukuran file maksimal 5MB.');
         return;
       }
       const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
       if (!allowedTypes.includes(file.type)) {
-        setBrandGuidelineError('Only PDF and DOC/DOCX files are allowed');
+        setBrandGuidelineError('Hanya file PDF atau DOC/DOCX.');
         return;
       }
       setNewBrandGuideline(file);
@@ -584,575 +730,537 @@ function SettingsContent() {
   };
 
   return (
-    <div className="container mx-auto p-4 max-w-4xl">
+    <div className="min-h-screen bg-canvas">
       <Toaster position="top-center" />
-      <div className="flex items-center mb-8">
-        <Button 
-          onClick={handleBackNavigation} 
-          variant="outline" 
-          size="sm" 
-          className="mr-4 border-blue-600 text-blue-600 hover:bg-blue-50"
-        >
-          <ChevronLeft className="w-4 h-4 mr-1" />
-          Back
-        </Button>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-ink">
-          {type === 'streamer' ? 'Pengaturan Streamer' : 'Pengaturan Client'}
-        </h1>
-      </div>
 
-      <Card className="border-0 bg-[#faf9f6]">
-        <CardHeader className="border-b border-hairline bg-surface-tint py-8">
-          <CardTitle className="text-xl sm:text-2xl font-semibold text-ink">Pengaturan Profil</CardTitle>
-        </CardHeader>
-        <CardContent className="p-8">
-          {loading ? (
-            <div className="flex justify-center items-center h-[60vh]">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-8">
-              {/* Profile Picture Section */}
-              <div className="flex flex-col items-center mb-10">
-                <div className="relative w-32 h-32 sm:w-40 sm:h-40 mb-4">
+      <main className="mx-auto w-full max-w-[880px] px-4 py-8 sm:px-6 sm:py-12">
+        <header className="min-w-0">
+          <button
+            type="button"
+            onClick={handleBackNavigation}
+            className="-ml-1 inline-flex items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            {userType === 'streamer' ? 'Dashboard' : 'Cari host'}
+          </button>
+          <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
+            {type === 'streamer' ? 'Pengaturan host' : 'Pengaturan brand'}
+          </h1>
+          <p className="mt-2 text-lede text-ink-soft">
+            {type === 'streamer'
+              ? 'Perbarui profil, harga, dan hal yang brand lihat sebelum booking.'
+              : 'Perbarui profil dan detail brand kamu.'}
+          </p>
+        </header>
+
+        {loading ? (
+          <div className="mt-8 flex items-center justify-center rounded-frame border border-hairline bg-surface py-24">
+            <Loader2 className="h-6 w-6 animate-spin text-ink-ghost" />
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit} className="mt-8 space-y-4">
+            {/* -------------------------------------------------------------
+                Foto profil.
+
+                The avatar used to be a 160px circle in a four-pixel blue ring,
+                centred above a blue upload button — two accents and a lot of
+                height for one field. It is a row now: the picture, the control
+                that changes it, and the one constraint that matters.
+                ------------------------------------------------------------- */}
+            <Section index={1} title="Foto profil">
+              <div className="flex min-w-0 items-center gap-4 sm:gap-5">
+                <span className="relative h-20 w-20 shrink-0 overflow-hidden rounded-full border border-hairline bg-surface-tint sm:h-24 sm:w-24">
                   {(previewUrl || imageUrl) ? (
                     <Image
                       src={previewUrl || imageUrl || ''}
-                      alt="Profile"
-                      width={160}
-                      height={160}
-                      className="w-full h-full rounded-full object-cover border-4 border-blue-100"
+                      alt="Foto profil"
+                      fill
+                      sizes="96px"
+                      className="object-cover"
                       unoptimized
                     />
                   ) : (
-                    <div className="w-full h-full bg-blue-50 rounded-full flex items-center justify-center border-4 border-blue-100">
-                      <User className="h-16 w-16 text-blue-400" />
-                    </div>
+                    <span className="grid h-full w-full place-items-center text-ink-ghost">
+                      <User className="h-7 w-7" />
+                    </span>
                   )}
-                </div>
-                <Button 
-                  type="button" 
-                  onClick={handleImageClick} 
-                  className="mt-3 bg-brand hover:bg-brand-hover text-white px-6"
-                >
-                  <Camera className="mr-2 h-4 w-4" />
-                  {imageUrl ? 'Ganti Foto Profil' : 'Upload Foto Profil'}
-                </Button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleImageChange}
-                  className="hidden"
-                  accept="image/*"
-                />
-                {imageError && (
-                  <p className="text-red-500 text-sm mt-2 flex items-center">
-                    <AlertCircle className="mr-1 h-4 w-4" />
-                    {imageError}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <Button
+                    type="button"
+                    variant="quiet"
+                    size="action-compact"
+                    onClick={handleImageClick}
+                  >
+                    <Camera className="mr-2 h-4 w-4" />
+                    {imageUrl ? 'Ganti foto' : 'Unggah foto'}
+                  </Button>
+                  <p className="mt-2 text-meta text-ink-soft">
+                    Format gambar, maksimal 1MB.
                   </p>
-                )}
+                </div>
               </div>
 
-              {type === 'streamer' && (
-                <>
-                  {/* Pricing Card - Enhanced with rules and warnings */}
-                  <Card className="border border-[#E23744]/20 mb-8 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 w-1 h-full bg-[#E23744]" />
-                    <Collapsible defaultOpen>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <DollarSign className="h-5 w-5 text-[#E23744]" />
-                              Pengaturan Harga
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6 space-y-6">
-                          <div className="relative">
-                            <Input
-                              id="price"
-                              type="text"
-                              value={newPrice}
-                              onChange={handlePriceChange}
-                              placeholder={price ? price.toString() : "Masukkan harga baru"}
-                              className="pl-12 h-11 text-base sm:text-lg"
-                            />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft text-base sm:text-lg">
-                              Rp.
-                            </span>
-                          </div>
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageChange}
+                className="hidden"
+                accept="image/*"
+              />
 
-                          {/* Price Rules and Guidelines */}
-                          <div className="flex items-start gap-2 p-4 sm:p-5 bg-[#E23744]/5 rounded-panel border border-[#E23744]/10">
-                            <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-[#E23744] flex-shrink-0 mt-0.5" />
-                            <div className="space-y-1">
-                              <p className="text-sm font-medium text-ink">Peraturan Perubahan Harga:</p>
-                              <ul className="text-xs sm:text-sm text-ink-muted list-disc pl-4 space-y-1">
-                                <li>Perubahan harga dibatasi maksimal <strong>25%</strong> naik atau turun per hari</li>
-                                <li>Harga yang dilihat client akan otomatis ditambah <strong>30%</strong> sebagai biaya layanan platform</li>
-                                <li>Perubahan harga hanya dapat dilakukan <strong>1 kali dalam 24 jam</strong></li>
-                              </ul>
-                            </div>
-                          </div>
-
-                          {/* Price Limits Display */}
-                          {price > 0 && (
-                            <div className="grid grid-cols-2 gap-4">
-                              <div className="bg-[#E23744]/5 rounded-panel p-4 border border-[#E23744]/10">
-                                <p className="text-sm text-ink-muted mb-1">Minimum</p>
-                                <p className="text-base font-semibold text-ink">
-                                  Rp {calculatePriceLimits(price).minPrice.toLocaleString('id-ID')}
-                                </p>
-                              </div>
-                              <div className="bg-[#E23744]/5 rounded-panel p-4 border border-[#E23744]/10">
-                                <p className="text-sm text-ink-muted mb-1">Maximum</p>
-                                <p className="text-base font-semibold text-ink">
-                                  Rp {calculatePriceLimits(price).maxPrice.toLocaleString('id-ID')}
-                                </p>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Final Price Display */}
-                          <div className="bg-[#E23744]/10 rounded-panel p-4 border border-[#E23744]/20">
-                            <p className="text-sm font-medium text-ink mb-1">
-                              Harga Yang Dilihat Client:
-                            </p>
-                            <p className="text-xl font-bold text-[#E23744]">
-                              Rp {Math.round(calculatePriceWithPlatformFee(price)).toLocaleString('id-ID')} / jam
-                            </p>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-
-                  {/* Personal Information Card */}
-                  <Card className="border border-hairline-input mb-8">
-                    <Collapsible>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <User className="h-5 w-5 text-ink-muted" />
-                              Informasi Pribadi
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6">
-                          <div className="grid gap-6">
-                            <div className="grid sm:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="firstName">Nama Depan</Label>
-                                <Input
-                                  id="firstName"
-                                  value={firstName}
-                                  onChange={(e) => setFirstName(e.target.value)}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="lastName">Nama Belakang</Label>
-                                <Input
-                                  id="lastName"
-                                  value={lastName}
-                                  onChange={(e) => setLastName(e.target.value)}
-                                />
-                              </div>
-                            </div>
-                            <div className="grid sm:grid-cols-3 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="gender">Gender</Label>
-                                <Select value={gender} onValueChange={setGender}>
-                                  <SelectTrigger id="gender">
-                                    <SelectValue placeholder="Pilih gender" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="male">Laki-laki</SelectItem>
-                                    <SelectItem value="female">Perempuan</SelectItem>
-                                    <SelectItem value="other">Prefer not to say</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="age">Umur</Label>
-                                <Input
-                                  id="age"
-                                  type="number"
-                                  min="18"
-                                  max="100"
-                                  value={age}
-                                  onChange={(e) => setAge(e.target.value)}
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="experience">Pengalaman</Label>
-                                <Select value={experience} onValueChange={setExperience}>
-                                  <SelectTrigger id="experience">
-                                    <SelectValue placeholder="Pilih pengalaman" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="beginner">Pemula ({`<`} 1 tahun)</SelectItem>
-                                    <SelectItem value="intermediate">Menengah (1-3 tahun)</SelectItem>
-                                    <SelectItem value="advanced">Berpengalaman ({`>`} 3 tahun)</SelectItem>
-                                    <SelectItem value="expert">Expert ({`>`} 5 tahun)</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-
-                  {/* Streamer Profile Card */}
-                  <Card className="border border-hairline-input mb-8">
-                    <Collapsible>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <Monitor className="h-5 w-5 text-ink-muted" />
-                              Profil Streamer
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6">
-                          <div className="space-y-6">
-                            <div className="space-y-2">
-                              <Label htmlFor="bio">Bio</Label>
-                              <Textarea
-                                id="bio"
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                placeholder="Ceritakan tentang dirimu, pengalaman streaming, dan konten yang kamu buat..."
-                                className="min-h-[120px]"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Platform</Label>
-                              <div className="flex gap-2">
-                                {['tiktok', 'shopee'].map((platformOption) => (
-                                  <button
-                                    key={platformOption}
-                                    onClick={() => {
-                                      const platforms = platform.split(',').filter(Boolean);
-                                      if (platforms.includes(platformOption)) {
-                                        setPlatform(platforms.filter(p => p !== platformOption).join(','));
-                                      } else {
-                                        setPlatform([...platforms, platformOption].join(','));
-                                      }
-                                    }}
-                                    className={`
-                                      h-10 px-6 rounded-lg border text-sm font-medium transition-all duration-200
-                                      ${platform.split(',').includes(platformOption)
-                                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                                        : 'border-hairline-input hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600'
-                                      }
-                                    `}
-                                  >
-                                    {platformOption.charAt(0).toUpperCase() + platformOption.slice(1)}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Kategori Konten (Pilih maksimal 3)</Label>
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {[
-                                  "gaming", "lifestyle", "education",
-                                  "entertainment", "music", "sports",
-                                  "food", "travel", "technology",
-                                  "beauty", "fashion", "other"
-                                ].map((cat) => (
-                                  <div
-                                    key={cat}
-                                    onClick={() => {
-                                      const categories = category.split(',').filter(Boolean);
-                                      if (categories.includes(cat)) {
-                                        setCategory(categories.filter(c => c !== cat).join(','));
-                                      } else if (categories.length < 3) {
-                                        setCategory([...categories, cat].join(','));
-                                      }
-                                    }}
-                                    className={`
-                                      cursor-pointer p-2 rounded-lg border transition-all duration-200
-                                      ${category.split(',').includes(cat)
-                                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                        : 'border-hairline-input hover:border-purple-500 hover:bg-purple-50/50'
-                                      }
-                                    `}
-                                  >
-                                    <span className="text-sm font-medium capitalize">{cat}</span>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-
-                  {/* Location & Contact Card */}
-                  <Card className="border border-hairline-input mb-8">
-                    <Collapsible>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <MapPin className="h-5 w-5 text-ink-muted" />
-                              Lokasi & Kontak
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6">
-                          <div className="space-y-6">
-                            <div className="space-y-2">
-                              <Label htmlFor="location">Kota</Label>
-                              <Input
-                                id="location"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="fullAddress">Alamat Lengkap</Label>
-                              <Textarea
-                                id="fullAddress"
-                                value={fullAddress}
-                                onChange={(e) => setFullAddress(e.target.value)}
-                                placeholder="Masukkan alamat lengkap kamu..."
-                                className="min-h-[80px]"
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-
-                  {/* Media & Gallery Card */}
-                  <Card className="border border-hairline-input mb-8">
-                    <Collapsible>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <ImageIcon className="h-5 w-5 text-ink-muted" />
-                              Media & Galeri
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6">
-                          <div className="space-y-6">
-                            <div className="space-y-2">
-                              <Label htmlFor="youtubeVideoUrl">Video YouTube</Label>
-                              <Input
-                                id="youtubeVideoUrl"
-                                value={youtubeVideoUrl}
-                                onChange={(e) => setYoutubeVideoUrl(e.target.value)}
-                                placeholder="https://youtube.com/watch?v=..."
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Foto Galeri (Maksimal 5)</Label>
-                              <Input
-                                type="file"
-                                onChange={handleGalleryPhotoChange}
-                                accept="image/*"
-                                multiple
-                                disabled={galleryPhotos.length >= maxGalleryPhotos}
-                              />
-                              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mt-4">
-                                {galleryPhotos.map((photo, index) => (
-                                  <div key={index} className="relative aspect-square">
-                                    <Image
-                                      src={photo.url}
-                                      alt={`Gallery photo ${index + 1}`}
-                                      width={200}
-                                      height={200}
-                                      className="w-full h-full object-cover rounded-lg"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => removeGalleryPhoto(index)}
-                                      className="absolute -top-2 -right-2 bg-surface rounded-full p-1 hover:bg-surface-tint"
-                                    >
-                                      <XCircle className="h-5 w-5 text-red-500" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-                </>
+              {imageError && (
+                <p className="mt-3 flex items-start gap-1.5 text-meta text-destructive-emphasis">
+                  <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  {imageError}
+                </p>
               )}
+            </Section>
 
-              {type !== 'streamer' && (
-                <>
-                  {/* Client Profile Card */}
-                  <Card className="border border-hairline-input mb-8">
-                    <Collapsible defaultOpen>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <User className="h-5 w-5 text-ink-muted" />
-                              Informasi Pribadi
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6">
-                          <div className="grid gap-6">
-                            <div className="grid sm:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                <Label htmlFor="firstName">Nama Depan</Label>
-                                <Input
-                                  id="firstName"
-                                  value={firstName}
-                                  onChange={(e) => setFirstName(e.target.value)}
-                                  placeholder="Masukkan nama depan"
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label htmlFor="lastName">Nama Belakang</Label>
-                                <Input
-                                  id="lastName"
-                                  value={lastName}
-                                  onChange={(e) => setLastName(e.target.value)}
-                                  placeholder="Masukkan nama belakang"
-                                />
-                              </div>
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="location">Lokasi</Label>
-                              <Input
-                                id="location"
-                                value={location}
-                                onChange={(e) => setLocation(e.target.value)}
-                                placeholder="Masukkan kota kamu"
-                              />
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
+            {type === 'streamer' && (
+              <>
+                {/* ---------------------------------------------------------
+                    Harga.
 
-                  {/* Brand Information Card */}
-                  <Card className="border border-hairline-input mb-8">
-                    <Collapsible defaultOpen>
-                      <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
-                          <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <FileText className="h-5 w-5 text-ink-muted" />
-                              Informasi Brand
-                            </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
-                          </div>
-                        </CardHeader>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <CardContent className="p-6">
-                          <div className="space-y-6">
-                            <div className="space-y-2">
-                              <Label htmlFor="brandName">Nama Brand</Label>
-                              <Input
-                                id="brandName"
-                                value={brandName}
-                                onChange={(e) => setBrandName(e.target.value)}
-                                placeholder="Masukkan nama brand kamu"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="brandDescription">Deskripsi Brand</Label>
-                              <Textarea
-                                id="brandDescription"
-                                value={bio}
-                                onChange={(e) => setBio(e.target.value)}
-                                placeholder="Ceritakan tentang brand kamu..."
-                                className="min-h-[120px]"
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label htmlFor="brandGuidelines">Brand Guidelines</Label>
-                              <div className="space-y-3">
-                                <Input
-                                  type="file"
-                                  id="brandGuidelines"
-                                  onChange={handleBrandGuidelineChange}
-                                  accept=".pdf,.doc,.docx"
-                                />
-                                {brandGuidelineUrl && (
-                                  <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                                    <FileText className="h-4 w-4 text-blue-600" />
-                                    <span className="text-sm text-blue-600">
-                                      {brandGuidelineUrl.split('/').pop()}
-                                    </span>
-                                  </div>
-                                )}
-                                {brandGuidelineError && (
-                                  <p className="text-sm text-red-500 flex items-center gap-1">
-                                    <AlertCircle className="h-4 w-4" />
-                                    {brandGuidelineError}
-                                  </p>
-                                )}
-                                <p className="text-sm text-ink-soft">
-                                  Upload file PDF atau DOC/DOCX (max. 5MB)
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </Card>
-                </>
-              )}
+                    Every surface in here was a wash of #E23744 — a left rail,
+                    three tinted wells and a red price — which made the pricing
+                    card shout louder than the button that saves the form. The
+                    rules are quiet copy on the tint fill, the limits are a
+                    two-cell grid drawn with `shadow-cell`, and the only figure
+                    with any size to it is the one the brand actually pays.
+                    --------------------------------------------------------- */}
+                <FoldSection
+                  index={2}
+                  title="Atur harga"
+                  description="Berlaku untuk booking baru."
+                  defaultOpen
+                >
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="price" className={LABEL}>
+                        Tarif dasar per jam
+                      </Label>
+                      <div className="relative">
+                        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ui text-ink-soft">
+                          Rp
+                        </span>
+                        <Input
+                          id="price"
+                          type="text"
+                          inputMode="numeric"
+                          value={newPrice}
+                          onChange={handlePriceChange}
+                          placeholder={price ? price.toLocaleString('id-ID') : "Masukkan harga baru"}
+                          className={`${FIELD} numeric pl-11`}
+                        />
+                      </div>
+                      <p className="text-meta text-ink-soft">
+                        Ini yang kamu terima. Salda menambah 30% di atasnya.
+                      </p>
+                      {priceError && (
+                        <p className="flex items-start gap-1.5 text-meta text-destructive-emphasis">
+                          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          {priceError}
+                        </p>
+                      )}
+                    </div>
 
-              <Button 
-                type="submit" 
-                className="w-full h-14 text-white text-lg font-medium transition-all duration-200 bg-brand hover:bg-brand-hover"
+                    <div className="rounded-panel border border-hairline-soft bg-surface-tint p-4">
+                      <p className="font-mono text-tiny uppercase text-ink-ghost">
+                        Aturan perubahan harga
+                      </p>
+                      <ul className="mt-2.5 space-y-1.5 text-meta text-ink-muted">
+                        <li>
+                          Perubahan dibatasi{' '}
+                          <span className="font-medium text-ink">25%</span> naik atau turun per hari.
+                        </li>
+                        <li>
+                          Harga yang brand lihat otomatis ditambah{' '}
+                          <span className="font-medium text-ink">30%</span> sebagai biaya layanan platform.
+                        </li>
+                        <li>
+                          Harga hanya bisa diubah{' '}
+                          <span className="font-medium text-ink">1 kali dalam 24 jam</span>.
+                        </li>
+                      </ul>
+                    </div>
+
+                    {price > 0 && (
+                      <div className="grid grid-cols-2 overflow-hidden rounded-panel">
+                        <div className="shadow-cell px-4 py-3">
+                          <p className="font-mono text-tiny uppercase text-ink-ghost">Minimum</p>
+                          <p className="numeric mt-1 truncate text-copy font-medium text-ink">
+                            Rp {calculatePriceLimits(price).minPrice.toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                        <div className="shadow-cell px-4 py-3">
+                          <p className="font-mono text-tiny uppercase text-ink-ghost">Maksimum</p>
+                          <p className="numeric mt-1 truncate text-copy font-medium text-ink">
+                            Rp {calculatePriceLimits(price).maxPrice.toLocaleString('id-ID')}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex min-w-0 items-baseline justify-between gap-4 border-t border-hairline-soft pt-4">
+                      <p className="min-w-0 text-ui font-medium text-ink">Brand membayar</p>
+                      <p className="shrink-0 whitespace-nowrap">
+                        <span className="numeric text-price font-semibold text-ink">
+                          Rp {Math.round(calculatePriceWithPlatformFee(price)).toLocaleString('id-ID')}
+                        </span>
+                        <span className="text-meta text-ink-soft"> / jam</span>
+                      </p>
+                    </div>
+
+                    <p className="text-meta text-ink-faint">
+                      Perubahan berlaku untuk booking baru. Sesi yang sudah dipesan tidak berubah.
+                    </p>
+                  </div>
+                </FoldSection>
+
+                <FoldSection index={3} title="Informasi pribadi">
+                  <div className="space-y-5">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName" className={LABEL}>Nama depan</Label>
+                        <Input
+                          id="firstName"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          className={FIELD}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName" className={LABEL}>Nama belakang</Label>
+                        <Input
+                          id="lastName"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          className={FIELD}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="gender" className={LABEL}>Jenis kelamin</Label>
+                        <Select value={gender} onValueChange={setGender}>
+                          <SelectTrigger id="gender" className={FIELD}>
+                            <SelectValue placeholder="Pilih jenis kelamin" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Laki-laki</SelectItem>
+                            <SelectItem value="female">Perempuan</SelectItem>
+                            <SelectItem value="other">Tidak ingin menyebutkan</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="age" className={LABEL}>Umur</Label>
+                        <Input
+                          id="age"
+                          type="number"
+                          min="18"
+                          max="100"
+                          value={age}
+                          onChange={(e) => setAge(e.target.value)}
+                          className={`${FIELD} numeric`}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="experience" className={LABEL}>Pengalaman</Label>
+                        <Select value={experience} onValueChange={setExperience}>
+                          <SelectTrigger id="experience" className={FIELD}>
+                            <SelectValue placeholder="Pilih pengalaman" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="beginner">Pemula ({`<`} 1 tahun)</SelectItem>
+                            <SelectItem value="intermediate">Menengah (1-3 tahun)</SelectItem>
+                            <SelectItem value="advanced">Berpengalaman ({`>`} 3 tahun)</SelectItem>
+                            <SelectItem value="expert">Ahli ({`>`} 5 tahun)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+                </FoldSection>
+
+                <FoldSection index={4} title="Profil host" description="Ini yang brand lihat.">
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="bio" className={LABEL}>Bio</Label>
+                      <Textarea
+                        id="bio"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Ceritakan tentang dirimu, pengalaman streaming, dan konten yang kamu buat..."
+                        className={`${AREA} min-h-[120px]`}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className={LABEL}>Platform</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {PLATFORM_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            // Without this the toggle submits the form. A <button>
+                            // inside a <form> defaults to type="submit", so picking
+                            // a platform also saved the whole profile. Every other
+                            // button in this form is already typed; this one was
+                            // missed.
+                            type="button"
+                            onClick={() => {
+                              const platforms = platform.split(',').filter(Boolean);
+                              if (platforms.includes(option.value)) {
+                                setPlatform(platforms.filter(p => p !== option.value).join(','));
+                              } else {
+                                setPlatform([...platforms, option.value].join(','));
+                              }
+                            }}
+                            className={`h-10 rounded-field border px-5 text-ui transition-colors ${
+                              platform.split(',').includes(option.value) ? CHIP_ON : CHIP_OFF
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <Label className={LABEL}>Kategori konten</Label>
+                        <span className="text-meta text-ink-faint">Pilih maksimal 3</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        {CATEGORY_OPTIONS.map((option) => (
+                          <div
+                            key={option.value}
+                            onClick={() => {
+                              const categories = category.split(',').filter(Boolean);
+                              if (categories.includes(option.value)) {
+                                setCategory(categories.filter(c => c !== option.value).join(','));
+                              } else if (categories.length < 3) {
+                                setCategory([...categories, option.value].join(','));
+                              }
+                            }}
+                            className={`cursor-pointer truncate rounded-field border px-3 py-2 text-copy transition-colors ${
+                              category.split(',').includes(option.value) ? CHIP_ON : CHIP_OFF
+                            }`}
+                          >
+                            {option.label}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </FoldSection>
+
+                <FoldSection index={5} title="Lokasi & kontak">
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="location" className={LABEL}>Kota</Label>
+                      <Input
+                        id="location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        className={FIELD}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fullAddress" className={LABEL}>Alamat lengkap</Label>
+                      <Textarea
+                        id="fullAddress"
+                        value={fullAddress}
+                        onChange={(e) => setFullAddress(e.target.value)}
+                        placeholder="Masukkan alamat lengkap kamu..."
+                        className={`${AREA} min-h-[80px]`}
+                      />
+                    </div>
+                  </div>
+                </FoldSection>
+
+                <FoldSection index={6} title="Media & galeri">
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="youtubeVideoUrl" className={LABEL}>Video YouTube</Label>
+                      <Input
+                        id="youtubeVideoUrl"
+                        value={youtubeVideoUrl}
+                        onChange={(e) => setYoutubeVideoUrl(e.target.value)}
+                        placeholder="https://youtube.com/watch?v=..."
+                        className={FIELD}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <Label className={LABEL}>Foto galeri</Label>
+                        <span className="numeric text-meta text-ink-faint">
+                          {galleryPhotos.length} / {maxGalleryPhotos}
+                        </span>
+                      </div>
+                      <Input
+                        type="file"
+                        onChange={handleGalleryPhotoChange}
+                        accept="image/*"
+                        multiple
+                        disabled={galleryPhotos.length >= maxGalleryPhotos}
+                        className={`${FIELD} cursor-pointer py-2.5 text-copy file:mr-3 file:text-copy file:text-ink-muted`}
+                      />
+                      {galleryError && (
+                        <p className="flex items-start gap-1.5 text-meta text-destructive-emphasis">
+                          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          {galleryError}
+                        </p>
+                      )}
+
+                      {galleryPhotos.length > 0 && (
+                        <div className="grid grid-cols-3 gap-3 pt-2 sm:grid-cols-5">
+                          {galleryPhotos.map((photo, index) => (
+                            <div
+                              key={index}
+                              className="relative aspect-square overflow-hidden rounded-panel border border-hairline bg-surface-tint"
+                            >
+                              <Image
+                                src={photo.url}
+                                alt={`Foto galeri ${index + 1}`}
+                                fill
+                                sizes="160px"
+                                className="object-cover"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeGalleryPhoto(index)}
+                                aria-label={`Hapus foto ${index + 1}`}
+                                className="absolute right-1.5 top-1.5 grid h-6 w-6 place-items-center rounded-full border border-hairline bg-surface text-ink-soft transition-colors hover:text-destructive-emphasis"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </FoldSection>
+              </>
+            )}
+
+            {type !== 'streamer' && (
+              <>
+                <FoldSection index={2} title="Informasi pribadi" defaultOpen>
+                  <div className="space-y-5">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName" className={LABEL}>Nama depan</Label>
+                        <Input
+                          id="firstName"
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
+                          placeholder="Masukkan nama depan"
+                          className={FIELD}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName" className={LABEL}>Nama belakang</Label>
+                        <Input
+                          id="lastName"
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
+                          placeholder="Masukkan nama belakang"
+                          className={FIELD}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="location" className={LABEL}>Lokasi</Label>
+                      <Input
+                        id="location"
+                        value={location}
+                        onChange={(e) => setLocation(e.target.value)}
+                        placeholder="Masukkan kota kamu"
+                        className={FIELD}
+                      />
+                    </div>
+                  </div>
+                </FoldSection>
+
+                <FoldSection index={3} title="Informasi brand" defaultOpen>
+                  <div className="space-y-5">
+                    <div className="space-y-2">
+                      <Label htmlFor="brandName" className={LABEL}>Nama brand</Label>
+                      <Input
+                        id="brandName"
+                        value={brandName}
+                        onChange={(e) => setBrandName(e.target.value)}
+                        placeholder="Masukkan nama brand kamu"
+                        className={FIELD}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="brandDescription" className={LABEL}>Deskripsi brand</Label>
+                      <Textarea
+                        id="brandDescription"
+                        value={bio}
+                        onChange={(e) => setBio(e.target.value)}
+                        placeholder="Ceritakan tentang brand kamu..."
+                        className={`${AREA} min-h-[120px]`}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="brandGuidelines" className={LABEL}>Panduan brand</Label>
+                      <Input
+                        type="file"
+                        id="brandGuidelines"
+                        onChange={handleBrandGuidelineChange}
+                        accept=".pdf,.doc,.docx"
+                        className={`${FIELD} cursor-pointer py-2.5 text-copy file:mr-3 file:text-copy file:text-ink-muted`}
+                      />
+                      {brandGuidelineUrl && (
+                        <div className="flex min-w-0 items-center gap-2 rounded-field border border-hairline-soft bg-surface-tint px-3 py-2">
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-ink-soft" />
+                          <span className="min-w-0 flex-1 truncate text-copy text-ink-body">
+                            {brandGuidelineUrl.split('/').pop()}
+                          </span>
+                        </div>
+                      )}
+                      {brandGuidelineError && (
+                        <p className="flex items-start gap-1.5 text-meta text-destructive-emphasis">
+                          <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          {brandGuidelineError}
+                        </p>
+                      )}
+                      <p className="text-meta text-ink-soft">
+                        Unggah file PDF atau DOC/DOCX, maksimal 5MB.
+                      </p>
+                    </div>
+                  </div>
+                </FoldSection>
+              </>
+            )}
+
+            <div className="pt-2">
+              <Button
+                type="submit"
+                variant="brand"
+                size="action-full"
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Menyimpan Perubahan...
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Menyimpan perubahan…
                   </>
                 ) : (
-                  'Simpan Perubahan'
+                  'Simpan perubahan'
                 )}
               </Button>
-            </form>
-          )}
-        </CardContent>
-      </Card>
+            </div>
+          </form>
+        )}
+      </main>
     </div>
   );
 }
@@ -1162,8 +1270,8 @@ export default function SettingsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center items-center h-screen">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <div className="flex h-screen items-center justify-center bg-canvas">
+          <Loader2 className="h-6 w-6 animate-spin text-ink-ghost" />
         </div>
       }
     >
