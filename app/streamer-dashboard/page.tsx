@@ -1334,10 +1334,10 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
         <div className="absolute top-0 left-4 right-4 h-px border-t-2 border-dashed border-hairline-input"></div>
         
         {/* Left circle cutout */}
-        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#faf9f6] rounded-full border border-hairline"></div>
+        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-canvas rounded-full border border-hairline"></div>
         
         {/* Right circle cutout */}
-        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#faf9f6] rounded-full border border-hairline"></div>
+        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-canvas rounded-full border border-hairline"></div>
 
         <div className="p-4 sm:p-6">
           {/* Header - Client Name, Route, and Group Indicator */}
@@ -1453,7 +1453,7 @@ const AnalyticsCard = ({ title, value, trend }: {
       <div className="space-y-1">
         <h3 className="text-base sm:text-lg md:text-[28px] font-bold text-ink">{value}</h3>
         {trend !== undefined && (
-          <p className={`text-[10px] sm:text-xs md:text-sm ${trend >= 0 ? 'text-[#4CAF50]' : 'text-red-500'}`}>
+          <p className={`text-[10px] sm:text-xs md:text-sm ${trend >= 0 ? 'text-positive' : 'text-destructive-emphasis'}`}>
             • {trend > 0 ? '+' : ''}{trend}% dari bulan lalu
           </p>
         )}
@@ -1868,7 +1868,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                 <div className="flex justify-center gap-2 sm:gap-3">
                   <Button
                     onClick={() => router.push('/streamer-schedule')}
-                    className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-[#E23744] hover:bg-[#E23744]/90 text-white transition-all duration-200"
+                    className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-brand hover:bg-brand-hover text-white transition-all duration-200"
                     title="Atur jadwal"
                   >
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -2648,7 +2648,7 @@ function DashboardNotice({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-[#faf9f6]">
+    <div className="min-h-screen bg-canvas">
       <Navbar />
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
         <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
@@ -3532,7 +3532,7 @@ export default function StreamerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#faf9f6]">
+    <div className="min-h-screen bg-canvas">
       <Navbar />
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
         <ToastContainer />
