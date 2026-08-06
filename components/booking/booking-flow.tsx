@@ -1086,8 +1086,16 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             <div className="mt-1.5 grid grid-cols-7 gap-1.5">
               {weekDays.map((day) => {
                 const key = format(day, 'yyyy-MM-dd');
-                const disabled = isDayOff(day) || !hasAvailableSchedule(day);
                 const picked = selectedDates.has(key);
+                // An already-picked day stays clickable even once it stops being
+                // legal — answering "yes, I need shipping" after choosing
+                // tomorrow pushes the earliest bookable date forward and
+                // disables it. Left disabled it could not be removed, and
+                // `handleBooking` reads `selectedDates`, not the grid, so the
+                // brand would be charged for a date the rules had already
+                // rejected. Clicking it now toggles it off; only unpicked
+                // illegal days are inert.
+                const disabled = !picked && (isDayOff(day) || !hasAvailableSchedule(day));
                 const focused = selectedDate ? isSameDay(day, selectedDate) : false;
                 return (
                   <button
@@ -1250,7 +1258,10 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
                     {Array.from(selectedDates.entries()).map(([key, info]) => (
                       <li key={key} className="flex justify-between gap-2 text-mini">
                         <span className="text-ink-body">
-                          {format(new Date(key), 'EEE, d MMM')}
+                          {/* `new Date('2026-08-10')` is parsed as UTC; adding
+                              the time component makes it local, so the label
+                              cannot name the previous day. */}
+                          {format(new Date(`${key}T00:00:00`), 'EEE, d MMM')}
                         </span>
                         <span className="numeric shrink-0 text-ink-soft">
                           {groupConsecutiveHours(info.hours)

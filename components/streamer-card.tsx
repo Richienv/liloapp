@@ -722,6 +722,20 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
       */}
       <button
         type="button"
+        /*
+          Everything inside a button is flattened into that button's accessible
+          name, so without this a screen reader announces the whole card as one
+          run-on control — name, price, "/ jam", "Terverifikasi", city, rating,
+          every category — and the <h3> below stops being a heading anyone can
+          navigate to. An explicit label gives the control a short, useful name
+          instead; the detail is still on the profile it opens.
+        */
+        aria-label={[
+          formatName(streamer.first_name, streamer.last_name),
+          priceInfo.hasPrice ? `${priceInfo.displayPrice} per jam` : NO_PRICE_LABEL,
+          locationLabel,
+          isBookable ? 'terverifikasi' : 'menunggu verifikasi',
+        ].join(', ')}
         className="group flex w-full flex-col overflow-hidden rounded-panel border border-hairline
           bg-surface p-0 text-left transition-colors hover:bg-surface-raised
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
