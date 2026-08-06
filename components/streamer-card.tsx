@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { subtotalWithPlatformFee } from '@/lib/pricing';
 import { Star, StarHalf, MapPin, ChevronLeft, ChevronRight, User, Calendar, Clock, Monitor, DollarSign, X, Mail, Sun, Sunset, Moon, Info, Package } from "lucide-react";
 import { Button } from "./ui/button";
+import { CardActionBar } from "./ui/card-action-bar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -875,6 +876,16 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
   // Rows created before usernames existed have none; linking to `/undefined`
   // renders a dead 404, so the link must simply not be there.
   const profileHref = streamer.username ? `/${streamer.username}` : null;
+
+  // `category` is a comma-joined free-text column, so it arrives with blanks,
+  // stray spaces and sometimes a trailing comma. Capped at three because the
+  // card renders them as one truncating row — a fourth would never be visible
+  // and would only push the row's ellipsis earlier.
+  const categoryLabels = (streamer.category || '')
+    .split(',')
+    .map((category) => category.trim())
+    .filter(Boolean)
+    .slice(0, 3);
 
   // Add new state for active bulk selection mode
   const [activeBulkMode, setActiveBulkMode] = useState<'week' | 'twoWeeks' | 'month' | null>(null);
@@ -1925,168 +1936,148 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
 
   return (
     <>
-      <div 
-        className="group relative bg-transparent w-full font-sans cursor-pointer animate-gpu hover-lift"
+      {/*
+        The whole card is one button.
+
+        It used to be a clickable div with two more buttons nested inside it,
+        which meant three overlapping hit targets and a `stopPropagation` on
+        each to stop them firing the card's own handler. A card is one thing you
+        can pick; the actions belong on the screen you land on, not stacked on
+        the summary. That also removes the last gradient from this file.
+      */}
+      <button
+        type="button"
+        className="group flex w-full flex-col overflow-hidden rounded-panel border border-hairline
+          bg-surface p-0 text-left transition-colors hover:bg-surface-raised
+          focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         onClick={() => {
           setIsProfileModalOpen(true);
         }}
         onMouseEnter={handleCardHover}
       >
-        {/* Image Container with Location Overlay */}
-        <div className="relative w-full aspect-[4/5] rounded-2xl overflow-hidden border border-[#f0f0ef]">
+        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4 / 5' }}>
           <img
             src={streamerImage(streamer.image_url)}
             alt={formatName(streamer.first_name, streamer.last_name)}
-            className="w-full h-full object-cover transition-optimized"
+            className="h-full w-full object-cover"
           />
-          {/* Location overlay */}
-          <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-lg shadow-sm flex items-center gap-2">
-            <MapPin className="w-3.5 h-3.5 text-[#2563eb]" />
-            <span className="text-xs font-medium text-gray-700">{locationLabel}</span>
-          </div>
-        </div>
-
-        {/* Content Container */}
-        <div className="p-4 pt-3 bg-[#faf9f6]">
-          {/* Name and Platforms */}
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-medium text-gray-900">
-                {formatName(streamer.first_name, streamer.last_name)}
-              </h3>
-              <VerificationBadge status={streamer.verification_status} showLabel={false} />
-              <div className="flex gap-1">
-                {normalizePlatforms(streamer).map((platform) => (
-                  <div
-                    key={platform}
-                    className={`px-2 py-0.5 rounded-full text-white text-[10px] font-medium
-                      ${platform === 'shopee'
-                        ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                        : 'bg-gradient-to-r from-blue-900 to-black text-white'
-                      }`}
-                  >
-                    {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Price Display */}
-          <div className="flex flex-col mb-2">
-            <div className="flex items-center gap-1.5">
-              <span className={cn(
-                "text-base font-semibold",
-                priceInfo.hasPrice ? "text-gray-900" : "text-gray-400"
-              )}>
-                {priceInfo.displayPrice}
-              </span>
-              {priceInfo.hasPrice && (
-                <span className="text-xs font-normal text-gray-500">/ jam</span>
-              )}
-            </div>
-            {priceInfo.originalPrice && priceInfo.discountPercentage && priceInfo.discountPercentage > 0 && (
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-sm text-gray-400 line-through">
-                  {priceInfo.originalPrice}
-                </span>
-                <span className="text-xs font-medium text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded">
-                  Hemat {priceInfo.discountPercentage}%
-                </span>
-              </div>
-            )}
-
-          </div>
-
-          {/* Rating */}
-          <div className="mb-3">
-            <RatingStars rating={averageRating} />
-          </div>
-
-          {/* Bio Preview */}
-          <div className="h-[3rem] mb-4">
-            <p className={cn(
-              "text-sm text-gray-600 leading-[1.5rem]",
-              "line-clamp-2 min-h-[3rem]",
-              "overflow-hidden display-webkit-box webkit-line-clamp-2 webkit-box-orient-vertical",
-              !streamer.bio && "text-gray-400"
-            )}>
-              {streamer.bio || 'No description available'}
-            </p>
-          </div>
-
-          {/* Categories */}
-          <div className="flex flex-wrap gap-2 mb-4">
-            {(streamer.category || '')
-              .split(',')
-              .map((category) => category.trim())
-              .filter(Boolean)
-              .slice(0, 3)
-              .map((category) => (
-              <div 
-                key={category} 
-                className="flex items-center gap-1.5 bg-white/80 px-2.5 py-1.5 rounded-lg border border-[#f0f0ef]"
+          {/*
+            Platforms sit on the photo rather than in the text column: they are
+            a property of the image the way a label on a product shot is, and
+            moving them off the text column is what leaves room for the price to
+            lead. Dark translucent, not brand-coloured — an orange Shopee pill
+            and a blue primary button on the same card are two accents.
+          */}
+          <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
+            {normalizePlatforms(streamer).map((platform) => (
+              <span
+                key={platform}
+                className="rounded-chip bg-ink/[.82] px-2 py-1 text-micro font-semibold
+                  uppercase tracking-[.03em] text-white backdrop-blur-[6px]"
               >
-                <div className="p-1 bg-[#2563eb]/10 rounded-full">
-                  <Monitor className="w-3 h-3 text-[#2563eb]" />
-                </div>
-                <span className="text-xs text-gray-600 truncate">
-                  {category}
-                </span>
-              </div>
+                {platform}
+              </span>
             ))}
           </div>
+        </div>
 
-          {/* Verification notice — the brand needs to know why booking is off */}
-          {!isBookable && (
-            <div className="mb-3 flex items-start gap-2 rounded-lg border border-yellow-100 bg-yellow-50 px-2.5 py-2">
-              <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-yellow-600" />
-              <p className="text-[11px] leading-snug text-yellow-800">
-                Profil ini sedang ditinjau tim Salda dan belum bisa dibooking.
-              </p>
-            </div>
-          )}
-
-          {/* Buttons */}
-          <div
-            className="flex gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Button
+        <div className="flex flex-1 flex-col gap-2.5 px-4 pb-4 pt-3.5">
+          {/*
+            Price first, at 22px. It is the single fact that decides whether a
+            brand reads the rest of the card, and it used to be set at the same
+            size and weight as the host's name — so the card asked you to
+            compare on the one attribute you cannot see.
+          */}
+          <div className="flex flex-wrap items-baseline gap-1.5">
+            <span
               className={cn(
-                "flex-1 text-xs py-2 text-white max-w-[85%] transition-optimized",
-                isBookable
-                  ? "bg-gradient-to-r from-[#1e40af] to-[#6b21a8] hover:from-[#1e3a8a] hover:to-[#581c87]"
-                  : "bg-gray-300 hover:bg-gray-300 cursor-not-allowed"
+                'numeric text-price font-semibold',
+                priceInfo.hasPrice ? 'text-ink' : 'text-ink-ghost',
               )}
-              disabled={!isBookable}
-              title={isBookable ? undefined : UNVERIFIED_BOOKING_MESSAGE}
-              onClick={(e) => {
-                e.stopPropagation();
-                openBookingModal();
-              }}
             >
-              {isBookable ? 'Book Livestreamer' : 'Menunggu Verifikasi'}
-            </Button>
-            <Button
-              variant="outline"
-              className="px-2.5 text-[#2563eb] border-[#2563eb] hover:bg-[#2563eb]/5 transition-optimized"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsProfileModalOpen(false);
-                handleMessageClick(e);
-              }}
-              disabled={isMessageLoading}
-            >
-              {isMessageLoading ? (
-                <span className="animate-spin">⏳</span>
+              {priceInfo.displayPrice}
+            </span>
+            {priceInfo.hasPrice && (
+              <span className="text-mini text-ink-soft">/ jam</span>
+            )}
+            {priceInfo.originalPrice &&
+              priceInfo.discountPercentage &&
+              priceInfo.discountPercentage > 0 && (
+                <>
+                  <span className="numeric text-mini text-ink-ghost line-through">
+                    {priceInfo.originalPrice}
+                  </span>
+                  <span className="rounded-chip bg-brand-tint px-1.5 py-0.5 text-micro font-semibold tracking-normal text-brand-deep">
+                    Hemat {priceInfo.discountPercentage}%
+                  </span>
+                </>
+              )}
+          </div>
+
+          {/*
+            Name and trust on one line. `min-w-0` + `truncate` is what keeps the
+            promise that rows never wrap: a long name shortens, it does not push
+            the verification state onto a second line where it reads as
+            unrelated.
+          */}
+          <div className="flex items-center gap-2">
+            <h3 className="min-w-0 flex-1 truncate text-ui font-medium text-ink">
+              {formatName(streamer.first_name, streamer.last_name)}
+            </h3>
+            {isBookable ? (
+              <span className="shrink-0 rounded-chip border border-positive-line bg-positive-tint px-1.5 py-px text-micro font-semibold tracking-normal text-positive">
+                Terverifikasi
+              </span>
+            ) : (
+              // Status as text, not a filled pill. A yellow block here competes
+              // with the price for the eye and makes an ordinary queue state
+              // look like an error.
+              <span
+                className="shrink-0 text-micro font-medium tracking-normal text-caution"
+                title={UNVERIFIED_BOOKING_MESSAGE}
+              >
+                Menunggu verifikasi
+              </span>
+            )}
+          </div>
+
+          {/*
+            Everything else is one quiet column of facts at one size. The old
+            card gave the city an overlay on the photo, the rating a five-star
+            widget, and each category its own bordered chip with an icon —
+            three different visual treatments for three things of equal weight.
+          */}
+          <div className="flex flex-col gap-1 text-meta text-ink-body">
+            <div className="flex items-center gap-1.5 truncate">
+              <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
+              <span className="truncate">{locationLabel}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              {typeof averageRating === 'number' &&
+              Number.isFinite(averageRating) &&
+              averageRating > 0 ? (
+                <>
+                  <Star className="h-3.5 w-3.5 shrink-0 fill-caution-dot text-caution-dot" />
+                  <span className="numeric">{Math.min(averageRating, 5).toFixed(1)}</span>
+                </>
               ) : (
-                <Mail className="h-3.5 w-3.5" />
+                <>
+                  <Star className="h-3.5 w-3.5 shrink-0 text-ink-ghost" />
+                  <span className="text-ink-soft">{NO_RATING_LABEL}</span>
+                </>
               )}
-            </Button>
+            </div>
+
+            {categoryLabels.length > 0 && (
+              <div className="flex items-center gap-1.5 truncate">
+                <Monitor className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
+                <span className="truncate">{categoryLabels.join(' · ')}</span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      </button>
 
       <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
         <DialogContent className="max-w-[680px] p-0 overflow-hidden rounded-2xl bg-white max-h-[85vh] flex flex-col fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] z-[9999] booking-dialog-mobile">
@@ -2952,6 +2943,47 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 </div>
               </>
             ) : null}
+
+            {/*
+              The card no longer carries its own buttons, so this is the one
+              place booking and messaging are reachable from the marketplace.
+              It sits at the end of the profile because that is the point at
+              which the brand has seen what they are paying for.
+
+              Sticky: the profile scrolls, and an action that scrolls out of
+              reach is one the reader has to go hunting for. `-mx-6 -mb-6` bleeds
+              it to the dialog's edges past the content padding.
+            */}
+            <div className="sticky bottom-0 -mx-6 -mb-6 mt-6 border-t border-hairline bg-canvas/95 px-6 py-4 backdrop-blur-md">
+              <CardActionBar
+                className="m-0 border-0 bg-transparent p-0"
+                primaryLabel={isBookable ? 'Booking sekarang' : 'Menunggu verifikasi'}
+                primaryDisabled={!isBookable}
+                onPrimary={() => {
+                  setIsProfileModalOpen(false);
+                  openBookingModal();
+                }}
+                secondaryLabel={isMessageLoading ? 'Membuka…' : 'Kirim pesan'}
+                secondaryDisabled={isMessageLoading}
+                onSecondary={(e) => {
+                  setIsProfileModalOpen(false);
+                  handleMessageClick(e);
+                }}
+              >
+                {isBookable ? (
+                  <span className="numeric">
+                    <span className="text-title font-semibold text-ink">
+                      {priceInfo.displayPrice}
+                    </span>
+                    {priceInfo.hasPrice && (
+                      <span className="ml-1 text-mini text-ink-soft">/ jam</span>
+                    )}
+                  </span>
+                ) : (
+                  <span className="text-meta text-caution">{UNVERIFIED_BOOKING_MESSAGE}</span>
+                )}
+              </CardActionBar>
+            </div>
           </DialogContent>
         </Dialog>
       )}
@@ -2959,29 +2991,29 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
   );
 }
 
+/**
+ * Mirrors StreamerCard's geometry exactly — same 4/5 image, same panel radius,
+ * same hairline, same padding, same four text rows in the same order. A
+ * skeleton whose shape differs from the thing it stands in for produces a
+ * visible jump on load, which reads as the page breaking rather than finishing.
+ */
 export function StreamerCardSkeleton() {
   return (
-    <div className="group relative bg-transparent w-full font-sans cursor-pointer">
-      <div className="relative w-full aspect-square sm:aspect-[4/5] rounded-xl overflow-hidden bg-gray-200 animate-pulse"></div>
-      <div className="p-3 sm:p-4 pt-2 sm:pt-3 bg-white/95 rounded-b-xl">
-        <div className="flex items-center justify-between gap-1 mb-1">
-          <div className="flex items-center gap-1.5">
-            <div className="h-4 w-20 bg-gray-200 animate-pulse rounded"></div>
-            <div className="h-4 w-12 bg-gray-200 animate-pulse rounded"></div>
-          </div>
+    <div className="flex w-full animate-pulse flex-col overflow-hidden rounded-panel border border-hairline bg-surface">
+      <div className="w-full bg-surface-deep" style={{ aspectRatio: '4 / 5' }} />
+      <div className="flex flex-1 flex-col gap-2.5 px-4 pb-4 pt-3.5">
+        {/* price */}
+        <div className="h-[22px] w-32 rounded-chip bg-surface-deep" />
+        {/* name + trust */}
+        <div className="flex items-center gap-2">
+          <div className="h-[14px] flex-1 rounded-chip bg-surface-deep" />
+          <div className="h-[14px] w-20 shrink-0 rounded-chip bg-surface-deep" />
         </div>
-        <div className="flex flex-col mb-1.5">
-          <div className="h-4 w-24 bg-gray-200 animate-pulse rounded"></div>
-          <div className="h-4 w-16 bg-gray-200 animate-pulse rounded mt-1"></div>
-        </div>
-        <div className="h-4 w-32 bg-gray-200 animate-pulse rounded mb-2"></div>
-        <div className="flex items-center gap-2 mb-3">
-          <div className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div>
-          <div className="h-4 w-16 bg-gray-200 animate-pulse rounded"></div>
-        </div>
-        <div className="flex gap-1.5">
-          <div className="h-8 w-full bg-gray-200 animate-pulse rounded"></div>
-          <div className="h-8 w-8 bg-gray-200 animate-pulse rounded"></div>
+        {/* three meta rows */}
+        <div className="flex flex-col gap-1">
+          <div className="h-[13px] w-2/3 rounded-chip bg-surface-deep" />
+          <div className="h-[13px] w-1/4 rounded-chip bg-surface-deep" />
+          <div className="h-[13px] w-1/2 rounded-chip bg-surface-deep" />
         </div>
       </div>
     </div>
