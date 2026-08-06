@@ -56,6 +56,15 @@ const RULES = [
     re: /\b(text|bg|border)-(gray|slate|zinc|neutral|stone)-\d/,
   },
   {
+    id: "off-palette",
+    why: "Tailwind's colour families are not the design's. Accent is bg-brand; states are text-positive / text-caution / text-destructive-emphasis on their -tint and -line.",
+    // Deliberately narrower than "any colour": `bg-brand` resolves to #2563eb,
+    // which IS blue-600, so those render identically today and are a token
+    // problem rather than a visual one. The greens and yellows are the visual
+    // ones — `positive` is #166534 on #f0fdf4, nothing like green-500.
+    re: /\b(bg|text|border|ring)-(blue|red|green|yellow|amber|emerald|purple|indigo|pink|orange|rose|teal|cyan|violet|lime|sky|fuchsia)-\d{2,3}\b/,
+  },
+  {
     id: "shadow",
     why: "Hairlines, not shadows. A card is a border and a radius.",
     re: /\bshadow-(sm|md|lg|xl|2xl)\b/,
