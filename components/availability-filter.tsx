@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { addDays, format, startOfWeek, endOfWeek, isSameMonth, isToday, isBefore, isSameDay } from 'date-fns';
+import { addDays, format, startOfWeek, endOfWeek, isToday, isBefore, isSameDay } from 'date-fns';
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 interface AvailabilityFilterProps {
   selectedDate: Date | null;
@@ -22,22 +22,38 @@ export function AvailabilityFilter({ selectedDate, setSelectedDate, className }:
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <button className={`flex items-center justify-center w-[40px] h-[40px] rounded-lg 
-          transition-all duration-200 ${className}`}
+        <button
+          type="button"
+          aria-label="Filter tanggal"
+          className={`grid h-10 w-10 shrink-0 place-items-center rounded-field border border-hairline-input bg-surface text-ink-soft transition-colors hover:border-hairline-strong hover:text-ink ${className ?? ''}`}
         >
-          <Calendar size={16} className="text-white" />
+          <Calendar className="h-4 w-4" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-3" align="start" sideOffset={8}>
+      <PopoverContent
+        className="w-auto rounded-panel border-hairline bg-surface p-3"
+        align="start"
+        sideOffset={8}
+      >
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <button onClick={prevWeek} className="p-1 hover:bg-surface-tint rounded-md">
+          <div className="flex items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={prevWeek}
+              aria-label="Minggu sebelumnya"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-chip text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
+            >
               <ChevronLeft className="h-4 w-4" />
             </button>
-            <span className="text-sm font-medium">
-              {format(weekStart, 'MMM d')} - {format(endOfWeek(currentDate), 'MMM d')}
+            <span className="numeric min-w-0 truncate text-copy font-medium text-ink">
+              {format(weekStart, 'd MMM')} – {format(endOfWeek(currentDate), 'd MMM')}
             </span>
-            <button onClick={nextWeek} className="p-1 hover:bg-surface-tint rounded-md">
+            <button
+              type="button"
+              onClick={nextWeek}
+              aria-label="Minggu berikutnya"
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-chip text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
+            >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -45,22 +61,35 @@ export function AvailabilityFilter({ selectedDate, setSelectedDate, className }:
             {days.map((day) => {
               const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
               const isDisabled = isBefore(day, startOfWeek(new Date()));
-              
+
               return (
                 <button
                   key={day.toString()}
+                  type="button"
                   onClick={() => setSelectedDate(day)}
                   disabled={isDisabled}
-                  className={`
-                    aspect-square p-1 text-center flex flex-col items-center justify-center
-                    rounded-md text-sm
-                    ${isDisabled ? 'text-ink-ghost cursor-not-allowed' : 'hover:bg-surface-tint'}
-                    ${isSelected ? 'bg-red-500 text-white hover:bg-red-600' : ''}
-                    ${isToday(day) ? 'font-bold' : ''}
-                  `}
+                  className={cn(
+                    "flex aspect-square flex-col items-center justify-center gap-0.5 rounded-field border transition-colors",
+                    isSelected
+                      ? "border-brand bg-brand text-white"
+                      : "border-hairline bg-surface text-ink",
+                    !isSelected && !isDisabled && "hover:bg-surface-tint",
+                    isDisabled &&
+                      "cursor-not-allowed border-hairline-soft bg-surface-tint text-ink-ghost",
+                    isToday(day) && !isSelected && "border-ink-faint"
+                  )}
                 >
-                  <span className="text-[10px]">{format(day, 'EEE')}</span>
-                  <span className="text-xs font-semibold">{format(day, 'd')}</span>
+                  <span
+                    className={cn(
+                      "font-mono text-micro uppercase",
+                      isSelected ? "text-white/70" : "text-ink-ghost"
+                    )}
+                  >
+                    {format(day, 'EEE')}
+                  </span>
+                  <span className="numeric text-copy font-semibold leading-none">
+                    {format(day, 'd')}
+                  </span>
                 </button>
               );
             })}

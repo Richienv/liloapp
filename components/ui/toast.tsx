@@ -1,5 +1,14 @@
 "use client"
 
+/**
+ * design-lint-allow: off-palette
+ *
+ * shadcn primitive. Its destructive variant styles through the --destructive
+ * CSS variable, which app/globals.css already re-points at the warm palette;
+ * the red-300/red-50/red-400 here are the close button's focus ring inside
+ * that variant. Restating them as tokens would fork the primitive from
+ * upstream for no visual gain.
+ */
 import * as React from "react"
 import * as ToastPrimitives from "@radix-ui/react-toast"
 import { cva, type VariantProps } from "class-variance-authority"

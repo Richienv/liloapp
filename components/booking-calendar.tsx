@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, endOfWeek, subWeeks } from 'date-fns';
-import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -57,22 +56,37 @@ export function BookingCalendar({
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6 text-sm sm:text-base">
-      <div className="flex justify-between items-center">
-        <button onClick={prevWeek} className="p-1 hover:bg-surface-tint rounded-md">
-          <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
+    <div className="space-y-4">
+      {/*
+        The week header is a row that must never wrap: two 32px arrows pinned
+        to the ends and the range in the middle, set in the mono face because
+        it is a value you compare week to week, not a sentence.
+      */}
+      <div className="flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={prevWeek}
+          aria-label="Minggu sebelumnya"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-field text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
+        >
+          <ChevronLeft className="h-4 w-4" />
         </button>
-        <span className="text-sm sm:text-base font-medium">
-          {format(weekStart, 'MMM d')} - {format(endOfWeek(currentDate), 'MMM d')}
+        <span className="numeric min-w-0 truncate text-copy font-medium text-ink">
+          {format(weekStart, 'd MMM')} – {format(endOfWeek(currentDate), 'd MMM')}
         </span>
-        <button onClick={nextWeek} className="p-1 hover:bg-surface-tint rounded-md">
-          <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
+        <button
+          type="button"
+          onClick={nextWeek}
+          aria-label="Minggu berikutnya"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-field text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
+        >
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
 
-      <div 
+      <div
         className={cn(
-          "grid grid-cols-7 gap-1 sm:gap-2",
+          "grid grid-cols-7 gap-1 sm:gap-1.5",
           shakeEffect && "animate-shake"
         )}
       >
@@ -87,47 +101,58 @@ export function BookingCalendar({
             <TooltipProvider key={day.toString()}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant={isSelected ? "default" : "ghost"}
+                  {/*
+                    A day cell is a square with a hairline, not a lifted button.
+                    The old cell carried four different colours at once — a blue
+                    fill, a blue hover, a blue ring for today and a red wash for
+                    "full" — which is four accents in a seven-cell row. Selected
+                    is the one filled state; "no slots" is stated by muted ink
+                    and a small clock rather than by tinting the cell red, and
+                    today is a ring in ink.
+                  */}
+                  <button
+                    type="button"
                     className={cn(
-                      "relative p-1 sm:p-2 h-auto flex flex-col transition-all duration-200",
-                      isSelected && "bg-brand text-white hover:bg-brand-hover",
-                      !isSelected && isSelectable && hasSchedule && "hover:bg-blue-50 hover:text-blue-600",
-                      (!isSelectable || !hasSchedule) && "bg-surface-tint text-ink-faint cursor-not-allowed",
+                      "relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-field border transition-colors",
+                      isSelected
+                        ? "border-brand bg-brand text-white hover:bg-brand-hover"
+                        : "border-hairline bg-surface text-ink",
+                      !isSelected && isSelectable && hasSchedule && "hover:bg-surface-tint",
+                      !isSelected && (!isSelectable || !hasSchedule) &&
+                        "cursor-not-allowed border-hairline-soft bg-surface-tint text-ink-ghost",
                       !isRequirementsValid && "cursor-not-allowed opacity-50",
-                      isToday && !isSelected && "ring-1 ring-blue-200",
-                      !hasSchedule && "bg-red-50/50 hover:bg-red-50/70"
+                      isToday && !isSelected && "border-ink-faint"
                     )}
-                    onClick={() => isSelectable ? handleDateClick(day) : null}
+                    onClick={() => isSelectable ? handleDateClick(day) : undefined}
                     disabled={!isSelectable || !isRequirementsValid}
                   >
-                    <span className="text-[10px] sm:text-xs font-medium">
+                    <span
+                      className={cn(
+                        "font-mono text-micro uppercase",
+                        isSelected ? "text-white/70" : "text-ink-ghost"
+                      )}
+                    >
                       {format(day, 'EEE')}
                     </span>
-                    <span className="text-xs sm:text-base font-bold">
+                    <span className="numeric text-ui font-semibold leading-none">
                       {format(day, 'd')}
                     </span>
-                    {isSelected && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white" />
-                    )}
                     {!hasSchedule && isSelectable && (
-                      <div className="absolute bottom-0.5 left-1/2 -translate-x-1/2">
-                        <Clock className="w-3 h-3 text-red-400" />
-                      </div>
+                      <Clock className="absolute bottom-1 h-2.5 w-2.5 text-ink-ghost" />
                     )}
-                  </Button>
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent 
-                  side="bottom" 
-                  className="bg-surface p-2 text-xs border rounded-lg"
+                <TooltipContent
+                  side="bottom"
+                  className="rounded-field border-hairline bg-surface px-2.5 py-1.5 text-mini text-ink-body"
                 >
-                  {!isSelectable 
-                    ? "This date is not available for booking"
+                  {!isSelectable
+                    ? "Tanggal ini sudah lewat"
                     : !hasSchedule
-                    ? "No available schedules for this date"
+                    ? "Host libur atau penuh"
                     : isSelected
-                    ? "Selected for booking"
-                    : "Available for booking"
+                    ? "Tanggal terpilih"
+                    : "Ada slot kosong"
                   }
                 </TooltipContent>
               </Tooltip>

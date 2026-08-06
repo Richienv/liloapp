@@ -23,6 +23,14 @@ interface Streamer {
   total_hours?: number;
 }
 
+/**
+ * design-lint-allow: gradient
+ *
+ * Three gradients, all load-bearing. One scrim over the carousel photo —
+ * white text on an unknown image needs it — and two marquee edge fades
+ * that say "this scrolls". The brief's rule kills decoration, not these.
+ */
+
 /** Same stand-in avatar the rest of the app falls back to. */
 const PLACEHOLDER_AVATAR = '/default-avatar.png';
 

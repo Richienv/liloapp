@@ -7,22 +7,17 @@ import dynamic from 'next/dynamic';
 import { useEffect, useState } from 'react';
 import { Input } from "@/components/ui/input";
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, MessageSquare, Search, MessageCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, MessageCircle } from "lucide-react";
 import { RealtimeChannel } from '@supabase/supabase-js';
 
 const NotificationsPopup = dynamic(
-  () => import('@/components/notifications-popup').then(mod => mod.NotificationsPopup), 
-  { 
+  () => import('@/components/notifications-popup').then(mod => mod.NotificationsPopup),
+  {
     ssr: false,
     loading: () => (
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors animate-pulse"
-      >
-        <div className="h-6 sm:h-7 w-6 sm:w-7 bg-surface-deep rounded-full"></div>
-      </Button>
+      <div className="grid h-9 w-9 place-items-center">
+        <div className="h-5 w-5 animate-pulse rounded-full bg-surface-deep" />
+      </div>
     )
   }
 );
@@ -32,10 +27,29 @@ const ProfileButton = dynamic(
   { 
     ssr: false,
     loading: () => (
-      <div className="w-10 h-10 rounded-full bg-surface-deep animate-pulse"></div>
+      <div className="h-9 w-9 animate-pulse rounded-full bg-surface-deep" />
     )
   }
 );
+
+/**
+ * Unread counters, in ink rather than in the accent.
+ *
+ * The navbar floats above every screen in the product, so its colour budget is
+ * not its own — a blue mark up here would be a second accent on whatever page
+ * happens to be underneath, and the rule is one per section. A dark badge on
+ * the warm canvas is the highest-contrast mark available without spending the
+ * accent, and the count itself is `.numeric` so 9 and 11 occupy the same width
+ * instead of nudging the icon sideways.
+ */
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  return (
+    <span className="numeric absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ink px-1 text-mini font-medium leading-none text-canvas">
+      {count > 99 ? '99+' : count}
+    </span>
+  );
+}
 
 interface NavbarProps {
   onFilterChange?: (value: string) => void;
@@ -269,125 +283,105 @@ export function Navbar({ onFilterChange }: NavbarProps) {
 
   // Message button skeleton component
   const MessageButtonSkeleton = () => (
-    <Button 
-      variant="ghost" 
-      size="icon" 
-      className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors animate-pulse"
-    >
-      <div className="h-6 sm:h-7 w-6 sm:w-7 bg-surface-deep rounded-full"></div>
-    </Button>
+    <div className="grid h-9 w-9 place-items-center">
+      <div className="h-5 w-5 animate-pulse rounded-full bg-surface-deep" />
+    </div>
   );
 
   return (
-    <div className="relative bg-[#faf9f6] border-b border-black/5 w-full z-40">
-      <nav className="w-full py-2 sm:py-4">
-        <div className="max-w-[2000px] mx-auto px-3 sm:px-6 lg:px-20">
-          <div className="flex items-center justify-between h-12 sm:h-16">
-            <div className="flex items-center flex-shrink-0">
-              <Link href={dashboardLink} className="flex items-center">
-                <div className="p-0.5 sm:p-1">
-                  <Image
-                    src="/images/salda-logoB.png"
-                    alt="Salda Logo"
-                    width={200}
-                    height={200}
-                    className="w-auto h-10 sm:h-16 object-contain"
-                    priority
-                  />
-                </div>
-              </Link>
-            </div>
+    /*
+      One horizontal edge, and it is a hairline.
 
-            {!isStreamerDashboard && onFilterChange && (
-              <div className="flex-1 max-w-3xl mx-2 sm:mx-8">
-                <div className={`relative transition-all duration-200 ${
-                  isSearchFocused ? 'transform scale-[1.02]' : ''
-                }`}>
-                  <Input
-                    type="text"
-                    placeholder="Cari Host di Salda"
-                    className="w-full pl-4 sm:pl-8 pr-12 sm:pr-16 py-3 sm:py-4 text-sm sm:text-base rounded-full border border-hairline-input hover: 
-                      focus: 
-                      transition-all duration-200
-                      focus:border-blue-500
-                      bg-surface"
-                    onChange={(e) => onFilterChange(e.target.value)}
-                    onFocus={() => setIsSearchFocused(true)}
-                    onBlur={() => setIsSearchFocused(false)}
-                  />
-                  <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2">
-                    <div className="bg-brand p-2 sm:p-3 rounded-full transition-shadow cursor-pointer">
-                      <Search className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
-                    </div>
-                  </div>
-                </div>
+      The bar was `bg-[#faf9f6]` over `border-black/5` — the canvas value typed
+      out by hand, and a translucent black rule that darkens differently over
+      every surface it crosses. Both are tokens now, and the bar keeps a single
+      fixed height at each breakpoint so the row can never grow a second line.
+
+      `z-40` is left exactly as it was. The `--z-navbar` token (1030) would sit
+      above the profile dropdown's portal, which renders at z-100 on <body>, so
+      raising the bar would hide the menu behind it.
+    */
+    <div className="relative z-40 w-full border-b border-hairline bg-canvas">
+      <nav className="mx-auto w-full max-w-[2000px] px-3 sm:px-6 lg:px-20">
+        <div className="flex h-14 items-center gap-3 sm:h-16 sm:gap-5">
+          <Link href={dashboardLink} className="flex shrink-0 items-center">
+            {/*
+              The logo was rendered 64px tall, which made the chrome taller than
+              a booking row and left the bar reading as a page header rather
+              than navigation. 36px sits it on the same optical line as the
+              icons beside it.
+            */}
+            <Image
+              src="/images/salda-logoB.png"
+              alt="Salda"
+              width={200}
+              height={200}
+              className="h-8 w-auto object-contain sm:h-9"
+              priority
+            />
+          </Link>
+
+          {!isStreamerDashboard && onFilterChange && (
+            /*
+              A field, not a field plus a blue disc. The disc was a `<div>` with
+              a cursor and no handler — filtering happens on every keystroke —
+              so it was a decorative accent standing in front of the one thing
+              on this bar that is actually interactive. The magnifier moves
+              inside, in ink, where it labels the field instead of pretending to
+              submit it.
+            */
+            <div className="min-w-0 flex-1 sm:max-w-[520px]">
+              <div className="relative">
+                <Search
+                  aria-hidden="true"
+                  className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 transition-colors ${
+                    isSearchFocused ? 'text-ink-body' : 'text-ink-faint'
+                  }`}
+                />
+                <Input
+                  type="text"
+                  placeholder="Cari host di Salda"
+                  aria-label="Cari host di Salda"
+                  className="h-10 w-full rounded-pill border-hairline-input bg-surface pl-10 pr-4 text-ui text-ink placeholder:text-ink-faint focus-visible:border-ink-faint focus-visible:ring-0 focus-visible:ring-offset-0"
+                  onChange={(e) => onFilterChange(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                />
               </div>
-            )}
-
-            <div className="flex items-center gap-2 sm:gap-5">
-              {isLoadingUser ? (
-                // Show skeletons while loading
-                <>
-                  <MessageButtonSkeleton />
-                  <div className="block scale-90 sm:scale-100">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors animate-pulse"
-                    >
-                      <div className="h-6 sm:h-7 w-6 sm:w-7 bg-surface-deep rounded-full"></div>
-                    </Button>
-                  </div>
-                  <div className="hidden sm:block h-10 w-px bg-surface-deep mx-3"></div>
-                  <div className="w-10 h-10 rounded-full bg-surface-deep animate-pulse"></div>
-                </>
-              ) : userData ? (
-                <>
-                  <Link href="/messages">
-                    {isLoadingMessages ? (
-                      <MessageButtonSkeleton />
-                    ) : (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors"
-                      >
-                        <MessageCircle className="h-6 sm:h-7 w-6 sm:w-7" />
-                        {unreadMessages > 0 && (
-                          <span className="absolute top-2 right-2 sm:right-3 min-w-[20px] h-5 px-1 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-                            {unreadMessages}
-                          </span>
-                        )}
-                      </Button>
-                    )}
-                  </Link>
-                  <div className="block scale-90 sm:scale-100">
-                    <NotificationsPopup />
-                  </div>
-                  <div className="hidden sm:block h-10 w-px bg-surface-deep mx-3"></div>
-                </>
-              ) : null}
-              
-              {isLoadingUser ? (
-                <>
-                  <div className="hidden sm:block w-10 h-10 rounded-full bg-surface-deep animate-pulse"></div>
-                  <div className="block sm:hidden w-9 h-9 rounded-full bg-surface-deep animate-pulse scale-90"></div>
-                </>
-              ) : (
-                <>
-                  <div className="hidden sm:block">
-                    <ProfileButton user={userData} />
-                  </div>
-                  <div className="block sm:hidden">
-                    <ProfileButton 
-                      user={userData} 
-                      showNameOnMobile={false}
-                      className="scale-90 sm:scale-100"
-                    />
-                  </div>
-                </>
-              )}
             </div>
+          )}
+
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+            {isLoadingUser ? (
+              <>
+                <MessageButtonSkeleton />
+                <MessageButtonSkeleton />
+                <div className="mx-1 hidden h-6 w-px bg-hairline sm:block" />
+                <div className="h-9 w-9 animate-pulse rounded-full bg-surface-deep" />
+              </>
+            ) : userData ? (
+              <>
+                <Link
+                  href="/messages"
+                  aria-label="Pesan"
+                  className="relative grid h-9 w-9 place-items-center rounded-field text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
+                >
+                  {isLoadingMessages ? (
+                    <div className="h-5 w-5 animate-pulse rounded-full bg-surface-deep" />
+                  ) : (
+                    <>
+                      <MessageCircle className="h-5 w-5" />
+                      <UnreadBadge count={unreadMessages} />
+                    </>
+                  )}
+                </Link>
+                <NotificationsPopup />
+                <div className="mx-1 hidden h-6 w-px bg-hairline sm:block" />
+                <ProfileButton user={userData} />
+              </>
+            ) : (
+              <ProfileButton user={userData} />
+            )}
           </div>
         </div>
       </nav>

@@ -4,6 +4,13 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useAnimationControls } from "framer-motion";
 
 /**
+ * design-lint-allow: gradient
+ *
+ * Two marquee edge fades. Same exception as the hero: they signal that the
+ * row scrolls, which nothing else in the layout communicates.
+ */
+
+/**
  * "Kita udah ngebantu mereka."
  *
  * Four quotes, attributed, as they were given. The five-star row that used to

@@ -6,8 +6,27 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { Bell, Check, CheckCheck, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertTriangle,
+  BadgeCheck,
+  Ban,
+  Bell,
+  CalendarDays,
+  Check,
+  CheckCheck,
+  ChevronDown,
+  ChevronUp,
+  Flag,
+  Info,
+  MessageSquare,
+  Radio,
+  RefreshCw,
+  Wallet,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { format, isToday, isYesterday, isThisWeek, isThisMonth } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
@@ -115,61 +134,64 @@ export function NotificationsPopup() {
     return groups;
   };
 
-  const getNotificationIcon = (type: NotificationType) => {
+  /**
+   * Line icons, not emoji — the same set the full page at /notifications uses.
+   *
+   * The emoji rendered in the system colour font: twelve different hues in a
+   * 384px-wide panel whose whole rule is one accent, and a different shape
+   * budget on every platform. A stroked glyph inherits `text-ink-soft` like
+   * every other mark in the row, which leaves the unread dot as the only
+   * colour in the list — the one place colour is carrying meaning.
+   */
+  const getNotificationIcon = (type: NotificationType): LucideIcon => {
     switch (type) {
-      case 'booking_request':
-        return '📅';
-      case 'booking_payment':
-        return '💰';
-      case 'booking_accepted':
-        return '✅';
-      case 'booking_rejected':
-        return '❌';
-      case 'booking_cancelled':
-        return '🚫';
-      case 'stream_started':
-        return '🎥';
-      case 'stream_ended':
-        return '🏁';
-      case 'reschedule_request':
-        return '🔄';
-      case 'info':
-        return 'ℹ️';
-      case 'warning':
-        return '⚠️';
-      case 'confirmation':
-        return '✓';
-      case 'new_message':
-        return '💬';
-      default:
-        return 'ℹ️';
+      case 'booking_request': return CalendarDays;
+      case 'booking_payment': return Wallet;
+      case 'booking_accepted': return Check;
+      case 'booking_rejected': return X;
+      case 'booking_cancelled': return Ban;
+      case 'stream_started': return Radio;
+      case 'stream_ended': return Flag;
+      case 'reschedule_request': return RefreshCw;
+      case 'info': return Info;
+      case 'warning': return AlertTriangle;
+      case 'confirmation': return BadgeCheck;
+      case 'new_message': return MessageSquare;
+      default: return Info;
     }
   };
 
+  /**
+   * Sentence case. "Permintaan Booking" was Title Case, which the design brief
+   * rules out everywhere — English capitalisation habits applied to Indonesian,
+   * where a mid-sentence capital reads as a proper noun.
+   *
+   * These strings are display-only; nothing groups or filters on them.
+   */
   const getNotificationTitle = (type: NotificationType): string => {
     switch (type) {
       case 'booking_request':
-        return 'Permintaan Booking';
+        return 'Permintaan booking';
       case 'booking_payment':
-        return 'Konfirmasi Pembayaran';
+        return 'Konfirmasi pembayaran';
       case 'booking_accepted':
-        return 'Booking Diterima';
+        return 'Booking diterima';
       case 'booking_rejected':
-        return 'Booking Ditolak';
+        return 'Booking ditolak';
       case 'booking_cancelled':
-        return 'Booking Dibatalkan';
+        return 'Booking dibatalkan';
       case 'stream_started':
-        return 'Live Stream Dimulai';
+        return 'Live stream dimulai';
       case 'stream_ended':
-        return 'Live Stream Selesai';
+        return 'Live stream selesai';
       case 'reschedule_request':
-        return 'Permintaan Reschedule';
+        return 'Permintaan reschedule';
       case 'reschedule_accepted':
-        return 'Reschedule Diterima';
+        return 'Reschedule diterima';
       case 'reschedule_rejected':
-        return 'Reschedule Ditolak';
+        return 'Reschedule ditolak';
       case 'new_message':
-        return 'Pesan Baru';
+        return 'Pesan baru';
       case 'info':
         return 'Informasi';
       case 'warning':
@@ -417,10 +439,10 @@ export function NotificationsPopup() {
   return (
     <Popover open={isOpen} onOpenChange={setIsOpen} modal={true}>
       <PopoverTrigger asChild>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors" 
+        <button
+          type="button"
+          aria-label="Notifikasi"
+          className="relative grid h-9 w-9 place-items-center rounded-field text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
           onClick={() => {
             if (isMobile) {
               router.push('/notifications');
@@ -430,40 +452,57 @@ export function NotificationsPopup() {
             }
           }}
         >
-          <Bell className="h-6 sm:h-7 w-6 sm:w-7" />
+          <Bell className="h-5 w-5" />
+          {/*
+            Ink, not red. This bell sits in chrome that floats above every
+            screen in the product; a coloured badge here would be a second
+            accent on whatever page is underneath it.
+          */}
           {unreadCount > 0 && (
-            <span className="absolute top-2 right-2 sm:right-3 min-w-[20px] h-5 px-1 bg-red-500 rounded-full text-white text-xs flex items-center justify-center">
-              {unreadCount}
+            <span className="numeric absolute -right-1 -top-1 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-ink px-1 text-mini font-medium leading-none text-canvas">
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
           )}
-        </Button>
+        </button>
       </PopoverTrigger>
+      {/*
+        `notification-popup` is gone from the class list on purpose. That global
+        rule paints a white fill and a two-layer drop shadow — the exact thing
+        the redesign replaces with a hairline — and its only other job was the
+        stacking context, which the z-index token below does directly. The panel
+        is now a card: a border, a radius, no shadow.
+      */}
       {!isMobile && (
-        <PopoverContent 
-          className="notification-popup w-96 p-0 rounded-lg"
+        <PopoverContent
+          className="z-[var(--z-notification)] w-96 overflow-hidden rounded-panel border-hairline bg-surface p-0"
           align="end"
-          sideOffset={4}
+          sideOffset={8}
         >
-          <div className="flex flex-col h-full">
-            <div className="bg-surface-tint px-4 py-3 flex justify-between items-center border-b border-hairline-input flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold">Notifikasi</h3>
-                {unreadCount > 0 && (
-                  <span className="bg-red-50 text-red-600 px-2 py-0.5 rounded-full text-sm font-medium">
-                    {unreadCount} Baru
-                  </span>
-                )}
-              </div>
+          <div className="flex h-full flex-col">
+            <div className="flex flex-shrink-0 items-center gap-3 border-b border-hairline bg-canvas px-4 py-3">
+              <h3 className="min-w-0 truncate font-serif text-title font-semibold text-ink">
+                Notifikasi
+              </h3>
+              {/*
+                A dot and a number, the same mark the unread rows carry — not a
+                pill reading "3 Baru". The word was the only thing on the panel
+                explaining the dot, and the dot explains itself.
+              */}
+              {unreadCount > 0 && (
+                <span className="flex shrink-0 items-center gap-1.5 rounded-chip border border-hairline bg-surface px-2 py-0.5">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                  <span className="numeric text-mini font-medium text-ink-body">{unreadCount}</span>
+                </span>
+              )}
               {notifications.length > 0 && (
                 <Button
-                  variant="ghost"
+                  variant="quiet"
                   size="sm"
                   onClick={handleMarkAllAsRead}
-                  className="text-sm text-ink-muted"
+                  className="ml-auto h-8 shrink-0 gap-1.5 px-3 text-mini"
                 >
-                  <CheckCheck className="w-4 h-4 mr-1.5" />
-                  <span className="hidden sm:inline">Tandai Semua</span>
-                  <span className="sm:hidden">Tandai</span>
+                  <CheckCheck className="h-3.5 w-3.5" />
+                  Tandai dibaca
                 </Button>
               )}
             </div>
@@ -476,75 +515,116 @@ export function NotificationsPopup() {
               }}
             >
               {notifications.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 px-4">
-                  <Bell className="w-12 h-12 text-ink-ghost mb-3" />
-                  <p className="text-ink-soft text-center">Tidak ada notifikasi baru</p>
+                <div className="flex flex-col items-center justify-center px-4 py-16 text-center">
+                  <Bell className="h-6 w-6 text-ink-ghost" />
+                  <p className="mt-3 text-copy text-ink-soft">Tidak ada notifikasi baru</p>
                 </div>
               ) : (
                 <div className="pb-safe">
-                  {groupNotifications(notifications).map((group) => (
-                    <div key={group.title} className="mb-2">
-                      <div className="bg-surface-tint/80 px-4 py-2 text-sm font-medium text-ink-muted sticky top-0">
+                  {groupNotifications(notifications).map((group, groupIndex) => (
+                    <section key={group.title}>
+                      {/*
+                        Eyebrow, not a heading: mono, 11px, tracked, ghost ink.
+                        It keeps the date context visible through a long scroll
+                        without the rows gaining a second type size.
+                      */}
+                      <div
+                        className={cn(
+                          "sticky top-0 z-[var(--z-sticky)] border-b border-hairline-soft bg-surface-tint px-4 py-2",
+                          "font-mono text-tiny uppercase text-ink-ghost",
+                          groupIndex > 0 && "border-t border-hairline-soft",
+                        )}
+                      >
                         {group.title}
                       </div>
-                      {group.notifications.map((notification) => (
-                        <div 
-                          key={notification.id} 
-                          className={`notification-item px-4 py-3 border-b border-hairline ${
-                            !notification.is_read ? 'bg-blue-50/60' : ''
-                          } ${
-                            expandedNotifications[notification.id] ? 'expanded' : ''
-                          }`}
-                        >
-                          <div className="flex gap-3">
-                            <span className="text-xl flex-shrink-0 w-8 h-8 flex items-center justify-center">
-                              {getNotificationIcon(notification.type)}
-                            </span>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between gap-2">
-                                <h4 className="font-medium text-sm text-ink truncate">
-                                  {getNotificationTitle(notification.type)}
-                                </h4>
-                                <div className="flex items-center gap-2">
-                                  <time className="text-xs text-ink-soft whitespace-nowrap">
+
+                      {group.notifications.map((notification, rowIndex) => {
+                        const Icon = getNotificationIcon(notification.type);
+                        const isExpanded = Boolean(expandedNotifications[notification.id]);
+                        const streamLink = notification.bookings?.stream_link;
+
+                        return (
+                          <article
+                            key={notification.id}
+                            className={cn(
+                              "px-4 py-3.5 transition-colors hover:bg-surface-raised",
+                              rowIndex > 0 && "border-t border-hairline-soft",
+                            )}
+                          >
+                            <div className="flex gap-3">
+                              {/*
+                                Unread is a dot in a reserved gutter, not a blue
+                                wash across the row. A tinted row makes every
+                                unread notification look like a warning, and the
+                                gutter keeps read and unread rows on one left
+                                edge instead of shifting by a marker's width.
+                              */}
+                              <span className="mt-2 flex h-1.5 w-1.5 shrink-0 items-center justify-center">
+                                {!notification.is_read && (
+                                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                                )}
+                              </span>
+
+                              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-chip border border-hairline-soft bg-surface-tint text-ink-soft">
+                                <Icon className="h-3.5 w-3.5" />
+                              </span>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex min-w-0 items-center gap-2">
+                                  <h4
+                                    className={cn(
+                                      "min-w-0 flex-1 truncate text-ui text-ink",
+                                      notification.is_read ? "font-medium" : "font-semibold",
+                                    )}
+                                  >
+                                    {getNotificationTitle(notification.type)}
+                                  </h4>
+                                  <time className="numeric shrink-0 text-mini text-ink-faint">
                                     {format(new Date(notification.created_at), 'HH:mm', { locale: id })}
                                   </time>
                                   <button
+                                    type="button"
                                     onClick={(e) => toggleNotificationExpansion(notification.id, e)}
-                                    className="p-1 hover:bg-surface-tint rounded-full transition-colors"
+                                    aria-expanded={isExpanded}
+                                    aria-label={getNotificationTitle(notification.type)}
+                                    className="-mr-1 grid h-6 w-6 shrink-0 place-items-center rounded-chip text-ink-ghost transition-colors hover:bg-surface-tint hover:text-ink-body"
                                   >
-                                    {expandedNotifications[notification.id] ? (
-                                      <ChevronUp className="h-4 w-4 text-ink-soft" />
+                                    {isExpanded ? (
+                                      <ChevronUp className="h-3.5 w-3.5" />
                                     ) : (
-                                      <ChevronDown className="h-4 w-4 text-ink-soft" />
+                                      <ChevronDown className="h-3.5 w-3.5" />
                                     )}
                                   </button>
                                 </div>
-                              </div>
-                              <div 
-                                className={`notification-content ${
-                                  expandedNotifications[notification.id] ? 'max-h-96' : 'max-h-12'
-                                }`}
-                              >
-                                <p className={`text-sm text-ink-muted mt-0.5 ${
-                                  expandedNotifications[notification.id] ? '' : 'notification-preview'
-                                }`}>
-                                  {notification.type === 'stream_started' && notification.bookings?.stream_link ? (
+
+                                <p
+                                  className={cn(
+                                    "mt-1 text-copy text-ink-muted",
+                                    !isExpanded && "line-clamp-2",
+                                  )}
+                                >
+                                  {notification.type === 'stream_started' && streamLink ? (
                                     <>
-                                      {notification.message.split(notification.bookings?.stream_link || '').map((part, index, array) => {
+                                      {notification.message.split(streamLink).map((part, index, array) => {
                                         if (index === array.length - 1) {
                                           return <span key={index}>{part}</span>;
                                         }
-                                        const streamLink = notification.bookings?.stream_link;
-                                        if (!streamLink) return null;
                                         return (
                                           <React.Fragment key={index}>
                                             {part}
-                                            <a 
-                                              href={streamLink} 
-                                              target="_blank" 
+                                            {/*
+                                              Underlined ink, not a blue link.
+                                              The unread dot already spends the
+                                              accent on this panel, and two blue
+                                              marks in one row mean two
+                                              different things at the same
+                                              volume.
+                                            */}
+                                            <a
+                                              href={streamLink}
+                                              target="_blank"
                                               rel="noopener noreferrer"
-                                              className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+                                              className="break-all font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
                                               onClick={(e) => {
                                                 e.stopPropagation();
                                                 window.open(streamLink, '_blank');
@@ -560,28 +640,28 @@ export function NotificationsPopup() {
                                     notification.message
                                   )}
                                 </p>
-                              </div>
-                              <div className="flex items-center justify-between mt-2">
-                                <p className="text-xs text-ink-faint">
-                                  {format(new Date(notification.created_at), 'dd MMM yyyy', { locale: id })}
-                                </p>
-                                {!notification.is_read && (
-                                  <button
-                                    onClick={() => handleNotificationSeen(notification.id)}
-                                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                                  >
-                                    Tandai Dibaca
-                                  </button>
-                                )}
+
+                                <div className="mt-2.5 flex items-center justify-between gap-3">
+                                  <p className="numeric min-w-0 truncate text-mini text-ink-faint">
+                                    {format(new Date(notification.created_at), 'dd MMM yyyy', { locale: id })}
+                                  </p>
+                                  {!notification.is_read && (
+                                    <Button
+                                      variant="quiet"
+                                      size="sm"
+                                      onClick={() => handleNotificationSeen(notification.id)}
+                                      className="h-7 shrink-0 px-2.5 text-mini"
+                                    >
+                                      Tandai dibaca
+                                    </Button>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            {!notification.is_read && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
-                            )}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                          </article>
+                        );
+                      })}
+                    </section>
                   ))}
                 </div>
               )}

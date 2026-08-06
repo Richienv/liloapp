@@ -10,7 +10,9 @@ type Props = ComponentProps<typeof Button> & {
 
 export function SubmitButton({
   children,
-  pendingText = "Submitting...",
+  // One language, everywhere — including the state a user only sees for the
+  // second a form is in flight.
+  pendingText = "Memproses…",
   ...props
 }: Props) {
   const { pending } = useFormStatus();

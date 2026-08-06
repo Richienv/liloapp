@@ -1,32 +1,20 @@
 "use client";
 
-// Lightweight hero background.
+// The hero background, and by now the whole of it is the canvas.
 //
-// The previous version rendered hundreds–thousands of individually animated SVG
-// dots (<DotPattern glow>) PLUS three infinitely-animated, blur-filtered
-// "spotlight" layers — all running forever and never pausing when scrolled past.
-// That was the main cause of the laggy scroll / near-crash on mobile.
+// History: this rendered thousands of individually animated SVG dots plus three
+// blur-filtered, infinitely-animated "spotlight" layers, which is what made the
+// landing page crawl on a phone. That was replaced by two static CSS radial
+// glows — cheap to render, but still two soft blue washes bleeding across the
+// top of the page.
 //
-// This replaces it with a couple of STATIC CSS radial-gradient glows on the same
-// cream base: no animation, no blur filters, no per-dot nodes — effectively free
-// to render while keeping the soft blue glow aesthetic.
+// Those glows are gone now. The redesign allows a gradient in exactly two
+// places: a scrim that buys white text contrast over a photograph, and the edge
+// fade on a marquee. A decorative glow behind a headline is neither, and a blue
+// one spends the page's single accent on nothing at all — the hero's blue
+// belongs to "Mulai cari host". What is left is the warm canvas the rest of the
+// product sits on, stated as a token instead of the hand-typed `#faf9f5` (which
+// was a shade off `#faf9f6` and seamed visibly against every section below it).
 export function CustomBackground() {
-  return (
-    <div className="relative h-full w-full overflow-hidden bg-[#faf9f5]">
-      <div
-        className="pointer-events-none absolute left-[10%] top-[20%] h-[420px] w-[420px] rounded-full opacity-60"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(74,144,226,0.12) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute right-[10%] top-[28%] h-[420px] w-[420px] rounded-full opacity-50"
-        style={{
-          background:
-            "radial-gradient(circle, rgba(74,144,226,0.10) 0%, transparent 70%)",
-        }}
-      />
-    </div>
-  );
+  return <div className="h-full w-full bg-canvas" />;
 }

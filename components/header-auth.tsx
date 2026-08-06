@@ -1,7 +1,6 @@
 import { signOutAction } from "@/app/actions";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import Link from "next/link";
-import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { ProfileButton } from "./profile-button";
@@ -70,33 +69,28 @@ export default async function AuthButton() {
   if (!hasEnvVars) {
     return (
       <>
-        <div className="flex gap-4 items-center">
-          <div>
-            <Badge
-              variant={"default"}
-              className="font-normal pointer-events-none"
-            >
-              Please update .env.local file with anon key and url
-            </Badge>
-          </div>
-          <div className="flex gap-2">
+        <div className="flex flex-nowrap items-center gap-4">
+          <span className="min-w-0 truncate text-meta text-ink-soft">
+            Lengkapi .env.local dengan anon key dan url Supabase
+          </span>
+          <div className="flex flex-nowrap gap-2">
             <Button
               asChild
-              size="sm"
-              variant={"outline"}
+              variant="quiet"
+              size="action-compact"
               disabled
-              className="opacity-75 cursor-none pointer-events-none"
+              className="pointer-events-none opacity-75"
             >
-              <Link href="/sign-in">Sign in</Link>
+              <Link href="/sign-in">Masuk</Link>
             </Button>
             <Button
               asChild
-              size="sm"
-              variant={"default"}
+              variant="brand"
+              size="action-compact"
               disabled
-              className="opacity-75 cursor-none pointer-events-none"
+              className="pointer-events-none opacity-75"
             >
-              <Link href="/sign-up">Sign up</Link>
+              <Link href="/sign-up">Daftar</Link>
             </Button>
           </div>
         </div>
@@ -109,12 +103,14 @@ export default async function AuthButton() {
       <ProfileButton user={userData} />
     </div>
   ) : (
-    <div className="flex gap-2">
-      <Button asChild size="sm" variant={"outline"}>
-        <Link href="/sign-in">Sign in</Link>
+    // `flex-nowrap`: the signed-out pair is the only thing in this slot and it
+    // never breaks onto two lines.
+    <div className="flex flex-nowrap gap-2">
+      <Button asChild variant="quiet" size="action-compact">
+        <Link href="/sign-in">Masuk</Link>
       </Button>
-      <Button asChild size="sm" variant={"default"}>
-        <Link href="/sign-up">Sign up</Link>
+      <Button asChild variant="brand" size="action-compact">
+        <Link href="/sign-up">Daftar</Link>
       </Button>
     </div>
   );

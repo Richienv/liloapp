@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { MapPin } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 
 interface AddressButtonProps {
@@ -38,15 +40,26 @@ export function AddressButton({ streamerId, clientId, onShowAddress, className }
 
   if (!showButton) return null;
 
+  /*
+    The quiet variant, not a hand-rolled blue block.
+
+    This button lives inside a message thread, where the accent belongs to
+    "send". A filled blue chip alongside the host's own messages read as the
+    primary action of the conversation, which looking up an address is not.
+    Going through the shared component also means it inherits the pair's height
+    and radius instead of `px-3 py-1.5` guessing at them.
+  */
   return (
-    <button
+    <Button
+      variant="quiet"
+      size="action-compact"
       onClick={onShowAddress}
-      className={`px-3 py-1.5 bg-brand rounded-lg transition-all 
-                 duration-200 ease-in-out flex items-center gap-2 text-white 
-                 text-sm font-medium ${className || ''}`}
+      // 36px, because this one sits in a conversation header beside a 40px
+      // avatar rather than at the foot of a card.
+      className={cn("h-9 px-3.5", className)}
     >
-      <MapPin className="h-4 w-4" />
-      Alamat Lengkap
-    </button>
+      <MapPin className="mr-2 h-4 w-4" />
+      Alamat lengkap
+    </Button>
   );
 } 

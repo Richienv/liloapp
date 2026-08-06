@@ -127,11 +127,11 @@ export function PhoneInput({
     <div className="space-y-2">
       <div
         className={cn(
-          "flex h-12 w-full items-center rounded-panel border bg-surface-tint transition-all duration-200",
+          "flex h-12 w-full items-center rounded-field border bg-surface transition-colors",
           "focus-within:ring-1",
           showError || showEmptyError
-            ? "border-red-300 focus-within:border-red-500 focus-within:ring-red-500"
-            : "border-hairline-input focus-within:border-blue-500 focus-within:ring-blue-500",
+            ? "border-destructive-emphasis/40 focus-within:border-destructive-emphasis focus-within:ring-destructive-emphasis"
+            : "border-hairline-input focus-within:border-brand focus-within:ring-brand",
           disabled && "cursor-not-allowed opacity-50",
           className
         )}
@@ -140,7 +140,7 @@ export function PhoneInput({
             rather than a country picker nobody would change. */}
         <span
           aria-hidden="true"
-          className="flex h-full select-none items-center gap-2 border-r border-hairline-input px-4 text-base font-medium text-ink-muted"
+          className="numeric flex h-full shrink-0 select-none items-center gap-2 border-r border-hairline-input px-4 text-ui font-medium text-ink-muted"
         >
           🇮🇩 +62
         </span>
@@ -169,7 +169,7 @@ export function PhoneInput({
           // in toNationalDigits() instead, after the noise is removed.
           onChange={(e) => onChange(toNationalDigits(e.target.value))}
           onBlur={() => setTouched(true)}
-          className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none placeholder:text-ink-faint disabled:cursor-not-allowed"
+          className="numeric h-full w-full min-w-0 flex-1 bg-transparent px-4 text-ui text-ink outline-none placeholder:text-ink-faint disabled:cursor-not-allowed"
         />
       </div>
 
@@ -186,9 +186,9 @@ export function PhoneInput({
         <p
           id={errorId}
           role="alert"
-          className="flex items-center gap-2 text-sm text-red-600"
+          className="flex items-start gap-2 text-meta text-destructive-emphasis"
         >
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
+          <AlertCircle className="mt-px h-4 w-4 shrink-0" />
           {PHONE_INVALID_MESSAGE}
         </p>
       ) : valid ? (
@@ -198,13 +198,16 @@ export function PhoneInput({
         <p
           id={hintId}
           aria-live="polite"
-          className="flex items-center gap-2 text-sm text-green-600"
+          className="flex items-start gap-2 text-meta text-positive"
         >
-          <Check className="h-4 w-4 flex-shrink-0" />
-          Nomor tersimpan sebagai {formatPhoneLocal(normalizePhone(national))}
+          <Check className="mt-px h-4 w-4 shrink-0" />
+          <span>
+            Nomor tersimpan sebagai{" "}
+            <span className="numeric">{formatPhoneLocal(normalizePhone(national))}</span>
+          </span>
         </p>
       ) : (
-        <p id={hintId} className="text-sm text-ink-soft">
+        <p id={hintId} className="text-meta text-ink-soft">
           Nomor WhatsApp aktif, tulis tanpa awalan +62 atau 0 — dipakai admin
           Salda dan pihak brand untuk menghubungi kamu soal booking.
         </p>
