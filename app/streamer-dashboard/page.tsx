@@ -13,6 +13,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { format, isToday, isThisWeek, isThisMonth, isSameDay, parseISO, differenceInHours, addDays, addHours, parse, startOfDay } from 'date-fns';
 import { Calendar, Clock, Monitor, DollarSign, MessageSquare, Link as LinkIcon, AlertTriangle, MapPin, Users, XCircle, Video, Settings, Loader2, Info, ExternalLink, ChevronRight, CheckCircle, Radio, Package, CheckSquare, Circle, X, ArrowRight, BadgeCheck, Store, Wallet } from 'lucide-react';
 import Link from 'next/link';
+import { ListingSections, MoneySections, PerformanceSection } from './money-sections';
 import {
   milestoneProgress,
   streamerMilestones,
@@ -3456,6 +3457,43 @@ export default function StreamerDashboard() {
             />
             <EarningsBar bookings={bookings} />
           </section>
+
+          {/*
+            The money sections. They read `payouts` and `salda_streamer_balance`,
+            which did not exist until 20260806140000_payouts.sql — the bank
+            details collected at onboarding had nowhere to pay into.
+          */}
+          {userData?.streamer_id ? (
+            <>
+              <MoneySections
+                streamerId={userData.streamer_id}
+                index={4}
+                bookings={bookings}
+              />
+              <ListingSections
+                index={7}
+                price={
+                  typeof streamerProfile?.price === 'string'
+                    ? Number(streamerProfile.price)
+                    : streamerProfile?.price ?? null
+                }
+                rating={streamerStats?.rating ?? null}
+                city={streamerProfile?.city_slug || streamerProfile?.location || ''}
+                platforms={(streamerProfile?.platform ?? '')
+                  .split(',')
+                  .map((value: string) => value.trim())
+                  .filter(Boolean)}
+                imageUrl={streamerProfile?.image_url ?? null}
+                name={userData.first_name}
+                isVerified={verificationStatus === 'approved'}
+              />
+              <PerformanceSection
+                index={9}
+                bookings={bookings}
+                rating={streamerStats?.rating ?? null}
+              />
+            </>
+          ) : null}
         </div>
       </div>
     </div>
