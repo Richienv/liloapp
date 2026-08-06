@@ -14,6 +14,8 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { StreamerCardSkeleton } from "@/components/streamer-card";
+
 // Dynamically import components
 const StreamerList = dynamic(() => import("@/components/streamer-list").then(mod => mod.StreamerList), {
   loading: () => (
@@ -256,48 +258,12 @@ export default function ProtectedPage() {
     setActiveFilters(filters);
   };
 
-  // Create the StreamerCardSkeleton component
-  const StreamerCardSkeleton = () => {
-    return (
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm animate-pulse">
-        {/* Image placeholder */}
-        <div className="w-full h-[180px] bg-gray-200"></div>
-        
-        {/* Content area */}
-        <div className="p-4 space-y-4">
-          {/* Name placeholder */}
-          <div className="h-5 bg-gray-200 rounded-md w-3/4"></div>
-          
-          {/* Location placeholder */}
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 rounded-full bg-gray-200"></div>
-            <div className="h-4 bg-gray-200 rounded-md w-1/2"></div>
-          </div>
-          
-          {/* Category/Platform placeholders */}
-          <div className="flex gap-2 flex-wrap">
-            <div className="h-6 bg-gray-200 rounded-full w-16"></div>
-            <div className="h-6 bg-gray-200 rounded-full w-20"></div>
-          </div>
-          
-          {/* Rating placeholder */}
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-1">
-              <div className="w-4 h-4 rounded-full bg-gray-200"></div>
-              <div className="h-4 bg-gray-200 rounded-md w-12"></div>
-            </div>
-            <div className="h-4 bg-gray-200 rounded-md w-16"></div>
-          </div>
-          
-          {/* Button placeholder */}
-          <div className="h-10 bg-gray-200 rounded-lg w-full mt-2"></div>
-        </div>
-      </div>
-    );
-  };
+  // StreamerCardSkeleton is imported from components/streamer-card — see the
+  // note there. A third hand-rolled copy used to live here, shaped like neither
+  // the old card nor the new one.
 
   return (
-    <div className="w-full bg-[#faf9f6]">
+    <div className="w-full bg-canvas">
       {/* Header */}
       <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-100">
         <Navbar onFilterChange={handleFilterChange} />

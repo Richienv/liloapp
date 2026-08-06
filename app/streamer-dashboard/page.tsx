@@ -101,12 +101,17 @@ const calculateBasePrice = (finalPrice: number): number => {
 };
 
 // Add this function at the top level of the file
+/**
+ * Rupiah, in full, with Indonesian thousands separators.
+ *
+ * This used to abbreviate: `Math.floor(price / 1000)` followed by a literal
+ * "K". For 2.000.000 that produced "Rp 2000K" — a unit nobody uses, on the one
+ * screen where a host checks what they are owed. It had no callers at all
+ * before the redesign, so nothing had ever surfaced it; the "now" card and the
+ * earnings chart are its first three.
+ */
 function formatPrice(price: number): string {
-  if (price < 1000) {
-    return `Rp ${price}`;
-  }
-  const firstTwoDigits = Math.floor(price / 1000);
-  return `Rp ${firstTwoDigits}K`;
+  return `Rp ${Math.round(price).toLocaleString('id-ID')}`;
 }
 
 function SubAccountLink({ link }: { link: string }) {
@@ -2705,7 +2710,21 @@ function NowCard({
   bookings: Booking[];
   pendingCount: number;
 }) {
-  const now = new Date();
+  /**
+   * A ticking clock, not a render-time snapshot.
+   *
+   * `const now = new Date()` is only re-evaluated when something else causes a
+   * render. A host who opens this page ten minutes before their session and
+   * leaves it open — which is exactly what a host does — would watch it go on
+   * saying "sesi berikutnya" straight through the start time, because nothing
+   * on the page changes at 15:00. A minute is finer than any decision this card
+   * drives.
+   */
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(timer);
+  }, []);
 
   const live = bookings.find((booking) => {
     if (booking.status !== 'accepted' && booking.status !== 'live') return false;
@@ -2777,7 +2796,7 @@ function NowCard({
           <p className="mt-4 text-meta text-ink-soft">
             {stage === 'live'
               ? 'Sesi ini sedang berlangsung. Tempel tautan siaran kamu supaya brand bisa menonton.'
-              : `Sesi berikutnya ${format(new Date(subject.start_time), 'EEEE, d MMMM')}.`}
+              : `Sesi berikutnya ${format(new Date(subject.start_time), 'EEEE, d MMMM', { locale: idLocale })}.`}
           </p>
         </div>
       ) : null}
@@ -2826,21 +2845,40 @@ function EarningsBar({ bookings }: { bookings: Booking[] }) {
         <p className="text-mini text-ink-soft">7 hari terakhir</p>
       </div>
 
-      <div className="mt-4 flex h-24 items-end gap-1.5">
+      {/*
+        The bars are percentage-height, so every ancestor between them and the
+        fixed h-24 needs a definite height of its own. The first version nested
+        each bar in an auto-height column, and a percentage against an auto
+        height resolves to auto — which for an empty div is zero. The whole
+        chart rendered as a blank strip.
+
+        So: the h-24 row holds only full-height columns, each pushing its bar to
+        the bottom with justify-end, and the day labels sit in a separate row
+        underneath rather than inside the measured area.
+      */}
+      <div className="mt-4 flex h-24 items-stretch gap-1.5">
         {days.map(({ day, total }) => (
-          <div key={day.toISOString()} className="flex flex-1 flex-col items-center gap-1.5">
+          <div key={day.toISOString()} className="flex h-full flex-1 flex-col justify-end">
             <div
               className={cn(
                 'w-full rounded-chip transition-colors',
                 total > 0 ? 'bg-brand' : 'bg-surface-deep',
               )}
               style={{ height: `${peak > 0 ? Math.max((total / peak) * 100, 3) : 3}%` }}
-              title={`${format(day, 'EEEE d MMMM')}: ${formatPrice(total)}`}
+              title={`${format(day, 'EEEE d MMMM', { locale: idLocale })}: ${formatPrice(total)}`}
             />
-            <span className="text-micro tracking-normal text-ink-faint">
-              {format(day, 'EEEEE')}
-            </span>
           </div>
+        ))}
+      </div>
+
+      <div className="mt-1.5 flex gap-1.5">
+        {days.map(({ day }) => (
+          <span
+            key={day.toISOString()}
+            className="flex-1 text-center text-micro tracking-normal text-ink-faint"
+          >
+            {format(day, 'EEEEE', { locale: idLocale })}
+          </span>
         ))}
       </div>
 

@@ -64,9 +64,14 @@ export function CardActionBar({
         `ml-auto` rather than `justify-between` on the parent: with no context
         passed, the pair still needs to sit at the end, and an empty flex child
         would leave it floating in the middle.
-        `flex-nowrap` + `shrink-0` is the guarantee in the doc comment above.
+
+        `flex-nowrap` is the guarantee in the doc comment above and holds at
+        every width. `shrink-0` only applies from `sm` up — below that the
+        buttons must be allowed to narrow, or a 400px pair overflows a 360px
+        phone and the primary action ends up off-screen. `w-full` on each button
+        plus `min-w-0` here is what lets them share the row instead.
       */}
-      <div className="ml-auto flex shrink-0 flex-nowrap gap-3">
+      <div className="ml-auto flex min-w-0 flex-nowrap gap-3 max-sm:w-full sm:shrink-0">
         {secondaryLabel ? (
           <Button
             type="button"

@@ -48,8 +48,15 @@ const buttonVariants = cva(
         // has to keep the same footprint as its label changes ("Lanjutkan" →
         // "Memproses…"), or the secondary button visibly jumps sideways every
         // time the primary enters a loading state.
-        action: "h-[46px] w-[220px] px-4 text-ui",
-        "action-secondary": "h-[46px] w-[168px] px-4 text-copy",
+        //
+        // The fixed widths start at `sm`. Below that they cannot be honoured:
+        // 220 + 168 + a 12px gap is 400px before the bar's own padding, which
+        // overflows every phone in the market — and this pair carries the only
+        // booking button in the product. Under 640px the two share the row
+        // instead. They still sit side by side; the design's rule is that they
+        // never WRAP, not that they are always 220 and 168.
+        action: "h-[46px] w-full px-4 text-ui sm:w-[220px]",
+        "action-secondary": "h-[46px] w-full px-4 text-copy sm:w-[168px]",
         // Same height, hugs its label. For rows of repeated actions (a booking
         // list) where a 220px button per row would be absurd.
         "action-compact": "h-11 px-5 text-copy",

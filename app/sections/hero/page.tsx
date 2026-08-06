@@ -28,8 +28,23 @@ interface Streamer {
 /** Same stand-in avatar the rest of the app falls back to. */
 const PLACEHOLDER_AVATAR = '/default-avatar.png';
 
-function formatName(firstName: string, lastName: string, index: number): string {
-  return `Streamer ${String.fromCharCode(65 + (index % 26))}`;
+/**
+ * The host's actual name.
+ *
+ * This function used to ignore both arguments and return
+ * `Streamer ${String.fromCharCode(65 + index % 26)}` — "Streamer A", "Streamer
+ * B" — so the carousel showed a real person's photo and real city under an
+ * invented name. Removing the anonymising in the data layer was not enough
+ * while this was still here; it is the second half of the same bug.
+ *
+ * Falls back to a generic label only when the row genuinely has no name yet,
+ * which happens on a profile the host has not finished.
+ */
+function formatName(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined,
+): string {
+  return [firstName, lastName].filter(Boolean).join(' ').trim() || 'Host Salda';
 }
 
 function formatPrice(price: number): string {
@@ -356,7 +371,7 @@ export default function Hero() {
                         <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl transition-all duration-500 group-hover:-translate-y-2">
                           <Image
                             src={streamer.image_url || PLACEHOLDER_AVATAR}
-                            alt={formatName(streamer.first_name, streamer.last_name, index)}
+                            alt={formatName(streamer.first_name, streamer.last_name)}
                             fill
                             className="object-cover"
                           />
@@ -369,7 +384,7 @@ export default function Hero() {
                             {/* Header */}
                             <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                               <h3 className="text-sm sm:text-lg font-medium text-white">
-                                {formatName(streamer.first_name, streamer.last_name, index)}
+                                {formatName(streamer.first_name, streamer.last_name)}
                               </h3>
                               {/* No platform set yet: render no pill at all
                                   rather than an empty floating chip */}

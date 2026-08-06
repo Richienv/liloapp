@@ -468,9 +468,18 @@ export default function RolePicker() {
                   className={`group flex w-full items-start gap-3.5 rounded-panel border p-4 text-left
                     transition-colors
                     ${
-                      isPreviewing || isSuggested
+                      // Only `isSuggested` paints the card as chosen. `isPreviewing`
+                      // deliberately does not: it defaults to "client", so keying the
+                      // selected look off it made the brand card look already-picked
+                      // before anyone had picked anything — and on a touch device,
+                      // where there is no hover and a tap submits, it could never
+                      // move off that card. Previewing only drives the panel, and on
+                      // pointer devices a quieter hover tint.
+                      isSuggested
                         ? "border-brand bg-brand-tint"
-                        : "border-hairline-input bg-surface hover:bg-surface-raised"
+                        : isPreviewing
+                          ? "border-hairline-strong bg-surface-raised"
+                          : "border-hairline-input bg-surface hover:bg-surface-raised"
                     }
                     focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring
                     focus-visible:ring-offset-2
@@ -478,9 +487,7 @@ export default function RolePicker() {
                 >
                   <span
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-field ${
-                      isPreviewing || isSuggested
-                        ? "bg-brand text-white"
-                        : "bg-surface-tint text-ink-faint"
+                      isSuggested ? "bg-brand text-white" : "bg-surface-tint text-ink-faint"
                     }`}
                   >
                     {isPending ? (

@@ -722,6 +722,20 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
       */}
       <button
         type="button"
+        /*
+          Everything inside a button is flattened into that button's accessible
+          name, so without this a screen reader announces the whole card as one
+          run-on control — name, price, "/ jam", "Terverifikasi", city, rating,
+          every category — and the <h3> below stops being a heading anyone can
+          navigate to. An explicit label gives the control a short, useful name
+          instead; the detail is still on the profile it opens.
+        */
+        aria-label={[
+          formatName(streamer.first_name, streamer.last_name),
+          priceInfo.hasPrice ? `${priceInfo.displayPrice} per jam` : NO_PRICE_LABEL,
+          locationLabel,
+          isBookable ? 'terverifikasi' : 'menunggu verifikasi',
+        ].join(', ')}
         className="group flex w-full flex-col overflow-hidden rounded-panel border border-hairline
           bg-surface p-0 text-left transition-colors hover:bg-surface-raised
           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
@@ -861,9 +875,18 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
           onOpenChange={setIsProfileModalOpen}
         >
           <DialogContent 
-            className="max-w-2xl w-full h-[85vh] overflow-y-auto z-[9999] fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] p-6 dialog-content-mobile"
+            /*
+              flex column, not a single scrolling box. With `h-[85vh]
+              overflow-y-auto` and nothing else, the action bar's `sticky
+              bottom-0` only pins while the content is tall enough to overflow —
+              on a short profile it landed immediately after the last section,
+              floating mid-dialog, and then jumped downward as the gallery and
+              testimonials finished loading. The scroll now belongs to the
+              content region and the bar is a sibling that always sits last.
+            */
+            className="max-w-2xl w-full h-[85vh] z-[9999] fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] p-0 dialog-content-mobile flex flex-col overflow-hidden"
           >
-            <DialogHeader className="bg-white pb-4 flex flex-row items-start justify-between">
+            <DialogHeader className="shrink-0 bg-white px-6 pb-4 pt-6 flex flex-row items-start justify-between">
               <div>
                 <DialogTitle className="text-xl font-semibold text-gray-900">Streamer Profile</DialogTitle>
                 <DialogDescription className="text-sm text-gray-500 mt-1">
@@ -874,7 +897,10 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 <X className="h-5 w-5 text-gray-500" />
               </DialogClose>
             </DialogHeader>
-            
+
+            {/* The one scrolling region. Carries the horizontal padding the
+                DialogContent gave up when it became a flex column. */}
+            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-6 pb-6">
             {isLoadingProfile ? (
               <div className="space-y-4">
                 <div className="h-4 bg-gray-200 rounded animate-pulse" />
@@ -884,7 +910,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             ) : extendedProfile ? (
               <>
                 {/* Professional ID Card Layout */}
-                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-100 shadow-sm mb-8">
+                <div className="rounded-panel border border-hairline bg-surface-tint p-4 sm:p-6 mb-8">
                   <div className="flex flex-col sm:flex-row gap-4 sm:gap-6">
                     {/* Left Column - Photo and Basic Info */}
                     <div className="flex flex-col items-center space-y-3">
@@ -980,15 +1006,17 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                           so a host who has not picked a platform gets no chips */}
                       <div className="flex flex-wrap gap-2 pt-2">
                         {normalizePlatforms(streamer).map((platform) => (
-                          <div
+                          // Same treatment as the marketplace card: a label,
+                          // not a brand-coloured pill. Two saturated chips next
+                          // to a blue primary action is three accents on one
+                          // screen.
+                          <span
                             key={platform}
-                            className={`px-3 py-1 rounded-full text-white text-xs font-medium
-                              ${platform === 'shopee'
-                                ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                                : 'bg-gradient-to-r from-blue-600 to-indigo-600'}`}
+                            className="rounded-chip border border-hairline bg-surface-tint px-2 py-1
+                              text-micro font-semibold uppercase tracking-[.03em] text-ink-muted"
                           >
-                            {platform.charAt(0).toUpperCase() + platform.slice(1)}
-                          </div>
+                            {platform}
+                          </span>
                         ))}
                       </div>
                     </div>
@@ -1103,7 +1131,11 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
               reach is one the reader has to go hunting for. `-mx-6 -mb-6` bleeds
               it to the dialog's edges past the content padding.
             */}
-            <div className="sticky bottom-0 -mx-6 -mb-6 mt-6 border-t border-hairline bg-canvas/95 px-6 py-4 backdrop-blur-md">
+            </div>
+
+            {/* A sibling of the scroll region, not a sticky child of it, so it
+                sits at the bottom whether the profile is two sections or ten. */}
+            <div className="shrink-0 border-t border-hairline bg-canvas px-6 py-4">
               <CardActionBar
                 className="m-0 border-0 bg-transparent p-0"
                 primaryLabel={isBookable ? 'Booking sekarang' : 'Menunggu verifikasi'}
