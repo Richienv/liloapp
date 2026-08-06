@@ -1,24 +1,31 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { createClient } from "@/utils/supabase/client";
-import { format, differenceInHours, isBefore, startOfDay, isSameDay } from 'date-fns';
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Clock, DollarSign, Star, Info, RefreshCw, X, XCircle, CheckCircle, Check, Radio, FileText, MapPin, Copy, Calendar, ChevronDown } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import RatingModal from '@/components/rating-modal';
 import { useRouter } from 'next/navigation';
-import CancelBookingModal from '@/components/cancel-booking-modal';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { toast } from "react-hot-toast";
+import { format, isBefore, isSameDay } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
+import { Check, ChevronLeft, Copy, MapPin, RefreshCw } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+
+import { createClient } from '@/utils/supabase/client';
+import { Button } from '@/components/ui/button';
+import { CardActionBar } from '@/components/ui/card-action-bar';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { BookingCalendar } from '@/components/booking-calendar';
-import { AddressButton } from "@/components/ui/address-button";
+import RatingModal from '@/components/rating-modal';
 
 interface Booking {
   id: number;
-  client_id: string;
+  client_id?: string;
   streamer_id: number;
   start_time: string;
   end_time: string;
@@ -29,7 +36,7 @@ interface Booking {
   price: number;
   special_request: string | null;
   timezone?: string;
-  payment_group_id: string;
+  payment_group_id?: string;
   streamer: {
     id: number;
     first_name: string;
@@ -46,11 +53,6 @@ interface Booking {
     final_price: number;
     discount_applied: number;
   }>;
-}
-
-interface RatingData {
-  streamer_id: number;
-  rating: number;
 }
 
 interface TimeSlot {
@@ -73,253 +75,300 @@ interface BookingRecord {
   status: string;
 }
 
-function formatBookingTime(dateString: string, timezone: string = 'UTC') {
-  const date = new Date(dateString);
-  return format(date, 'HH:mm');
-}
+/* -------------------------------------------------------------------------
+   Reading a booking.
 
-function formatBookingDate(dateString: string, formatStr: string = 'EEEE, MMMM d, yyyy') {
-  const date = new Date(dateString);
-  return format(date, formatStr);
-}
+   Everything below derives from `status` and the two timestamps the page
+   already loads. No extra query, no extra column.
+   ------------------------------------------------------------------------- */
 
-const getStatusInfo = (status: string) => {
-  switch (status.toLowerCase()) {
-    case 'pending':
-      return 'Menunggu streamer menerima pesanan kamu. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
-    case 'accepted':
-      return 'Pesanan kamu telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
-    case 'completed':
-      return 'Sesi streaming telah selesai. Terima kasih telah menggunakan layanan kami.';
-    case 'rejected':
-      return 'Maaf, streamer tidak dapat menerima pesanan kamu. Silakan coba waktu lain atau streamer lainnya.';
-    case 'live':
-      return 'Sesi streaming sedang berlangsung.';
-    default:
-      return '';
-  }
+/**
+ * Status rendered as words, never as a filled pill.
+ *
+ * The tone is a text colour on the warm canvas — caution for "the clock is
+ * running", positive for "confirmed", ghost for "this is over". None of them
+ * is the brand blue: the blue on this screen belongs to the one action a row
+ * can ask for, and a status that competes with it is a status pretending to be
+ * a button.
+ */
+const STATUS_TEXT: Record<string, { label: string; tone: string }> = {
+  pending: { label: 'Menunggu host', tone: 'text-caution' },
+  accepted: { label: 'Diterima host', tone: 'text-positive' },
+  live: { label: 'Sedang live', tone: 'text-critical' },
+  reschedule_requested: { label: 'Reschedule diajukan', tone: 'text-caution' },
+  completed: { label: 'Selesai', tone: 'text-ink-soft' },
+  rejected: { label: 'Ditolak host', tone: 'text-ink-ghost' },
+  cancelled: { label: 'Dibatalkan', tone: 'text-ink-ghost' },
 };
+
+function statusText(status: string) {
+  return (
+    STATUS_TEXT[status.toLowerCase()] ?? {
+      label: status,
+      tone: 'text-ink-soft',
+    }
+  );
+}
+
+type Bucket = 'action' | 'waiting' | 'done';
+
+/**
+ * Which of the three stacks a booking belongs in.
+ *
+ * The page's subtitle is a promise — "yang butuh tindakan kamu ada di atas" —
+ * so the top stack is defined as exactly the bookings that can offer the brand
+ * a button, and nothing else:
+ *
+ *   - `reschedule_requested` — the brand's own request is open; it can modify
+ *     or withdraw it.
+ *   - `accepted` — the host is confirmed, which means the product has to be
+ *     shipped and the sub-account prepared. That is the brand's move, not the
+ *     host's.
+ *   - `live` — happening right now; it outranks everything for the same reason
+ *     it does on the host dashboard.
+ *   - `completed` with no rating yet — the last thing the brand owes the host.
+ *
+ * `pending` deliberately is NOT action: the ball is with the host and there is
+ * nothing to press. Sorting it above a session whose products still need
+ * shipping would break the promise the subtitle makes.
+ */
+function bucketOf(booking: Booking): Bucket {
+  switch (booking.status.toLowerCase()) {
+    case 'live':
+    case 'reschedule_requested':
+    case 'accepted':
+      return 'action';
+    case 'completed':
+      return booking.items_received ? 'done' : 'action';
+    case 'pending':
+      return 'waiting';
+    default:
+      return 'done';
+  }
+}
+
+function startTimeOf(booking: Booking) {
+  return new Date(booking.start_time).getTime();
+}
+
+function hostName(booking: Booking) {
+  const first = booking.streamer?.first_name ?? 'Host';
+  const last = booking.streamer?.last_name ?? '';
+  return `${first} ${last}`.trim();
+}
+
+function formatDay(dateString: string) {
+  return format(new Date(dateString), 'd MMM yyyy', { locale: idLocale });
+}
+
+function formatClock(dateString: string) {
+  return format(new Date(dateString), 'HH:mm');
+}
+
+function formatRupiah(value: number) {
+  return `Rp ${Math.round(value).toLocaleString('id-ID')}`;
+}
+
+/* -------------------------------------------------------------------------
+   Reschedule — unchanged behaviour, redressed.
+   ------------------------------------------------------------------------- */
 
 interface RescheduleTimeModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (newStartTime: Date, newEndTime: Date) => void;
-  currentStartTime: string;
-  currentEndTime: string;
   booking: Booking;
 }
 
-function RescheduleTimeModal({ 
-  isOpen, 
-  onClose, 
+/** The four bands the hour grid is split into, and the hours each one owns. */
+const TIME_BANDS: Array<{ label: string; from: number; to: number }> = [
+  { label: 'Pagi', from: 6, to: 12 },
+  { label: 'Siang', from: 12, to: 18 },
+  { label: 'Malam', from: 18, to: 24 },
+  { label: 'Dini hari', from: 0, to: 6 },
+];
+
+function RescheduleTimeModal({
+  isOpen,
+  onClose,
   onConfirm,
-  currentStartTime,
-  currentEndTime,
-  booking
+  booking,
 }: RescheduleTimeModalProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date(currentStartTime));
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date(booking.start_time));
   const [selectedHours, setSelectedHours] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeSchedule, setActiveSchedule] = useState<Schedule | null>(null);
-  const [daysOff, setDaysOff] = useState<string[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchActiveSchedule();
-      fetchDaysOff();
-      fetchAcceptedBookings();
-    }
-  }, [booking.streamer_id, isOpen]);
+    if (!isOpen) return;
 
-  const fetchActiveSchedule = async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('streamer_active_schedules')
-      .select('schedule')
-      .eq('streamer_id', booking.streamer_id);
+    const fetchActiveSchedule = async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('streamer_active_schedules')
+        .select('schedule')
+        .eq('streamer_id', booking.streamer_id);
 
-    if (error) {
-      console.error('Error fetching active schedule:', error);
-      setActiveSchedule(null);
-    } else if (data && data.length > 0) {
-      try {
-        const schedule = typeof data[0].schedule === 'string' 
-          ? JSON.parse(data[0].schedule)
-          : data[0].schedule;
-        setActiveSchedule(schedule);
-      } catch (e) {
-        console.error('Error parsing schedule:', e);
+      if (error) {
+        console.error('Error fetching active schedule:', error);
+        setActiveSchedule(null);
+      } else if (data && data.length > 0) {
+        try {
+          const schedule =
+            typeof data[0].schedule === 'string'
+              ? JSON.parse(data[0].schedule)
+              : data[0].schedule;
+          setActiveSchedule(schedule);
+        } catch (e) {
+          console.error('Error parsing schedule:', e);
+          setActiveSchedule(null);
+        }
+      } else {
         setActiveSchedule(null);
       }
-    } else {
-      setActiveSchedule(null);
-    }
-  };
+    };
 
-  const fetchDaysOff = async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('streamer_day_offs')
-      .select('date')
-      .eq('streamer_id', booking.streamer_id);
+    const fetchAcceptedBookings = async () => {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('streamer_id', booking.streamer_id)
+        .in('status', ['accepted', 'pending'])
+        .neq('id', booking.id);
 
-    if (error) {
-      console.error('Error fetching days off:', error);
-    } else if (data) {
-      setDaysOff(data.map(d => d.date));
-    }
-  };
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        toast.error('Gagal memuat jadwal host');
+      } else {
+        setBookings(data || []);
+      }
+    };
 
-  const fetchAcceptedBookings = async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('streamer_id', booking.streamer_id)
-      .in('status', ['accepted', 'pending'])
-      .neq('id', booking.id);
+    fetchActiveSchedule();
+    fetchAcceptedBookings();
+  }, [booking.streamer_id, booking.id, isOpen]);
 
-    if (error) {
-      console.error('Error fetching bookings:', error);
-      toast.error('Failed to fetch bookings');
-    } else {
-      setBookings(data || []);
-    }
-  };
+  const isSlotAvailable = useCallback(
+    (date: Date, hour: number): boolean => {
+      if (!activeSchedule) return false;
+      const dayOfWeek = date.getDay();
+      const daySchedule = activeSchedule[dayOfWeek];
+      if (!daySchedule || !daySchedule.slots) return false;
 
-  const isSlotAvailable = useCallback((date: Date, hour: number): boolean => {
-    if (!activeSchedule) return false;
-    const dayOfWeek = date.getDay();
-    const daySchedule = activeSchedule[dayOfWeek];
-    if (!daySchedule || !daySchedule.slots) return false;
-  
-    const isInSchedule = daySchedule.slots.some((slot: TimeSlot) => {
-      const start = parseInt(slot.start.split(':')[0]);
-      const end = parseInt(slot.end.split(':')[0]);
-      return hour >= start && hour < end;
-    });
+      const isInSchedule = daySchedule.slots.some((slot: TimeSlot) => {
+        const start = parseInt(slot.start.split(':')[0]);
+        const end = parseInt(slot.end.split(':')[0]);
+        return hour >= start && hour < end;
+      });
 
-    const bookingExists = bookings.some((booking: BookingRecord) => {
-      const bookingStart = new Date(booking.start_time);
-      const bookingEnd = new Date(booking.end_time);
-      return (
-        isSameDay(date, bookingStart) &&
-        (
-          (hour >= bookingStart.getHours() && hour < bookingEnd.getHours()) ||
-          (hour === bookingEnd.getHours() && bookingEnd.getMinutes() > 0)
-        )
-      );
-    });
+      const bookingExists = bookings.some((existing: BookingRecord) => {
+        const bookingStart = new Date(existing.start_time);
+        const bookingEnd = new Date(existing.end_time);
+        return (
+          isSameDay(date, bookingStart) &&
+          ((hour >= bookingStart.getHours() && hour < bookingEnd.getHours()) ||
+            (hour === bookingEnd.getHours() && bookingEnd.getMinutes() > 0))
+        );
+      });
 
-    return isInSchedule && !bookingExists;
-  }, [activeSchedule, bookings] as const);
+      return isInSchedule && !bookingExists;
+    },
+    [activeSchedule, bookings],
+  );
 
-  const generateTimeOptions = (): string[] => {
+  const timeOptions = useMemo((): string[] => {
     if (!selectedDate || !activeSchedule) return [];
     const dayOfWeek = selectedDate.getDay();
     const daySchedule = activeSchedule[dayOfWeek];
     if (!daySchedule || !daySchedule.slots) return [];
-  
+
     const options = daySchedule.slots.flatMap((slot: TimeSlot) => {
       const start = parseInt(slot.start.split(':')[0]);
       const end = parseInt(slot.end.split(':')[0]);
-      return Array.from({ length: end - start }, (_, i) => `${(start + i).toString().padStart(2, '0')}:00`);
+      return Array.from(
+        { length: end - start },
+        (_, i) => `${(start + i).toString().padStart(2, '0')}:00`,
+      );
     });
 
     return options.filter((hour: string) => isSlotAvailable(selectedDate, parseInt(hour)));
-  };
-
-  const timeOptions = generateTimeOptions();
+  }, [selectedDate, activeSchedule, isSlotAvailable]);
 
   const handleHourSelection = (hour: string) => {
     setSelectedHours((prevSelected) => {
       const hourNum = parseInt(hour);
-      
+
       if (prevSelected.includes(hour)) {
-        const newSelected = prevSelected.filter(h => h !== hour);
-        
+        const newSelected = prevSelected.filter((h) => h !== hour);
+
         if (newSelected.length > 0) {
-          const selectedHourNums = newSelected.map(h => parseInt(h));
+          const selectedHourNums = newSelected.map((h) => parseInt(h));
           const minHour = Math.min(...selectedHourNums);
           const maxHour = Math.max(...selectedHourNums);
-          
+
           return Array.from(
-            { length: maxHour - minHour + 1 }, 
-            (_, i) => `${(minHour + i).toString().padStart(2, '0')}:00`
+            { length: maxHour - minHour + 1 },
+            (_, i) => `${(minHour + i).toString().padStart(2, '0')}:00`,
           );
         }
         return newSelected;
-      } else {
-        if (prevSelected.length === 0) {
-          return [hour];
-        }
-        
-        const selectedHourNums = prevSelected.map(h => parseInt(h));
-        const minHour = Math.min(...selectedHourNums);
-        const maxHour = Math.max(...selectedHourNums);
-        
-        if (hourNum === maxHour + 1 || hourNum === minHour - 1) {
-          const newSelected = [...prevSelected, hour];
-          return newSelected.sort((a, b) => parseInt(a) - parseInt(b));
-        }
-        
-        return [hour];
       }
+
+      if (prevSelected.length === 0) return [hour];
+
+      const selectedHourNums = prevSelected.map((h) => parseInt(h));
+      const minHour = Math.min(...selectedHourNums);
+      const maxHour = Math.max(...selectedHourNums);
+
+      if (hourNum === maxHour + 1 || hourNum === minHour - 1) {
+        return [...prevSelected, hour].sort((a, b) => parseInt(a) - parseInt(b));
+      }
+
+      return [hour];
     });
   };
 
-  const isHourSelected = (hour: string): boolean => {
-    return selectedHours.includes(hour);
-  };
+  const isHourSelected = (hour: string): boolean => selectedHours.includes(hour);
 
   const isHourDisabled = (hour: string): boolean => {
     const hourNum = parseInt(hour);
     const selectedDateTime = new Date(selectedDate);
     selectedDateTime.setHours(hourNum, 0, 0, 0);
-    const now = new Date();
-    
-    if (isBefore(selectedDateTime, now)) return true;
-    
+
+    if (isBefore(selectedDateTime, new Date())) return true;
     if (!isSlotAvailable(selectedDate, hourNum)) return true;
-    
     if (selectedHours.length === 0) return false;
-    
-    const selectedHourNums = selectedHours.map(h => parseInt(h));
+
+    const selectedHourNums = selectedHours.map((h) => parseInt(h));
     const minHour = Math.min(...selectedHourNums);
     const maxHour = Math.max(...selectedHourNums);
-    
+
     return hourNum !== maxHour + 1 && hourNum !== minHour - 1;
   };
 
-  const getSelectedTimeRange = (): string => {
+  const selectedRange = (): string => {
     if (selectedHours.length === 0) return '';
-    
-    // Get start and end times
     const startTime = selectedHours[0];
     const endTime = selectedHours[selectedHours.length - 1];
-    
-    // Calculate duration based on the difference between start and end time
-    const startHour = parseInt(startTime);
-    const endHour = parseInt(endTime);
-    const duration = endHour - startHour;
-    
-    return `${startTime} - ${endTime} (${duration} hour${duration !== 1 ? 's' : ''})`;
+    const duration = parseInt(endTime) - parseInt(startTime);
+    return `${startTime}–${endTime} · ${duration} jam`;
   };
 
   const handleSubmit = async () => {
     if (selectedHours.length < 1) {
-      toast.error("Please select at least one hour");
+      toast.error('Pilih minimal satu jam');
       return;
     }
 
     setIsSubmitting(true);
     try {
       const supabase = createClient();
-      
+
       const startTime = new Date(selectedDate);
       startTime.setHours(parseInt(selectedHours[0]), 0, 0, 0);
-      
+
       const endTime = new Date(selectedDate);
       const lastHour = parseInt(selectedHours[selectedHours.length - 1]);
       endTime.setHours(lastHour + 1, 0, 0, 0);
@@ -327,11 +376,11 @@ function RescheduleTimeModal({
       // Update the existing booking with new schedule and status
       const { error: updateError } = await supabase
         .from('bookings')
-        .update({ 
+        .update({
           status: 'reschedule_requested',
           start_time: startTime.toISOString(),
           end_time: endTime.toISOString(),
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('id', booking.id);
 
@@ -346,17 +395,14 @@ function RescheduleTimeModal({
         .single();
 
       if (streamerUser?.user_id) {
-        // Create notification for streamer
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: streamerUser.user_id,
-            type: 'reschedule_request',
-            message: `Client has requested to reschedule booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}`,
-            booking_id: booking.id,
-            created_at: new Date().toISOString(),
-            is_read: false
-          });
+        const { error: notificationError } = await supabase.from('notifications').insert({
+          user_id: streamerUser.user_id,
+          type: 'reschedule_request',
+          message: `Client has requested to reschedule booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}`,
+          booking_id: booking.id,
+          created_at: new Date().toISOString(),
+          is_read: false,
+        });
 
         if (notificationError) {
           console.error('Error creating notification:', notificationError);
@@ -365,10 +411,9 @@ function RescheduleTimeModal({
 
       onClose();
       onConfirm(startTime, endTime);
-      
     } catch (error) {
       console.error('Error processing reschedule:', error);
-      toast.error("Failed to reschedule");
+      toast.error('Gagal mengajukan reschedule');
     } finally {
       setIsSubmitting(false);
     }
@@ -376,99 +421,101 @@ function RescheduleTimeModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0">
-        <div className="p-4 sm:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="space-y-2">
-            <DialogTitle className="text-base sm:text-lg font-semibold">
-              Pengajuan Reschedule
+      <DialogContent className="gap-0 rounded-frame border-hairline bg-surface p-0">
+        <div className="max-h-[80vh] space-y-5 overflow-y-auto p-5 sm:p-6">
+          <DialogHeader className="space-y-1.5 text-left">
+            <DialogTitle className="font-serif text-title font-semibold text-ink">
+              Ajukan jadwal baru
             </DialogTitle>
-            <DialogDescription className="text-xs sm:text-sm">
-              Pilih waktu baru untuk sesi live streaming
+            <DialogDescription className="text-meta text-ink-soft">
+              Pilih tanggal dan jam pengganti. Host masih harus menyetujuinya.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-2">
-            <BookingCalendar 
-              selectedDate={selectedDate}
-              onDateSelect={(dateStr) => setSelectedDate(new Date(dateStr))}
-              onTimeSelect={(time) => {
-                if (selectedDate) {
-                  const [hours, minutes] = time.split(':').map(Number);
-                  const newDate = new Date(selectedDate);
-                  newDate.setHours(hours, minutes, 0, 0);
-                  setSelectedDate(newDate);
-                }
-              }}
-            />
-          </div>
+          <BookingCalendar
+            selectedDate={selectedDate}
+            onDateSelect={(dateStr) => setSelectedDate(new Date(dateStr))}
+            onTimeSelect={(time) => {
+              if (!selectedDate) return;
+              const [hours, minutes] = time.split(':').map(Number);
+              const newDate = new Date(selectedDate);
+              newDate.setHours(hours, minutes, 0, 0);
+              setSelectedDate(newDate);
+            }}
+          />
 
-          <div className="h-px bg-surface-deep" />
+          <div className="h-px bg-hairline-soft" />
 
-          <div className="space-y-3">
-            {['Morning', 'Afternoon', 'Evening', 'Night'].map((timeOfDay) => (
-              <div key={timeOfDay}>
-                <h4 className="text-xs sm:text-sm font-semibold mb-2">{timeOfDay}</h4>
-                <div className="grid grid-cols-4 gap-1.5">
-                  {timeOptions
-                    .filter((hour) => {
-                      const hourNum = parseInt(hour);
+          <div className="space-y-4">
+            {TIME_BANDS.map((band) => {
+              const hours = timeOptions.filter((hour) => {
+                const hourNum = parseInt(hour);
+                return hourNum >= band.from && hourNum < band.to;
+              });
+              if (hours.length === 0) return null;
+
+              return (
+                <div key={band.label}>
+                  <h4 className="text-tiny uppercase text-ink-ghost">{band.label}</h4>
+                  <div className="mt-2 grid grid-cols-4 gap-1.5">
+                    {hours.map((hour) => {
+                      const selected = isHourSelected(hour);
+                      const disabled = isHourDisabled(hour);
                       return (
-                        (timeOfDay === 'Night' && (hourNum >= 0 && hourNum < 6)) ||
-                        (timeOfDay === 'Morning' && (hourNum >= 6 && hourNum < 12)) ||
-                        (timeOfDay === 'Afternoon' && (hourNum >= 12 && hourNum < 18)) ||
-                        (timeOfDay === 'Evening' && (hourNum >= 18 && hourNum < 24))
+                        <button
+                          key={hour}
+                          type="button"
+                          onClick={() => handleHourSelection(hour)}
+                          disabled={disabled}
+                          className={`numeric h-9 rounded-field border text-copy transition-colors ${
+                            selected
+                              ? 'border-brand bg-brand text-white'
+                              : 'border-hairline-input bg-surface text-ink-body hover:bg-surface-tint'
+                          } disabled:cursor-not-allowed disabled:border-hairline-soft disabled:bg-surface disabled:text-ink-ghost`}
+                        >
+                          {hour}
+                        </button>
                       );
-                    })
-                    .map((hour) => (
-                      <Button
-                        key={hour}
-                        variant={isHourSelected(hour) ? "default" : "outline"}
-                        className={`text-[10px] sm:text-xs p-1 h-8 ${
-                          isHourSelected(hour) 
-                            ? 'bg-brand text-white hover:bg-brand-hover' 
-                            : isHourDisabled(hour)
-                              ? 'opacity-50 cursor-not-allowed'
-                              : 'hover:bg-blue-50'
-                        }`}
-                        onClick={() => handleHourSelection(hour)}
-                        disabled={isHourDisabled(hour)}
-                      >
-                        {hour}
-                      </Button>
-                    ))}
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {selectedHours.length > 0 && (
-            <div className="text-xs sm:text-sm font-medium">
-              Selected time: {getSelectedTimeRange()}
-            </div>
+            <p className="text-meta text-ink-body">
+              Waktu terpilih <span className="numeric text-ink">{selectedRange()}</span>
+            </p>
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t bg-surface-tint">
+        <DialogFooter className="gap-2 border-t border-hairline-soft bg-surface-tint p-5 sm:p-6">
           <Button
-            variant="outline"
+            variant="quiet"
+            size="action-secondary"
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10 border-hairline-strong"
           >
             Kembali
           </Button>
           <Button
+            variant="brand"
+            size="action"
             onClick={handleSubmit}
             disabled={isSubmitting || selectedHours.length < 1}
-            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10 bg-brand text-white hover:bg-brand-hover"
           >
-            {isSubmitting ? 'Memproses...' : 'Konfirmasi'}
+            {isSubmitting ? 'Memproses…' : 'Ajukan jadwal baru'}
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
   );
 }
+
+/* -------------------------------------------------------------------------
+   Cancel — unchanged behaviour, redressed.
+   ------------------------------------------------------------------------- */
 
 interface CancelConfirmationModalProps {
   isOpen: boolean;
@@ -481,7 +528,7 @@ function CancelConfirmationModal({
   isOpen,
   onClose,
   onConfirm,
-  isSubmitting
+  isSubmitting,
 }: CancelConfirmationModalProps) {
   const [reason, setReason] = useState('');
   const [error, setError] = useState('');
@@ -496,66 +543,54 @@ function CancelConfirmationModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0">
-        <div className="p-4 sm:p-6 space-y-4 max-h-[85vh] overflow-y-auto">
-          <DialogHeader className="space-y-3">
-            <DialogTitle className="text-lg sm:text-xl font-semibold text-red-600">
-              Konfirmasi Pembatalan
+      <DialogContent className="gap-0 rounded-frame border-hairline bg-surface p-0">
+        <div className="space-y-5 p-5 sm:p-6">
+          <DialogHeader className="space-y-1.5 text-left">
+            <DialogTitle className="font-serif text-title font-semibold text-ink">
+              Batalkan pengajuan reschedule
             </DialogTitle>
-            <DialogDescription className="space-y-3">
-              <div className="bg-red-50 border border-red-100 rounded-lg p-3">
-                <p className="text-sm font-medium text-red-800 mb-2">
-                  Peringatan:
-                </p>
-                <ul className="list-disc pl-4 space-y-1.5 text-xs sm:text-sm text-red-700">
-                  <li>Pembatalan akan mempengaruhi reputasi kamu sebagai client</li>
-                  <li>Pembatalan mendadak dapat menyebabkan kerugian bagi streamer</li>
-                  <li>Mohon pertimbangkan kembali sebelum membatalkan pesanan</li>
-                </ul>
-              </div>
+            <DialogDescription className="text-meta text-ink-soft">
+              Host akan melihat alasan ini. Membatalkan mendadak merugikan host yang
+              sudah menyiapkan jamnya.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3">
-            <div className="space-y-2">
-              <Label htmlFor="cancel-reason" className="text-sm font-medium flex items-center">
-                Alasan Pembatalan
-                <span className="text-red-500 ml-0.5">*</span>
-              </Label>
-              <textarea
-                id="cancel-reason"
-                className={`w-full min-h-[120px] p-3 rounded-lg border text-sm ${
-                  error ? 'border-red-500' : 'border-hairline-strong'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 bg-surface`}
-                placeholder="Mohon jelaskan alasan pembatalan kamu..."
-                value={reason}
-                onChange={(e) => {
-                  setReason(e.target.value);
-                  if (error) setError('');
-                }}
-              />
-              {error && (
-                <p className="text-xs text-red-500 mt-1">{error}</p>
-              )}
-            </div>
+          <div className="space-y-2">
+            <Label htmlFor="cancel-reason" className="text-copy font-medium text-ink-body">
+              Alasan pembatalan
+            </Label>
+            <textarea
+              id="cancel-reason"
+              className={`min-h-[112px] w-full rounded-field border bg-surface p-3 text-copy text-ink placeholder:text-ink-ghost focus:outline-none focus:ring-1 focus:ring-brand ${
+                error ? 'border-critical' : 'border-hairline-input'
+              }`}
+              placeholder="Tulis alasan kamu di sini…"
+              value={reason}
+              onChange={(e) => {
+                setReason(e.target.value);
+                if (error) setError('');
+              }}
+            />
+            {error && <p className="text-mini text-critical">{error}</p>}
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t bg-surface-tint">
+        <DialogFooter className="gap-2 border-t border-hairline-soft bg-surface-tint p-5 sm:p-6">
           <Button
-            variant="outline"
+            variant="quiet"
+            size="action-secondary"
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-full sm:w-auto text-sm h-10 border-hairline-strong"
           >
             Kembali
           </Button>
           <Button
+            variant="danger"
+            size="action"
             onClick={handleSubmit}
             disabled={isSubmitting || !reason.trim()}
-            className="w-full sm:w-auto text-sm h-10 bg-red-600 hover:bg-red-700 text-white"
           >
-            {isSubmitting ? 'Memproses...' : 'Lanjutkan'}
+            {isSubmitting ? 'Memproses…' : 'Batalkan pengajuan'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -563,589 +598,279 @@ function CancelConfirmationModal({
   );
 }
 
-interface BookingEntryProps {
-  booking: Booking;
-  onRatingSubmit: () => void;
-  onStatusUpdate: (bookingId: number, newStatus: string) => void;
-}
+/* -------------------------------------------------------------------------
+   Address — unchanged behaviour, redressed.
+   ------------------------------------------------------------------------- */
 
-function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryProps) {
-  const router = useRouter();
-  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
-  const [showDeliveryInfo, setShowDeliveryInfo] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const [relatedBookings, setRelatedBookings] = useState<Booking[]>([]);
-  const [showRelatedBookings, setShowRelatedBookings] = useState(false);
+function AddressDialog({
+  booking,
+  onClose,
+}: {
+  booking: Booking | null;
+  onClose: () => void;
+}) {
   const [isCopied, setIsCopied] = useState(false);
+  const address = booking?.streamer?.full_address;
 
-  // Fetch related bookings on mount
   useEffect(() => {
-    const fetchRelatedBookings = async () => {
-      if (!booking.payment_group_id) return;
+    setIsCopied(false);
+  }, [booking?.id]);
 
-      const supabase = createClient();
-      const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
-        .eq('payment_group_id', booking.payment_group_id)
-        .neq('id', booking.id)
-        .order('start_time', { ascending: true });
-
-      if (!error && data) {
-        setRelatedBookings(data);
-      }
-    };
-
-    fetchRelatedBookings();
-  }, [booking.payment_group_id, booking.id]);
-
-  // Add debug logging
-  useEffect(() => {
-    console.log('Booking times:', {
-      start: booking.start_time,
-      end: booking.end_time,
-      convertedStart: formatBookingTime(booking.start_time, booking.timezone),
-      convertedEnd: formatBookingTime(booking.end_time, booking.timezone),
-      timezone: booking.timezone
-    });
-  }, [booking]);
-
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return <Clock className="w-3 h-3" />;
-      case 'accepted': return <CheckCircle className="w-3 h-3" />;
-      case 'completed': return <Check className="w-3 h-3" />;
-      case 'live': return <Radio className="w-3 h-3" />;
-      case 'rejected': return <XCircle className="w-3 h-3" />;
-      case 'cancelled': return <X className="w-3 h-3" />;
-      default: return null;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'bg-blue-50 text-blue-700 border border-blue-200';
-      case 'accepted': return 'bg-green-50 text-green-700 border border-green-200';
-      case 'completed': return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
-      case 'live': return 'bg-red-50 text-red-700 border border-red-200';
-      case 'rejected': return 'bg-surface-tint text-ink-body border border-hairline-input';
-      case 'cancelled': return 'bg-surface-tint text-ink-body border border-hairline-input';
-      default: return 'bg-surface-tint text-ink-body border border-hairline-input';
-    }
-  };
-
-  console.log('Booking status:', booking.status); // Add this line for debugging
-
-  // Parse the rating to ensure it's a number
-  const rating = parseFloat(booking.streamer?.rating as unknown as string);
-
-  // Group bookings by date
-  const bookingsByDate = useMemo(() => {
-    const allBookings = [booking, ...relatedBookings];
-    return allBookings.reduce((acc, b) => {
-      const date = format(new Date(b.start_time), 'yyyy-MM-dd');
-      if (!acc[date]) {
-        acc[date] = [];
-      }
-      acc[date].push(b);
-      return acc;
-    }, {} as Record<string, Booking[]>);
-  }, [booking, relatedBookings]);
-
-  const handleReschedule = async (startTime: Date, endTime: Date) => {
+  const handleCopy = async () => {
+    if (!address) return;
     try {
-      const supabase = createClient();
-      
-      // Update the booking status to pending
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ 
-          status: 'pending',
-          start_time: startTime.toISOString(),
-          end_time: endTime.toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-
-      if (updateError) throw updateError;
-
-      // Look up the streamer's user (auth) uuid — notifications.user_id is a
-      // uuid, not the numeric streamers.id. Skip gracefully if not found.
-      const { data: streamerUser } = await supabase
-        .from('streamers')
-        .select('user_id')
-        .eq('id', booking.streamer_id)
-        .single();
-
-      if (streamerUser?.user_id) {
-        // Create notification for streamer
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: streamerUser.user_id,
-            type: 'booking_request',
-            message: `Client has rescheduled booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}. Please review and accept/reject.`,
-            booking_id: booking.id,
-            created_at: new Date().toISOString(),
-            is_read: false,
-            streamer_id: booking.streamer_id
-          });
-
-        if (notificationError) {
-          console.error('Error creating notification:', notificationError);
-        }
-      }
-
-      setIsRescheduleModalOpen(false);
-      toast.success("Reschedule request sent successfully");
-      
-      // Update local state
-      if (typeof onStatusUpdate === 'function') {
-        onStatusUpdate(booking.id, 'pending');
-      }
-
-      // Refresh the bookings list
-      window.location.reload();
-    } catch (error) {
-      console.error('Error rescheduling booking:', error);
-      toast.error("Failed to reschedule booking");
+      await navigator.clipboard.writeText(address);
+      setIsCopied(true);
+      toast.success('Alamat berhasil disalin!');
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      toast.error('Gagal menyalin alamat');
     }
-  };
-
-  const handleCancel = async (reason: string) => {
-    setIsSubmittingCancel(true);
-    try {
-      const supabase = createClient();
-      
-      const { error: updateError } = await supabase
-        .from('bookings')
-        .update({ 
-          status: 'cancelled',
-          reason: reason,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', booking.id);
-
-      if (updateError) throw updateError;
-
-      // Look up the streamer's user (auth) uuid — notifications.user_id is a
-      // uuid, not the numeric streamers.id. Skip gracefully if not found.
-      const { data: streamerUser } = await supabase
-        .from('streamers')
-        .select('user_id')
-        .eq('id', booking.streamer_id)
-        .single();
-
-      if (streamerUser?.user_id) {
-        // Create notification for streamer
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: streamerUser.user_id,
-            message: `Client telah membatalkan permintaan reschedule dengan alasan: ${reason}`,
-            type: 'booking_cancelled',
-            booking_id: booking.id,
-            created_at: new Date().toISOString(),
-            is_read: false
-          });
-
-        if (notificationError) {
-          console.error('Error creating notification:', notificationError);
-        }
-      }
-
-      setIsCancelModalOpen(false);
-      toast.success("Booking berhasil dibatalkan");
-      
-      // Update the booking status locally
-      if (typeof onStatusUpdate === 'function') {
-        onStatusUpdate(booking.id, 'cancelled');
-      }
-    } catch (error) {
-      console.error('Error cancelling booking:', error);
-      toast.error("Gagal membatalkan booking");
-    } finally {
-      setIsSubmittingCancel(false);
-    }
-  };
-
-  // Update price display logic
-  const displayPrice = booking.voucher_usage?.[0]?.final_price ?? booking.price;
-  const discountAmount = booking.voucher_usage?.[0]?.discount_applied ?? 0;
-  const hasDiscount = discountAmount > 0;
-
-  const DeliveryInfoCard = () => {
-    const handleCopyAddress = async () => {
-      if (selectedBooking?.streamer?.full_address) {
-        try {
-          await navigator.clipboard.writeText(selectedBooking.streamer.full_address);
-          setIsCopied(true);
-          toast.success("Alamat berhasil disalin!");
-          
-          // Reset the copied state after 2 seconds
-          setTimeout(() => {
-            setIsCopied(false);
-          }, 2000);
-        } catch (err) {
-          toast.error("Gagal menyalin alamat");
-        }
-      }
-    };
-
-    return (
-      <>
-        {/* Dark overlay backdrop */}
-        <div 
-          className="fixed inset-0 bg-black/50 transition-opacity z-40"
-          onClick={() => setShowDeliveryInfo(false)}
-        />
-        
-        {/* Centered card */}
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-surface rounded-panel w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
-            <div className="p-4">
-              {/* Header with close button */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-lg overflow-hidden">
-                    <Image
-                      src={selectedBooking?.streamer?.image_url || '/default-avatar.png'}
-                      alt="Streamer"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-ink">
-                      {selectedBooking?.streamer?.first_name} {selectedBooking?.streamer?.last_name?.charAt(0)}.
-                    </h3>
-                    <p className="text-sm text-ink-soft">
-                      Rp {selectedBooking?.price?.toLocaleString('id-ID')}/jam
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowDeliveryInfo(false)}
-                  className="p-2 rounded-full hover:bg-surface-tint transition-colors"
-                >
-                  <XCircle className="h-5 w-5 text-ink-faint" />
-                </button>
-              </div>
-
-              {/* Booking ID */}
-              <div className="flex items-center gap-2 mb-4 bg-blue-50 p-2 rounded-lg">
-                <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-blue-600" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-ink-muted">Booking ID:</span>
-                  <span className="text-sm font-medium text-ink">#{selectedBooking?.id}</span>
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                    {selectedBooking?.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Address section with improved styling */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-blue-600">
-                  <MapPin className="h-4 w-4" />
-                  <h4 className="font-medium">Alamat Pengiriman</h4>
-                </div>
-                <div className="bg-surface-tint p-3 rounded-lg space-y-2">
-                  {selectedBooking?.streamer?.full_address ? (
-                    <div className="text-ink-muted text-sm whitespace-pre-line">
-                      {selectedBooking.streamer.full_address}
-                    </div>
-                  ) : (
-                    <p className="text-ink-soft text-sm italic">Alamat tidak tersedia</p>
-                  )}
-                </div>
-                <button
-                  onClick={handleCopyAddress}
-                  disabled={!selectedBooking?.streamer?.full_address || isCopied}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition-all duration-300 ${
-                    isCopied 
-                      ? 'bg-green-500 hover:bg-green-600 text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isCopied ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Alamat sudah disalin
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      Salin Alamat
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </>
-    );
   };
 
   return (
-    <div className="border rounded-lg p-4 pb-4 mb-4 text-sm transition-shadow relative">
-      <div className="flex justify-between items-center mb-3 pb-3 border-b">
-        <div className="flex items-center gap-2">
-          <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)} flex items-center`}>
-            {getStatusIcon(booking.status)}
-            {booking.status}
-          </span>
-          {relatedBookings.length > 0 && (
-            <button
-              onClick={() => setShowRelatedBookings(!showRelatedBookings)}
-              className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-            >
-              <Calendar className="h-4 w-4" />
-              {showRelatedBookings ? 'Hide' : 'Show'} {relatedBookings.length} related {relatedBookings.length === 1 ? 'booking' : 'bookings'}
-            </button>
-          )}
-        </div>
-        <span className="text-ink-soft text-sm">
-          {formatBookingDate(booking.created_at)}
-        </span>
-      </div>
-      
-      <div className="flex items-start mb-3 pb-3 border-b">
-        <Image
-          src={booking.streamer?.image_url || '/default-avatar.png'}
-          alt={`${booking.streamer?.first_name ?? ''} ${booking.streamer?.last_name ?? ''}`}
-          width={80}
-          height={80}
-          className="rounded-full mr-4"
-        />
-        <div className="flex-grow">
-          <h3 className="font-medium text-base mb-2">{`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}</h3>
-          <p className="text-ink-muted mb-2">Livestreaming services on {booking.platform}</p>
-          
-          {/* Display time blocks grouped by date */}
-          {Object.entries(bookingsByDate).map(([date, bookings]) => (
-            <div key={date} className="mb-2">
-              <div className="text-sm text-ink-soft mb-1">
-                {formatBookingDate(date)}
+    <Dialog open={!!booking} onOpenChange={onClose}>
+      <DialogContent className="gap-0 rounded-frame border-hairline bg-surface p-0">
+        <div className="space-y-5 p-5 sm:p-6">
+          <DialogHeader className="space-y-1.5 text-left">
+            <DialogTitle className="font-serif text-title font-semibold text-ink">
+              Alamat Pengiriman
+            </DialogTitle>
+            <DialogDescription className="text-meta text-ink-soft">
+              Kirim produk kamu ke alamat ini sebelum jadwal live dimulai.
+            </DialogDescription>
+          </DialogHeader>
+
+          {booking && (
+            <dl className="overflow-hidden rounded-panel border border-hairline">
+              <div className="flex min-w-0 items-baseline gap-4 border-b border-hairline-soft px-4 py-3">
+                <dt className="shrink-0 text-meta text-ink-soft">Host</dt>
+                <dd className="min-w-0 flex-1 truncate text-right text-copy text-ink">
+                  {hostName(booking)}
+                </dd>
               </div>
-              {bookings.map((b: Booking) => (
-                <div key={b.id} className="flex items-center mb-1">
-                  <Clock className="w-4 h-4 mr-2 text-ink-faint" />
-                  <span className="text-base">
-                    {formatBookingTime(b.start_time, b.timezone)} - {formatBookingTime(b.end_time, b.timezone)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ))}
-          
-          <div className="flex items-center">
-            <Star className="w-4 h-4 mr-2 text-yellow-400" />
-            <span className="text-base">Rating: {isNaN(rating) ? 'N/A' : rating.toFixed(1)}</span>
-          </div>
-        </div>
-      </div>
-      
-      {/* Related bookings section */}
-      {showRelatedBookings && relatedBookings.length > 0 && (
-        <div className="mt-4 space-y-3">
-          <h4 className="font-medium text-ink">Related Bookings</h4>
-          {relatedBookings.map((relatedBooking) => (
-            <div key={relatedBooking.id} className="flex items-center justify-between p-3 bg-surface-tint rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full overflow-hidden">
-                  <Image
-                    src={booking.streamer?.image_url || '/default-avatar.png'}
-                    alt={`${booking.streamer?.first_name ?? ''} ${booking.streamer?.last_name ?? ''}`}
-                    width={40}
-                    height={40}
-                    className="object-cover"
-                  />
-                </div>
-                <div>
-                  <p className="font-medium text-ink">
-                    {formatBookingDate(relatedBooking.start_time)}
-                  </p>
-                  <p className="text-sm text-ink-muted">
-                    {formatBookingTime(relatedBooking.start_time, relatedBooking.timezone)} - {formatBookingTime(relatedBooking.end_time, relatedBooking.timezone)}
-                  </p>
-                </div>
+              <div className="flex min-w-0 items-baseline gap-4 border-b border-hairline-soft px-4 py-3">
+                <dt className="shrink-0 text-meta text-ink-soft">Sesi</dt>
+                <dd className="numeric min-w-0 flex-1 truncate text-right text-copy text-ink">
+                  {formatDay(booking.start_time)} · {formatClock(booking.start_time)}–
+                  {formatClock(booking.end_time)}
+                </dd>
               </div>
-              <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(relatedBooking.status)}`}>
-                {getStatusIcon(relatedBooking.status)}
-                {relatedBooking.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3 text-sm">
-          <DollarSign className="h-4 w-4 text-ink-faint" />
-          <div className="flex flex-col">
-            <span className="font-medium text-ink">
-              Rp {booking.price.toLocaleString()}
-            </span>
-          </div>
-        </div>
-        <div className="flex gap-2 justify-end">
-          {booking.status.toLowerCase() === 'completed' && !booking.items_received && (
-            <Button 
-              variant="default"
-              size="sm" 
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => setIsRatingModalOpen(true)}
-            >
-              Rate Session
-            </Button>
-          )}
-          {booking.status.toLowerCase() === 'accepted' && (
-            <Button
-              variant="default"
-              size="sm"
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-              onClick={() => {
-                setSelectedBooking(booking);
-                setShowDeliveryInfo(true);
-              }}
-            >
-              <MapPin className="h-4 w-4 mr-2" />
-              Lihat Alamat
-            </Button>
-          )}
-          {booking.status === 'reschedule_requested' && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="text-red-500 border-red-500 hover:bg-red-50"
-                onClick={() => setIsCancelModalOpen(true)}
-              >
-                Cancel Request
-              </Button>
-              <Button
-                variant="default"
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setIsRescheduleModalOpen(true)}
-              >
-                Modify Schedule
-              </Button>
-            </>
+              <div className="px-4 py-3">
+                <dt className="text-meta text-ink-soft">Alamat</dt>
+                <dd className="mt-1 whitespace-pre-line text-copy text-ink-body">
+                  {address || 'Alamat tidak tersedia'}
+                </dd>
+              </div>
+            </dl>
           )}
         </div>
-      </div>
 
-      {isRatingModalOpen && (
-        <RatingModal 
-          isOpen={isRatingModalOpen} 
-          onClose={() => setIsRatingModalOpen(false)} 
-          bookingId={booking.id}
-          streamerId={booking.streamer?.id ?? 0}
-          streamerName={`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}
-          streamerImage={booking.streamer?.image_url ?? ''}
-          startDate={booking.start_time}
-          endDate={booking.end_time}
-          onSubmit={onRatingSubmit}
-        />
-      )}
-      
-      <CancelBookingModal
-        isOpen={isCancelModalOpen}
-        onClose={() => setIsCancelModalOpen(false)}
-        bookingId={booking.id}
-        streamer_id={booking.streamer?.id}
-        start_time={booking.start_time}
-      />
+        <DialogFooter className="gap-2 border-t border-hairline-soft bg-surface-tint p-5 sm:p-6">
+          <Button variant="quiet" size="action-secondary" onClick={onClose}>
+            Tutup
+          </Button>
+          <Button
+            variant="brand"
+            size="action"
+            onClick={handleCopy}
+            disabled={!address || isCopied}
+          >
+            {isCopied ? (
+              <>
+                <Check className="mr-2 h-4 w-4" />
+                Alamat sudah disalin
+              </>
+            ) : (
+              <>
+                <Copy className="mr-2 h-4 w-4" />
+                Salin Alamat
+              </>
+            )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-      <RescheduleTimeModal
-        isOpen={isRescheduleModalOpen}
-        onClose={() => setIsRescheduleModalOpen(false)}
-        onConfirm={handleReschedule}
-        currentStartTime={booking.start_time}
-        currentEndTime={booking.end_time}
-        booking={booking}
-      />
+/* -------------------------------------------------------------------------
+   The list.
+   ------------------------------------------------------------------------- */
 
-      <CancelConfirmationModal
-        isOpen={isCancelModalOpen}
-        onClose={() => setIsCancelModalOpen(false)}
-        onConfirm={handleCancel}
-        isSubmitting={isSubmittingCancel}
-      />
-
-      {showDeliveryInfo && selectedBooking && <DeliveryInfoCard />}
+function SectionHeading({
+  index,
+  title,
+  description,
+  count,
+}: {
+  index: number;
+  title: string;
+  description: string;
+  count: number;
+}) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline-soft px-4 py-4 sm:px-5">
+      <span className="numeric text-mini font-semibold text-ink-ghost">
+        {String(index).padStart(2, '0')}
+      </span>
+      <h2 className="font-serif text-title font-semibold text-ink">{title}</h2>
+      <span className="numeric text-mini text-ink-ghost">{count}</span>
+      <p className="w-full text-meta text-ink-soft sm:w-auto sm:flex-1 sm:text-right">
+        {description}
+      </p>
     </div>
   );
 }
 
+interface BookingRowProps {
+  booking: Booking;
+  onShowAddress: (booking: Booking) => void;
+  onRate: (booking: Booking) => void;
+  onReschedule: (booking: Booking) => void;
+  onCancel: (booking: Booking) => void;
+}
+
+/**
+ * One booking, one line.
+ *
+ * The identity block is `min-w-0` + `truncate` and the value block is
+ * `shrink-0`: a long host name or a five-word platform string shortens itself
+ * rather than pushing the price onto a second line. A booking list where some
+ * rows are one line tall and some are two is a list you cannot scan down.
+ *
+ * Any action sits BELOW the line rather than inside it. There is no width at
+ * which host + schedule + status + price + a button all fit on a phone, and
+ * the alternative — letting the row reflow — is the thing this design forbids.
+ */
+function BookingRow({
+  booking,
+  onShowAddress,
+  onRate,
+  onReschedule,
+  onCancel,
+}: BookingRowProps) {
+  const status = statusText(booking.status);
+  const discount = booking.voucher_usage?.[0]?.discount_applied ?? 0;
+  const finalPrice = booking.voucher_usage?.[0]?.final_price ?? booking.price;
+  const normalized = booking.status.toLowerCase();
+
+  return (
+    <li className="border-b border-hairline-soft last:border-b-0">
+      <div className="flex min-w-0 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-surface-raised sm:gap-4 sm:px-5">
+        <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface-tint">
+          <Image
+            src={booking.streamer?.image_url || '/default-avatar.png'}
+            alt={hostName(booking)}
+            fill
+            sizes="40px"
+            className="object-cover"
+          />
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-ui font-medium text-ink">{hostName(booking)}</p>
+          <p className="truncate text-meta text-ink-soft">
+            <span className="numeric">{formatDay(booking.start_time)}</span>
+            <span className="text-ink-ghost"> · </span>
+            <span className="numeric">
+              {formatClock(booking.start_time)}–{formatClock(booking.end_time)}
+            </span>
+            <span className="text-ink-ghost"> · </span>
+            {booking.platform}
+          </p>
+        </div>
+
+        <div className="shrink-0 text-right">
+          <p className={`text-mini ${status.tone}`}>{status.label}</p>
+          <p className="whitespace-nowrap text-copy font-medium text-ink">
+            {discount > 0 && (
+              <span className="numeric mr-1.5 text-mini font-normal text-ink-ghost line-through">
+                {formatRupiah(booking.price)}
+              </span>
+            )}
+            <span className="numeric">{formatRupiah(finalPrice)}</span>
+          </p>
+        </div>
+      </div>
+
+      {normalized === 'reschedule_requested' ? (
+        <div className="px-4 pb-4 sm:px-5">
+          <CardActionBar
+            className="mt-0"
+            primaryLabel="Ubah jadwal"
+            onPrimary={() => onReschedule(booking)}
+            secondaryLabel="Batalkan"
+            onSecondary={() => onCancel(booking)}
+          >
+            Host belum menjawab pengajuan reschedule kamu.
+          </CardActionBar>
+        </div>
+      ) : normalized === 'accepted' ? (
+        <div className="flex justify-end px-4 pb-3.5 sm:px-5">
+          <Button
+            variant="quiet"
+            size="action-compact"
+            onClick={() => onShowAddress(booking)}
+          >
+            <MapPin className="mr-2 h-4 w-4" />
+            Lihat alamat host
+          </Button>
+        </div>
+      ) : normalized === 'completed' && !booking.items_received ? (
+        <div className="flex justify-end px-4 pb-3.5 sm:px-5">
+          <Button variant="quiet" size="action-compact" onClick={() => onRate(booking)}>
+            Beri penilaian
+          </Button>
+        </div>
+      ) : null}
+    </li>
+  );
+}
+
+/* -------------------------------------------------------------------------
+   Page.
+   ------------------------------------------------------------------------- */
+
+const SECTIONS: Array<{ bucket: Bucket; title: string; description: string }> = [
+  {
+    bucket: 'action',
+    title: 'Butuh tindakan kamu',
+    description: 'Kirim produk, buka alamat host, atau beri penilaian.',
+  },
+  {
+    bucket: 'waiting',
+    title: 'Menunggu jawaban host',
+    description: 'Host biasanya menjawab dalam 15–60 menit.',
+  },
+  {
+    bucket: 'done',
+    title: 'Sudah selesai',
+    description: 'Sesi yang sudah lewat, ditolak, atau dibatalkan.',
+  },
+];
+
 export default function ClientBookings(): JSX.Element {
   const router = useRouter();
-  const [clientName, setClientName] = useState('');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [activeTab, setActiveTab] = useState('Upcoming');
-  const [isRatingModalOpen, setIsRatingModalOpen] = useState(false);
-  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
-  const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
-  const [showDeliveryInfo, setShowDeliveryInfo] = useState(false);
-  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
-  const bookingsPerPage = 10;
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return <Clock className="w-3 h-3" />;
-      case 'accepted': return <CheckCircle className="w-3 h-3" />;
-      case 'completed': return <Check className="w-3 h-3" />;
-      case 'live': return <Radio className="w-3 h-3" />;
-      case 'rejected': return <XCircle className="w-3 h-3" />;
-      case 'cancelled': return <X className="w-3 h-3" />;
-      default: return null;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'pending': return 'bg-blue-50 text-blue-700 border border-blue-200';
-      case 'accepted': return 'bg-green-50 text-green-700 border border-green-200';
-      case 'completed': return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
-      case 'live': return 'bg-red-50 text-red-700 border border-red-200';
-      case 'rejected': return 'bg-surface-tint text-ink-body border border-hairline-input';
-      case 'cancelled': return 'bg-surface-tint text-ink-body border border-hairline-input';
-      default: return 'bg-surface-tint text-ink-body border border-hairline-input';
-    }
-  };
+  const [addressBooking, setAddressBooking] = useState<Booking | null>(null);
+  const [ratingBooking, setRatingBooking] = useState<Booking | null>(null);
+  const [rescheduleBooking, setRescheduleBooking] = useState<Booking | null>(null);
+  const [cancelBooking, setCancelBooking] = useState<Booking | null>(null);
+  const [isSubmittingCancel, setIsSubmittingCancel] = useState(false);
 
   const fetchClientData = useCallback(async () => {
     try {
       const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (user) {
-        // Fetch client name
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('first_name')
-          .eq('id', user.id)
-          .single();
-        
-        if (userData) {
-          setClientName(userData.first_name);
-        } else if (userError) {
-          console.error("Error fetching user data:", userError);
-          toast.error("Failed to fetch user data");
-        }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
+      if (user) {
         // Fetch bookings
         const { data: bookingsData, error: bookingsError } = await supabase
           .from('bookings')
@@ -1179,7 +904,7 @@ export default function ClientBookings(): JSX.Element {
 
         if (bookingsError) {
           console.error('Error fetching bookings:', bookingsError);
-          toast.error("Failed to fetch bookings");
+          setError('Gagal memuat booking kamu');
         } else if (bookingsData) {
           // Get unique streamer IDs. Guard against a null streamer join (a
           // deleted/unlinked streamer) so one orphaned booking can't throw and
@@ -1188,8 +913,8 @@ export default function ClientBookings(): JSX.Element {
             new Set(
               bookingsData
                 .map((booking: any) => booking.streamer?.id)
-                .filter((id: any) => id != null)
-            )
+                .filter((id: any) => id != null),
+            ),
           );
 
           // Fetch ratings
@@ -1202,14 +927,17 @@ export default function ClientBookings(): JSX.Element {
             console.error('Error fetching ratings:', ratingsError);
           } else {
             // Calculate average ratings
-            const averageRatings = (ratingsData || []).reduce((acc: Record<number, { sum: number; count: number }>, curr) => {
-              if (!acc[curr.streamer_id]) {
-                acc[curr.streamer_id] = { sum: 0, count: 0 };
-              }
-              acc[curr.streamer_id].sum += curr.rating;
-              acc[curr.streamer_id].count += 1;
-              return acc;
-            }, {});
+            const averageRatings = (ratingsData || []).reduce(
+              (acc: Record<number, { sum: number; count: number }>, curr) => {
+                if (!acc[curr.streamer_id]) {
+                  acc[curr.streamer_id] = { sum: 0, count: 0 };
+                }
+                acc[curr.streamer_id].sum += curr.rating;
+                acc[curr.streamer_id].count += 1;
+                return acc;
+              },
+              {},
+            );
 
             // Add ratings to bookings
             const bookingsWithRatings: Booking[] = bookingsData.map((booking: any) => ({
@@ -1218,20 +946,22 @@ export default function ClientBookings(): JSX.Element {
               streamer: {
                 ...booking.streamer,
                 rating: averageRatings[booking.streamer?.id]
-                  ? (averageRatings[booking.streamer?.id].sum / averageRatings[booking.streamer?.id].count)
-                  : 0
-              }
+                  ? averageRatings[booking.streamer?.id].sum /
+                    averageRatings[booking.streamer?.id].count
+                  : 0,
+              },
             }));
 
+            setError(null);
             setBookings(bookingsWithRatings);
           }
         } else {
           setBookings([]);
         }
       }
-    } catch (error) {
-      console.error('Error:', error);
-      toast.error("Something went wrong while fetching data");
+    } catch (err) {
+      console.error('Error:', err);
+      setError('Gagal memuat booking kamu');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -1247,427 +977,292 @@ export default function ClientBookings(): JSX.Element {
     fetchClientData();
   };
 
-  // Filter bookings based on active tab
-  const filteredBookings = useMemo(() => {
-    return bookings.filter(booking => {
-      const status = booking.status.toLowerCase();
-      const bookingDate = new Date(booking.start_time);
-      const now = new Date();
-      
-      switch (activeTab.toLowerCase()) {
-        case 'upcoming':
-          return ['accepted', 'pending'].includes(status) && bookingDate > now;
-        case 'pending':
-          return status === 'pending';
-        case 'recurring':
-          // Add logic for recurring bookings if needed
-          return false;
-        case 'past':
-          return ['completed', 'rejected'].includes(status);
-        case 'cancelled':
-          return status === 'cancelled';
-        default:
-          return true;
+  /**
+   * The whole screen's ordering, in one place.
+   *
+   * Within "butuh tindakan" and "menunggu", soonest first — the thing that runs
+   * out of time first is the thing to do first. Within "sudah selesai", most
+   * recent first, because history is read backwards.
+   */
+  const sections = useMemo(() => {
+    const grouped: Record<Bucket, Booking[]> = { action: [], waiting: [], done: [] };
+    bookings.forEach((booking) => grouped[bucketOf(booking)].push(booking));
+
+    grouped.action.sort((a, b) => startTimeOf(a) - startTimeOf(b));
+    grouped.waiting.sort((a, b) => startTimeOf(a) - startTimeOf(b));
+    grouped.done.sort((a, b) => startTimeOf(b) - startTimeOf(a));
+
+    return SECTIONS.map((section) => ({ ...section, rows: grouped[section.bucket] }));
+  }, [bookings]);
+
+  const isEmpty = bookings.length === 0;
+
+  const handleReschedule = async (startTime: Date, endTime: Date) => {
+    const booking = rescheduleBooking;
+    if (!booking) return;
+
+    try {
+      const supabase = createClient();
+
+      // Update the booking status to pending
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          status: 'pending',
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+
+      if (updateError) throw updateError;
+
+      // Look up the streamer's user (auth) uuid — notifications.user_id is a
+      // uuid, not the numeric streamers.id. Skip gracefully if not found.
+      const { data: streamerUser } = await supabase
+        .from('streamers')
+        .select('user_id')
+        .eq('id', booking.streamer_id)
+        .single();
+
+      if (streamerUser?.user_id) {
+        const { error: notificationError } = await supabase.from('notifications').insert({
+          user_id: streamerUser.user_id,
+          type: 'booking_request',
+          message: `Client has rescheduled booking #${booking.id} to ${format(startTime, 'MMM d, yyyy HH:mm')} - ${format(endTime, 'HH:mm')}. Please review and accept/reject.`,
+          booking_id: booking.id,
+          created_at: new Date().toISOString(),
+          is_read: false,
+          streamer_id: booking.streamer_id,
+        });
+
+        if (notificationError) {
+          console.error('Error creating notification:', notificationError);
+        }
       }
-    });
-  }, [bookings, activeTab]);
 
-  // Update the pagination to use filtered bookings
-  const indexOfLastBooking = currentPage * bookingsPerPage;
-  const indexOfFirstBooking = indexOfLastBooking - bookingsPerPage;
-  const currentBookings = filteredBookings.slice(indexOfFirstBooking, indexOfLastBooking);
+      setRescheduleBooking(null);
+      toast.success('Pengajuan reschedule terkirim');
 
-  // Add grouping by date functionality
-  const groupedBookings = useMemo(() => {
-    const groups = filteredBookings.reduce((acc, booking) => {
-      const dateKey = format(new Date(booking.start_time), 'yyyy-MM-dd');
-      if (!acc[dateKey]) {
-        acc[dateKey] = {
-          date: new Date(booking.start_time),
-          bookings: []
-        };
-      }
-      acc[dateKey].bookings.push(booking);
-      return acc;
-    }, {} as Record<string, { date: Date; bookings: Booking[] }>);
-    
-    // Sort bookings by start time within each day group
-    Object.values(groups).forEach(group => {
-      group.bookings.sort((a, b) => {
-        const aTime = new Date(a.start_time).getTime();
-        const bTime = new Date(b.start_time).getTime();
-        return aTime - bTime; // Sort from earliest to latest
-      });
-    });
-    
-    // Convert to array and sort by date
-    return Object.values(groups).sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [filteredBookings]);
+      setBookings((prev) =>
+        prev.map((item) =>
+          item.id === booking.id ? { ...item, status: 'pending' } : item,
+        ),
+      );
 
-  // Only paginate the grouped bookings
-  const currentGroupedBookings = useMemo(() => {
-    const allGroups = [...groupedBookings];
-    const startIndex = (currentPage - 1) * 3; // Show 3 days per page
-    const endIndex = startIndex + 3;
-    return allGroups.slice(startIndex, endIndex);
-  }, [groupedBookings, currentPage]);
-
-  // Add state for collapsed day sections
-  const [collapsedDays, setCollapsedDays] = useState<Record<string, boolean>>({});
-
-  // Toggle collapse for a specific day
-  const toggleDayCollapse = (dateKey: string) => {
-    setCollapsedDays(prev => ({
-      ...prev,
-      [dateKey]: !prev[dateKey]
-    }));
+      window.location.reload();
+    } catch (err) {
+      console.error('Error rescheduling booking:', err);
+      toast.error('Gagal mengajukan reschedule');
+    }
   };
 
-  const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
+  const handleCancel = async (reason: string) => {
+    const booking = cancelBooking;
+    if (!booking) return;
 
-  const handleStatusUpdate = (bookingId: number, newStatus: string) => {
-    setBookings(prevBookings => 
-      prevBookings.map(booking => 
-        booking.id === bookingId 
-          ? { ...booking, status: newStatus }
-          : booking
-      )
-    );
+    setIsSubmittingCancel(true);
+    try {
+      const supabase = createClient();
+
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({
+          status: 'cancelled',
+          reason,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', booking.id);
+
+      if (updateError) throw updateError;
+
+      // Look up the streamer's user (auth) uuid — notifications.user_id is a
+      // uuid, not the numeric streamers.id. Skip gracefully if not found.
+      const { data: streamerUser } = await supabase
+        .from('streamers')
+        .select('user_id')
+        .eq('id', booking.streamer_id)
+        .single();
+
+      if (streamerUser?.user_id) {
+        const { error: notificationError } = await supabase.from('notifications').insert({
+          user_id: streamerUser.user_id,
+          message: `Client telah membatalkan permintaan reschedule dengan alasan: ${reason}`,
+          type: 'booking_cancelled',
+          booking_id: booking.id,
+          created_at: new Date().toISOString(),
+          is_read: false,
+        });
+
+        if (notificationError) {
+          console.error('Error creating notification:', notificationError);
+        }
+      }
+
+      setCancelBooking(null);
+      toast.success('Booking berhasil dibatalkan');
+
+      setBookings((prev) =>
+        prev.map((item) =>
+          item.id === booking.id ? { ...item, status: 'cancelled' } : item,
+        ),
+      );
+    } catch (err) {
+      console.error('Error cancelling booking:', err);
+      toast.error('Gagal membatalkan booking');
+    } finally {
+      setIsSubmittingCancel(false);
+    }
   };
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-surface-tint flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="min-h-screen bg-[#faf96f]/10 p-8">
-      <div className="max-w-3xl mx-auto bg-surface rounded-panel p-6">
-        <p className="text-red-500 text-sm">Error: {error}</p>
-      </div>
-    </div>;
-  }
-
-  const tabs = ['Upcoming', 'Pending', 'Recurring', 'Past', 'Cancelled'];
 
   return (
-    <div className="min-h-screen bg-surface-tint p-4 md:p-8">
-      <div className="max-w-5xl mx-auto bg-surface rounded-panel relative">
-        {isRefreshing && (
-          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-panel flex items-center justify-center z-10">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          </div>
-        )}
-
-        {showDeliveryInfo && selectedBooking && (
-          <>
-            {/* Dark overlay backdrop */}
-            <div 
-              className="fixed inset-0 bg-black/50 transition-opacity z-40"
-              onClick={() => setShowDeliveryInfo(false)}
-            />
-            
-            {/* Centered card */}
-            <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-              <div className="bg-surface rounded-panel w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
-                <div className="p-4">
-                  {/* Header with close button */}
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="relative w-10 h-10 rounded-lg overflow-hidden">
-                        <Image
-                          src={selectedBooking.streamer.image_url || '/default-avatar.png'}
-                          alt="Streamer"
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-ink">
-                          {selectedBooking.streamer.first_name} {selectedBooking.streamer.last_name?.charAt(0)}.
-                        </h3>
-                        <p className="text-sm text-ink-soft">
-                          Rp {selectedBooking.price?.toLocaleString('id-ID')}/jam
-                        </p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setShowDeliveryInfo(false)}
-                      className="p-2 rounded-full hover:bg-surface-tint transition-colors"
-                    >
-                      <XCircle className="h-5 w-5 text-ink-faint" />
-                    </button>
-                  </div>
-
-                  {/* Booking ID */}
-                  <div className="flex items-center gap-2 mb-4 bg-blue-50 p-2 rounded-lg">
-                    <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                      <FileText className="h-3.5 w-3.5 text-blue-600" />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-ink-muted">Booking ID:</span>
-                      <span className="text-sm font-medium text-ink">#{selectedBooking.id}</span>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
-                        Accepted
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Address section with improved styling */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-blue-600">
-                      <MapPin className="h-4 w-4" />
-                      <h4 className="font-medium">Alamat Pengiriman</h4>
-                    </div>
-                    <div className="bg-surface-tint p-3 rounded-lg space-y-2">
-                      <p className="font-medium text-ink">{selectedBooking.streamer.full_address}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(selectedBooking.streamer.full_address);
-                        toast.success("Alamat berhasil disalin!");
-                      }}
-                      className="w-full mt-4 py-2.5 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 font-medium"
-                    >
-                      <Copy className="h-4 w-4" />
-                      Salin Alamat
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-
-        <div className="p-6 border-b">
-          <div className="flex items-center gap-4">
-            <Button 
-              onClick={() => router.push('/protected')} 
-              variant="ghost" 
-              size="lg"
-              className="text-ink-muted hover:text-ink p-0"
+    <div className="min-h-screen bg-canvas">
+      <main className="mx-auto w-full max-w-[880px] px-4 py-8 sm:px-6 sm:py-12">
+        <header className="flex flex-wrap items-end gap-x-6 gap-y-4">
+          <div className="min-w-0 flex-1">
+            <button
+              type="button"
+              onClick={() => router.push('/protected')}
+              className="-ml-1 inline-flex items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
             >
-              <ChevronLeft className="w-6 h-6" />
-            </Button>
-            <div className="flex items-center justify-between flex-grow">
-              <h1 className="text-2xl font-semibold">Salda Booking Management</h1>
-              <Button 
-                onClick={refreshBookings} 
-                size="sm" 
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Refresh
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="p-6">
-          <div className="mb-6">
-            <p className="text-ink-muted">Manage and track all your Salda streaming sessions in one place.</p>
+              <ChevronLeft className="h-4 w-4" />
+              Cari host
+            </button>
+            <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
+              Booking saya
+            </h1>
+            <p className="mt-2 text-lede text-ink-soft">
+              Yang butuh tindakan kamu ada di atas.
+            </p>
           </div>
 
-          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-            {tabs.map((tab) => (
-              <Button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                variant={activeTab === tab ? "default" : "outline"}
-                className={`${
-                  activeTab === tab 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'hover:bg-blue-50 border-blue-200'
-                } rounded-full px-6`}
+          <Button
+            variant="quiet"
+            size="action-compact"
+            onClick={refreshBookings}
+            disabled={isRefreshing || isLoading}
+            className="shrink-0 max-sm:w-full"
+          >
+            <RefreshCw
+              className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`}
+            />
+            Muat ulang
+          </Button>
+        </header>
+
+        {isLoading ? (
+          <div className="mt-8 overflow-hidden rounded-frame border border-hairline bg-surface">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 border-b border-hairline-soft px-5 py-4 last:border-b-0"
               >
-                {tab}
-              </Button>
+                <div className="h-10 w-10 shrink-0 animate-pulse rounded-full bg-surface-deep" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="h-3.5 w-1/3 animate-pulse rounded-chip bg-surface-deep" />
+                  <div className="h-3 w-2/3 animate-pulse rounded-chip bg-surface-tint" />
+                </div>
+                <div className="h-3.5 w-20 shrink-0 animate-pulse rounded-chip bg-surface-deep" />
+              </div>
             ))}
           </div>
-
-          <div className="space-y-8">
-            {currentGroupedBookings.length > 0 ? (
-              currentGroupedBookings.map((group) => {
-                const dateKey = format(group.date, 'yyyy-MM-dd');
-                const isCollapsed = collapsedDays[dateKey];
-                
-                return (
-                  <div key={dateKey} className="bg-surface rounded-panel border overflow-hidden">
-                    {/* Day Header with expand/collapse */}
-                    <button 
-                      onClick={() => toggleDayCollapse(dateKey)}
-                      className="w-full text-left bg-surface-tint p-4 flex items-center justify-between cursor-pointer border-b transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="bg-surface rounded-full p-1.5 w-10 h-10 flex items-center justify-center">
-                          <Calendar className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-ink">
-                            {format(group.date, 'EEEE, MMMM d, yyyy')}
-                          </h3>
-                          <p className="text-sm text-ink-muted">
-                            {group.bookings.length} booking{group.bookings.length !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <div className={`transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}>
-                        <ChevronDown className="w-5 h-5 text-ink-soft" />
-                      </div>
-                    </button>
-                    
-                    {/* Bookings for this day */}
-                    {!isCollapsed && (
-                      <div className="divide-y">
-                        {group.bookings.map((booking) => (
-                          <div key={booking.id} className="p-4 hover:bg-surface-tint transition-colors">
-                            <div className="flex justify-between items-start mb-4">
-                              <div className="flex items-center gap-4">
-                                <Image
-                                  src={booking.streamer?.image_url || '/default-avatar.png'}
-                                  alt={`${booking.streamer?.first_name ?? ''} ${booking.streamer?.last_name ?? ''}`}
-                                  width={60}
-                                  height={60}
-                                  className="rounded-full"
-                                />
-                                <div>
-                                  <h3 className="font-medium text-lg">{`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}</h3>
-                                  <p className="text-ink-muted text-sm">{booking.platform}</p>
-                                </div>
-                              </div>
-                              <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1.5 ${getStatusColor(booking.status)}`}>
-                                {getStatusIcon(booking.status)}
-                                {booking.status}
-                              </span>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                              <div className="flex items-center gap-2">
-                                <Clock className="w-5 h-5 text-blue-600" />
-                                <div>
-                                  <p className="text-sm text-ink-muted">Schedule</p>
-                                  <p className="font-medium">
-                                    {formatBookingTime(booking.start_time, booking.timezone)} - {formatBookingTime(booking.end_time, booking.timezone)}
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Star className="w-5 h-5 text-yellow-400" />
-                                <div>
-                                  <p className="text-sm text-ink-muted">Streamer Rating</p>
-                                  <p className="font-medium">{isNaN(parseFloat(booking.streamer?.rating as unknown as string)) ? 'N/A' : parseFloat(booking.streamer?.rating as unknown as string).toFixed(1)}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <DollarSign className="w-5 h-5 text-blue-600" />
-                                <div>
-                                  <p className="text-sm text-ink-muted">Session Price</p>
-                                  <div className="flex flex-col">
-                                    {booking.voucher_usage?.[0]?.discount_applied ? (
-                                      <>
-                                        <span className="line-through text-ink-faint text-sm">
-                                          Rp {booking.price.toLocaleString()}
-                                        </span>
-                                        <span className="font-medium text-green-600">
-                                          Rp {(booking.voucher_usage[0].final_price).toLocaleString()}
-                                        </span>
-                                      </>
-                                    ) : (
-                                      <span className="font-medium text-ink">
-                                        Rp {booking.price.toLocaleString()}
-                                      </span>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="flex gap-2 justify-end">
-                              {booking.status.toLowerCase() === 'completed' && !booking.items_received && (
-                                <Button 
-                                  variant="default"
-                                  size="sm" 
-                                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                                  onClick={() => setIsRatingModalOpen(true)}
-                                >
-                                  Rate Session
-                                </Button>
-                              )}
-                              {booking.status.toLowerCase() === 'accepted' && (
-                                <Button
-                                  variant="default"
-                                  size="sm"
-                                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                                  onClick={() => {
-                                    setSelectedBooking(booking);
-                                    setShowDeliveryInfo(true);
-                                  }}
-                                >
-                                  <MapPin className="h-4 w-4 mr-2" />
-                                  Lihat Alamat
-                                </Button>
-                              )}
-                              {booking.status === 'reschedule_requested' && (
-                                <>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-red-500 border-red-500 hover:bg-red-50"
-                                    onClick={() => setIsCancelModalOpen(true)}
-                                  >
-                                    Cancel Request
-                                  </Button>
-                                  <Button
-                                    variant="default"
-                                    size="sm"
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                    onClick={() => setIsRescheduleModalOpen(true)}
-                                  >
-                                    Modify Schedule
-                                  </Button>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-ink-soft">No streaming sessions found for this category.</p>
-              </div>
+        ) : error ? (
+          <div className="mt-8 rounded-frame border border-hairline bg-surface px-5 py-12 text-center">
+            <p className="text-copy font-medium text-ink">{error}</p>
+            <p className="mx-auto mt-1 max-w-sm text-meta text-ink-soft">
+              Coba muat ulang sebentar lagi. Booking kamu tidak hilang.
+            </p>
+            <div className="mt-5 flex justify-center">
+              <Button variant="brand" size="action-compact" onClick={refreshBookings}>
+                Muat ulang
+              </Button>
+            </div>
+          </div>
+        ) : isEmpty ? (
+          <div className="mt-8 rounded-frame border border-hairline bg-surface px-5 py-16 text-center">
+            <p className="font-serif text-title font-semibold text-ink">
+              Belum ada booking
+            </p>
+            <p className="mx-auto mt-2 max-w-sm text-meta text-ink-soft">
+              Pilih host, tandai jamnya, dan sesi pertama kamu muncul di sini.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <Button
+                variant="brand"
+                size="action-compact"
+                onClick={() => router.push('/protected')}
+              >
+                Cari host
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-8 space-y-6">
+            {sections.map((section, index) =>
+              section.rows.length === 0 ? null : (
+                <section
+                  key={section.bucket}
+                  className="overflow-hidden rounded-frame border border-hairline bg-surface"
+                >
+                  <SectionHeading
+                    index={index + 1}
+                    title={section.title}
+                    description={section.description}
+                    count={section.rows.length}
+                  />
+                  <ul>
+                    {section.rows.map((booking) => (
+                      <BookingRow
+                        key={booking.id}
+                        booking={booking}
+                        onShowAddress={setAddressBooking}
+                        onRate={setRatingBooking}
+                        onReschedule={setRescheduleBooking}
+                        onCancel={setCancelBooking}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              ),
             )}
           </div>
+        )}
+      </main>
 
-          <div className="mt-6 flex justify-between items-center">
-            <Button
-              onClick={() => paginate(currentPage - 1)}
-              disabled={currentPage === 1}
-              variant="outline"
-              className="border-blue-200 hover:bg-blue-50"
-            >
-              <ChevronLeft className="h-5 w-5" />
-            </Button>
-            <span className="text-sm font-medium">
-              Page {currentPage} of {Math.max(1, Math.ceil(groupedBookings.length / 3))}
-            </span>
-            <Button
-              onClick={() => paginate(currentPage + 1)}
-              disabled={currentPage >= Math.ceil(groupedBookings.length / 3)}
-              variant="outline"
-              className="border-blue-200 hover:bg-blue-50"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
-      </div>
+      <AddressDialog booking={addressBooking} onClose={() => setAddressBooking(null)} />
+
+      {ratingBooking && (
+        <RatingModal
+          isOpen
+          onClose={() => setRatingBooking(null)}
+          bookingId={ratingBooking.id}
+          streamerId={ratingBooking.streamer?.id ?? 0}
+          streamerName={hostName(ratingBooking)}
+          streamerImage={ratingBooking.streamer?.image_url ?? ''}
+          startDate={ratingBooking.start_time}
+          endDate={ratingBooking.end_time}
+          onSubmit={() => {
+            setRatingBooking(null);
+            fetchClientData();
+          }}
+        />
+      )}
+
+      {rescheduleBooking && (
+        <RescheduleTimeModal
+          isOpen
+          onClose={() => setRescheduleBooking(null)}
+          onConfirm={handleReschedule}
+          booking={rescheduleBooking}
+        />
+      )}
+
+      <CancelConfirmationModal
+        isOpen={!!cancelBooking}
+        onClose={() => setCancelBooking(null)}
+        onConfirm={handleCancel}
+        isSubmitting={isSubmittingCancel}
+      />
     </div>
   );
 }
