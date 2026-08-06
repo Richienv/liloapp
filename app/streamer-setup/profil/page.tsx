@@ -5,6 +5,7 @@ import { ArrowLeft, Store } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { getCityBySlug, resolveCity } from "@/lib/cities";
 import { suggestUsername } from "@/lib/username";
+import { markProfileSetupStarted } from "../actions";
 import { ProfileForm } from "./profile-form";
 
 export const metadata = {
@@ -61,6 +62,13 @@ export default async function StreamerSetupProfilePage() {
       </main>
     );
   }
+
+  // Reaching this line is the definition of "started setup": authenticated, not
+  // a brand, looking at the form. There is no write to hang the event off — the
+  // host has not typed anything yet — so the page view is the signal. Awaited
+  // rather than fired-and-forgotten because a serverless request can be torn
+  // down the moment the response is flushed, which would drop the insert.
+  await markProfileSetupStarted();
 
   // Smart default #1: a username the host never has to invent. Their own name
   // is almost always what they would have typed, and it arrives editable.

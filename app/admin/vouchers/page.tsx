@@ -47,6 +47,7 @@ import * as z from "zod";
 import { Dialog as HeadlessUIDialog } from '@headlessui/react'
 import { PlusIcon } from '@heroicons/react/24/outline'
 import { Database } from '@/types/supabase'
+import { createVoucher } from './actions'
 
 interface BaseVoucher {
   id: string;
@@ -139,6 +140,14 @@ const voucherFormSchema = z.object({
     .max(1000, "Maximum quantity is 1,000"),
   expires_at: z.string()
     .min(1, "Expiry date is required")
+    // The server rejects a non-future date, and today counts as past: a date-only
+    // value is midnight UTC, which has already gone by everywhere in Indonesia.
+    // Catching it here means the admin sees it under the field instead of as a
+    // failed submit.
+    .refine(
+      (value) => !Number.isNaN(new Date(value).getTime()) && new Date(value).getTime() > Date.now(),
+      "Expiry date must be in the future"
+    )
 });
 
 type FormData = z.infer<typeof voucherFormSchema>;
@@ -573,33 +582,34 @@ export default function VouchersPage() {
     setFilteredVouchers(filtered);
   };
 
+  // Creation goes through the server action, never the browser client: `vouchers`
+  // has RLS on with no insert policy, and an admin-gated service-role write is
+  // the only path that both works and cannot be replayed by whoever holds the
+  // anon key. See app/admin/vouchers/actions.ts.
   const handleCreateVoucher = async (data: FormData) => {
     if (isCreating) return;
-    
+
     setIsCreating(true);
     setError(null);
-    const supabase = createClient();
 
     try {
-      const { data: insertedData, error } = await supabase
-        .from('vouchers')
-        .insert({
-          ...data,
-          code: data.code.toUpperCase(),
-          remaining_quantity: data.total_quantity,
-          is_active: true
-        })
-        .select()
-        .single();
+      const result = await createVoucher({
+        code: data.code.toUpperCase(),
+        description: data.description,
+        discount_amount: data.discount_amount,
+        total_quantity: data.total_quantity,
+        expires_at: data.expires_at
+      });
 
-      if (error) throw error;
-
-      if (!insertedData) {
-        throw new Error('No data returned after insertion');
+      if (!result.success || !result.voucher) {
+        const message = result.error || 'Failed to create voucher';
+        setError(message);
+        toast.error(message);
+        return;
       }
 
       // Initialize the new voucher with analytics
-      const newVoucherWithAnalytics = createDefaultVoucherWithAnalytics(insertedData);
+      const newVoucherWithAnalytics = createDefaultVoucherWithAnalytics(result.voucher);
       setVouchers(prev => [newVoucherWithAnalytics, ...prev]);
       toast.success('Voucher created successfully');
       form.reset();

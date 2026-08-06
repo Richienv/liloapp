@@ -22,6 +22,8 @@ import { suggestUsername, validateUsername, withSuffix } from "@/lib/username";
 import { normalizePhone, PHONE_INVALID_MESSAGE } from "@/lib/phone";
 import { resolveCity } from "@/lib/cities";
 import { nextPathFor, ROLE_PICKER_PATH } from "@/lib/auth-redirect";
+import { ONBOARDING_EVENTS, trackEvent } from "@/lib/analytics";
+import { absoluteUrl } from "@/lib/site";
 
 // Add this helper function at the top of the file
 function sanitizeFileName(fileName: string): string {
@@ -41,6 +43,26 @@ const GENERIC_ERROR_MESSAGE = "Terjadi kesalahan. Silakan coba lagi.";
  * that escapes this origin during parsing is self-evidently not our path.
  */
 const SAFE_REDIRECT_BASE = "https://redirect-base.invalid";
+
+/**
+ * Where a confirmation email has to send someone back to.
+ *
+ * When `emailRedirectTo` is omitted, Supabase builds the link in the
+ * confirmation email from the project's **Site URL** dashboard field — and that
+ * field still says `salda.id`, a domain that has expired (see the note at the
+ * top of `next.config.js`). Every "confirm your email" link therefore pointed at
+ * a host that does not resolve, so with confirmation switched on a new account
+ * could never be activated. Passing the value explicitly moves that decision out
+ * of a dashboard field nobody can see from the code and onto the same origin the
+ * rest of the app publishes, `lib/site.ts`.
+ *
+ * `/auth/callback` and nothing else: it is the route that already exchanges the
+ * `code` Supabase appends and then hands off to `nextPathFor`, so a freshly
+ * confirmed account lands on the step it actually needs rather than on a page it
+ * cannot use yet. Deliberately no query string — Supabase matches this against
+ * its Redirect URLs allowlist, and a bare path is the shape that list expects.
+ */
+const EMAIL_CONFIRM_REDIRECT_URL = absoluteUrl("/auth/callback");
 
 /**
  * Split a submitted city into the two columns that store it.
@@ -312,6 +334,9 @@ export async function createAccountAction(
         email,
         password,
         options: {
+          // Never let the confirmation link fall back to the dashboard's Site
+          // URL — see EMAIL_CONFIRM_REDIRECT_URL.
+          emailRedirectTo: EMAIL_CONFIRM_REDIRECT_URL,
           data: {
             first_name: firstName,
             last_name: lastName,
@@ -357,6 +382,23 @@ export async function createAccountAction(
         await deleteOrphanedAuthUser(authData.user.id);
         return { success: false, error: "Gagal membuat akun. Silakan coba lagi." };
       }
+
+      // Stage 1 of the funnel, logged only once the account really exists —
+      // after the rollback above, so a signup that was unwound never shows up as
+      // someone who entered the funnel.
+      //
+      // The id is passed explicitly because there may be no session at all yet:
+      // with "Confirm email" enabled `signUp` returns a user and no cookies, so
+      // `auth.uid()` is null and an event that relied on it would be attributed
+      // to nobody. Awaited because this returns straight into a client-side
+      // navigation and an unawaited insert can be torn down with the request;
+      // `trackEvent` never rejects, so a failed analytics write cannot fail a
+      // signup. No email, name or phone in `props` — ids and enums only.
+      await trackEvent(
+        ONBOARDING_EVENTS.ACCOUNT_CREATED,
+        { method: "email" },
+        authData.user.id,
+      );
 
       return { success: true, redirectTo: ROLE_PICKER_PATH };
     } catch (error) {
@@ -563,6 +605,14 @@ export async function selectRoleAction(
         console.error("Select role: user_type is still null after a successful update");
         return { success: false, error: GENERIC_ERROR_MESSAGE };
       }
+    } else {
+      // Stage 2, logged on the transition only: this is the request on which
+      // `user_type` stopped being NULL. A re-submitted picker takes the
+      // `currentRole` branch instead, and the submit that lost the race above
+      // falls into the empty-`updated` branch — so one account contributes one
+      // role_selected however many times the form is sent. The role is an enum,
+      // which is the only kind of thing `props` is allowed to carry.
+      await trackEvent(ONBOARDING_EVENTS.ROLE_SELECTED, { role }, user.id);
     }
   } else if (cityUpdate) {
     // The role was already 'client' — a re-submitted picker, or an account that
@@ -692,6 +742,9 @@ export async function signUpAction(formData: FormData): Promise<SignUpResponse> 
       email,
       password,
       options: {
+        // Legacy or not, a confirmation email from this form still has to point
+        // at a domain that resolves — see EMAIL_CONFIRM_REDIRECT_URL.
+        emailRedirectTo: EMAIL_CONFIRM_REDIRECT_URL,
         data: {
           first_name: firstName,
           last_name: lastName,
@@ -866,9 +919,12 @@ export const signInAction = async (formData: FormData) => signInWithPassword(for
 export const forgotPasswordAction = async (formData: FormData) => {
   const email = formData.get("email")?.toString();
   const supabase = createClient();
-  // Prefer the configured site URL; fall back to the request Origin header.
-  // A configured value guarantees the redirect target is one Supabase allows.
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || headers().get("origin");
+  // Same origin source as the confirmation link, for the same reason: a
+  // recovery email that Supabase cannot match against its allowlist falls back
+  // to the dashboard's Site URL, which is the expired domain. This also removes
+  // the case where the Origin header is absent and the redirect was built as the
+  // literal string "null/auth/callback".
+  const callbackTarget = `${EMAIL_CONFIRM_REDIRECT_URL}?redirect_to=/reset-password`;
   // Same treatment as `redirect_to` on sign-in: this value is attacker-supplied
   // and lands the user somewhere immediately after a genuine reset email goes
   // out — the most credible possible moment to phish the reset code.
@@ -879,7 +935,7 @@ export const forgotPasswordAction = async (formData: FormData) => {
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirect_to=/reset-password`,
+    redirectTo: callbackTarget,
   });
 
   if (error) {
@@ -1236,6 +1292,9 @@ export async function streamerSignUpAction(formData: FormData): Promise<SignUpRe
         email: formData.get('email') as string,
         password: formData.get('password') as string,
         options: {
+          // Legacy or not, a confirmation email from this form still has to
+          // point at a domain that resolves — see EMAIL_CONFIRM_REDIRECT_URL.
+          emailRedirectTo: EMAIL_CONFIRM_REDIRECT_URL,
           data: {
             first_name: firstName,
             last_name: lastName,

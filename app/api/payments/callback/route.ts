@@ -30,8 +30,8 @@ export async function POST(request: Request) {
       console.error('Error parsing request body:', error);
       return new NextResponse(
         JSON.stringify({
-          error: 'Invalid request body',
-          details: 'Request body must be valid JSON'
+          error: 'Permintaan tidak valid',
+          details: 'Data yang dikirim tidak bisa dibaca. Coba muat ulang halaman ini.'
         }),
         { 
           status: 400,
@@ -48,8 +48,8 @@ export async function POST(request: Request) {
       console.error('Missing required data in callback:', { result, metadata });
       return new NextResponse(
         JSON.stringify({
-          error: 'Missing required data',
-          details: 'Both result and metadata are required'
+          error: 'Data pemesanan tidak lengkap',
+          details: 'Detail pembayaran dan pemesanan tidak terkirim. Coba muat ulang halaman ini.'
         }),
         { 
           status: 400,
@@ -80,8 +80,8 @@ export async function POST(request: Request) {
       console.error('Payment verification failed — unknown or unverifiable order:', orderId);
       return new NextResponse(
         JSON.stringify({
-          error: 'Payment verification failed',
-          details: 'The transaction could not be verified with the payment provider.',
+          error: 'Pembayaran tidak bisa diverifikasi',
+          details: 'Kami tidak menemukan transaksi ini di Midtrans. Kalau kamu merasa sudah membayar, hubungi tim Salda.',
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
@@ -91,8 +91,8 @@ export async function POST(request: Request) {
       console.warn('Payment reported as failed by Midtrans:', verified.transactionStatus, orderId);
       return new NextResponse(
         JSON.stringify({
-          error: 'Payment not completed',
-          details: `Transaction status is "${verified.transactionStatus}".`,
+          error: 'Pembayaran belum selesai',
+          details: `Status transaksinya "${verified.transactionStatus}", jadi pesanan belum bisa dibuat.`,
         }),
         { status: 402, headers: { 'Content-Type': 'application/json' } }
       );
@@ -108,28 +108,39 @@ export async function POST(request: Request) {
       });
       return new NextResponse(
         JSON.stringify({
-          error: 'Payment amount mismatch',
-          details: 'The paid amount does not match the booking amount.',
+          error: 'Nominal pembayaran tidak cocok',
+          details: 'Jumlah yang dibayar berbeda dengan total pesanan. Hubungi tim Salda sebelum membayar lagi.',
         }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     try {
+      // Safe to reach more than once for the same order: Snap's onSuccess fires
+      // again on a double-click, a retried fetch or a reload of this page, and
+      // createBookingAfterPayment() answers a repeat with the bookings it
+      // already made instead of making a second set.
       const bookings = await createBookingAfterPayment(result, metadata);
       console.log('Bookings created successfully:', JSON.stringify(bookings, null, 2));
       return NextResponse.json(bookings);
     } catch (error) {
-      console.error('Error in createBookingAfterPayment:', error);
-      
-      // Return a more detailed error response with proper headers
+      // The money is already captured at this point, so the full diagnosis
+      // belongs in the server log where an operator can act on it — not in a
+      // response body the browser renders. `details` is what
+      // app/booking-detail shows the user, so it stays a plain Indonesian
+      // sentence and carries no internals.
+      console.error('Error in createBookingAfterPayment for order', orderId, error);
+
       return new NextResponse(
         JSON.stringify({
-          error: 'Failed to create booking',
-          details: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined
+          error: 'Pesanan gagal dibuat',
+          details:
+            'Pembayaranmu sudah diterima, tetapi pesanannya gagal dicatat. ' +
+            'Jangan bayar lagi — hubungi tim Salda dengan menyebutkan kode pesanan ' +
+            `${orderId} dan kami akan menyelesaikannya.`,
+          orderId,
         }),
-        { 
+        {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         }
@@ -137,18 +148,16 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     console.error('Payment callback error:', error);
-    
-    // Return a more detailed error response with proper headers
+
     return new NextResponse(
       JSON.stringify({
-        error: 'Payment callback failed',
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        error: 'Callback pembayaran gagal',
+        details: 'Terjadi kesalahan saat memproses pembayaran. Coba muat ulang halaman ini.',
       }),
-      { 
+      {
         status: 500,
         headers: { 'Content-Type': 'application/json' }
       }
     );
   }
-} 
+}

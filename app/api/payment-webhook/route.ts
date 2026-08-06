@@ -5,10 +5,162 @@ import { createNotification } from "@/services/notification-service";
 import { formatInTimeZone } from 'date-fns-tz';
 import crypto from 'crypto';
 
-// Midtrans transaction_status values that mean the money is actually captured.
-const PAID_STATUSES = new Set(['settlement', 'capture']);
-// Values that mean the payment will never complete.
-const FAILED_STATUSES = new Set(['deny', 'cancel', 'expire', 'failure']);
+/**
+ * ============================================================================
+ * PAYMENT STATE MACHINE
+ * ============================================================================
+ *
+ * Midtrans notifications are neither ordered nor delivered once. A QRIS or
+ * virtual-account payment genuinely produces `pending` and then `settlement`,
+ * every notification is retried until it gets a 200, and a retry of an older
+ * notification can land after a newer one. So the incoming status alone cannot
+ * decide anything — only the pair (what we already recorded, what just arrived)
+ * can.
+ *
+ *                             INCOMING
+ *  STORED    | pending   | paid            | failed          | refund/chargeback
+ *  ----------+-----------+-----------------+-----------------+------------------
+ *  unknown   | record    | record + notify | record + cancel | record + cancel
+ *  pending   | record    | record + notify | record + cancel | record + cancel
+ *  paid      | IGNORE    | ignore (repeat) | IGNORE          | record + cancel
+ *  failed    | IGNORE    | record + notify | ignore (repeat) | record
+ *  refunded  | IGNORE    | IGNORE          | IGNORE          | ignore (repeat)
+ *
+ * The rules behind the table:
+ *
+ *  1. A settled payment is only movable by a refund or a chargeback. Nothing
+ *     else means the money left again.
+ *
+ *  2. `pending` never overwrites a terminal state. It used to: the old
+ *     idempotency check only short-circuited on (paid && alreadyPaid) or
+ *     (failed && alreadyFailed), and `pending` is neither, so a retried
+ *     `pending` fell through and rewrote a settled payment back to pending.
+ *
+ *  3. A late `cancel`/`expire` after settlement is ignored outright. It used to
+ *     pass `isFailed && !alreadyFailed`, overwrite the status AND cancel every
+ *     booking still in 'pending' — which is precisely the status a paid booking
+ *     sits in while it waits for the streamer to accept. A paid booking became
+ *     a cancelled one, silently.
+ *
+ *  4. failed -> paid IS allowed: money that actually arrives outranks a
+ *     previous "this will never complete" (Midtrans can settle a VA transfer
+ *     that races its own expiry). The bookings may already have been cancelled
+ *     by rule 3's legitimate first pass, so this logs for reconciliation rather
+ *     than silently un-cancelling work a streamer has already been told is off.
+ *
+ *  5. A partial refund/chargeback records the status but does not cancel: part
+ *     of the money is still with us and the booking may well stand.
+ */
+
+type PaymentState = 'unknown' | 'pending' | 'paid' | 'failed' | 'refunded';
+
+// Money is captured.
+const PAID_STATUSES = new Set(['settlement', 'capture', 'success', 'paid', 'completed']);
+// This payment will never complete.
+const FAILED_STATUSES = new Set(['deny', 'cancel', 'expire', 'failure', 'failed']);
+// Money that was captured has gone back.
+const REFUND_STATUSES = new Set([
+  'refund', 'partial_refund', 'chargeback', 'partial_chargeback', 'refunded',
+]);
+// ...and of those, the ones where ALL of it went back.
+const FULL_REVERSAL_STATUSES = new Set(['refund', 'chargeback', 'refunded']);
+
+// Bookings that are still only waiting to be paid for / accepted. A booking a
+// streamer has already accepted, completed or is live on is never touched here.
+const UNACCEPTED_BOOKING_STATUSES = ['pending', 'payment_pending'];
+
+/** Rank so the strongest signal across the two stored columns wins. */
+const STATE_RANK: Record<PaymentState, number> = {
+  unknown: 0,
+  pending: 1,
+  failed: 2,
+  paid: 3,
+  refunded: 4,
+};
+
+function classify(status: unknown, fraudStatus?: string): PaymentState {
+  if (typeof status !== 'string' || status === '') return 'unknown';
+  const value = status.toLowerCase();
+
+  if (REFUND_STATUSES.has(value)) return 'refunded';
+  // A `capture` is only money in hand once fraud review accepts it; a
+  // `challenge` is still undecided, so it counts as pending, not paid.
+  if (value === 'capture') return fraudStatus === 'accept' ? 'paid' : 'pending';
+  if (PAID_STATUSES.has(value)) return 'paid';
+  if (FAILED_STATUSES.has(value)) return 'failed';
+  return 'pending';
+}
+
+/**
+ * What we already believe about this payment. `status` and `payment_status` are
+ * written together but can disagree on a row half-updated by an older build, so
+ * take the strongest of the two: never downgrade our belief about money.
+ */
+function storedState(payment: { status: unknown; payment_status: unknown }): PaymentState {
+  const a = classify(payment.status);
+  const b = classify(payment.payment_status);
+  return STATE_RANK[a] >= STATE_RANK[b] ? a : b;
+}
+
+type Effect = 'none' | 'notify_paid' | 'cancel_unpaid' | 'cancel_reversed';
+
+interface Transition {
+  apply: boolean;
+  effect: Effect;
+  reason: string;
+}
+
+const IGNORE = (reason: string): Transition => ({ apply: false, effect: 'none', reason });
+
+/** The table above, as code. */
+function decideTransition(
+  stored: PaymentState,
+  incoming: PaymentState,
+  incomingStatus: string
+): Transition {
+  if (incoming === 'refunded') {
+    if (stored === 'refunded') return IGNORE('refund already recorded');
+    return {
+      apply: true,
+      // A partial reversal leaves a live booking live (rule 5).
+      effect: FULL_REVERSAL_STATUSES.has(incomingStatus.toLowerCase())
+        ? 'cancel_reversed'
+        : 'none',
+      reason: `money reversed (${incomingStatus})`,
+    };
+  }
+
+  if (stored === 'refunded') {
+    return IGNORE('payment is refunded; a refund is terminal');
+  }
+
+  if (incoming === 'paid') {
+    if (stored === 'paid') return IGNORE('payment already settled');
+    return {
+      apply: true,
+      effect: 'notify_paid',
+      reason: stored === 'failed'
+        ? 'settlement arrived after a recorded failure'
+        : 'payment settled',
+    };
+  }
+
+  if (incoming === 'failed') {
+    // Rule 3: the bug. Never let a late cancel/expire undo a settlement.
+    if (stored === 'paid') {
+      return IGNORE(`late ${incomingStatus} after settlement; the money is captured`);
+    }
+    if (stored === 'failed') return IGNORE('failure already recorded');
+    return { apply: true, effect: 'cancel_unpaid', reason: `payment ${incomingStatus}` };
+  }
+
+  // Rule 2: pending is the weakest signal there is. It may only ever be written
+  // over nothing at all.
+  if (stored === 'paid' || stored === 'failed') {
+    return IGNORE(`pending notification arrived after a ${stored} payment`);
+  }
+  return { apply: true, effect: 'none', reason: 'still pending' };
+}
 
 /**
  * Verify the Midtrans notification signature.
@@ -32,6 +184,130 @@ function isValidSignature(payload: any, serverKey: string): boolean {
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
 
+/**
+ * Notifications must not decide whether Midtrans gets a 200. One booking whose
+ * notification insert fails cannot be allowed to abort the notifications for
+ * the rest of the order, nor to trigger a retry of a notification we have
+ * already applied (the retry would be correctly ignored, so nothing would be
+ * re-sent anyway — it would just burn Midtrans' retry budget).
+ */
+async function safeNotify(
+  payload: Parameters<typeof createNotification>[0],
+  context: string
+) {
+  try {
+    await createNotification(payload);
+  } catch (error) {
+    console.error(`[payment-webhook] notification failed (${context}):`, error);
+  }
+}
+
+async function notifyPaid(supabase: any, paymentId: string) {
+  const { data: bookings, error } = await supabase
+    .from('bookings')
+    .select('*, streamers(user_id, first_name, last_name)')
+    .eq('payment_group_id', paymentId);
+
+  if (error) throw error;
+
+  for (const booking of bookings ?? []) {
+    const when = formatInTimeZone(
+      new Date(booking.start_time),
+      booking.timezone || 'Asia/Jakarta',
+      'dd MMMM HH:mm'
+    );
+
+    // Notify the client.
+    await safeNotify({
+      user_id: booking.client_id,
+      streamer_id: booking.streamer_id,
+      message: `Pembayaran untuk pesananmu dengan ${booking.streamers?.first_name ?? ''} pada ${when} sudah dikonfirmasi.`,
+      type: 'booking_payment',
+      booking_id: booking.id,
+      is_read: false,
+    }, `paid/client booking ${booking.id}`);
+
+    // Notify the streamer (addressed to their user account).
+    if (booking.streamers?.user_id) {
+      await safeNotify({
+        user_id: booking.streamers.user_id,
+        streamer_id: booking.streamer_id,
+        message: `Pesanan baru dari ${booking.client_first_name ?? 'seorang brand'} untuk ${when} sudah dibayar.`,
+        type: 'booking_payment',
+        booking_id: booking.id,
+        is_read: false,
+      }, `paid/streamer booking ${booking.id}`);
+    }
+  }
+}
+
+/**
+ * Cancel the bookings attached to a payment that will not (or no longer does)
+ * hold money, and tell the client why.
+ *
+ * Only bookings still waiting on payment/acceptance are cancelled. One a
+ * streamer has already accepted is a scheduled commitment; unwinding it is a
+ * support decision, not something a webhook should do behind everyone's back.
+ */
+async function cancelBookings(
+  supabase: any,
+  paymentId: string,
+  transactionStatus: string,
+  kind: 'unpaid' | 'reversed'
+) {
+  const { data: bookings, error } = await supabase
+    .from('bookings')
+    .select('*, streamers(first_name, last_name)')
+    .eq('payment_group_id', paymentId);
+
+  if (error) throw error;
+
+  const { data: cancelled, error: cancelError } = await supabase
+    .from('bookings')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('payment_group_id', paymentId)
+    .in('status', UNACCEPTED_BOOKING_STATUSES)
+    .select('id');
+
+  if (cancelError) throw cancelError;
+
+  // Notify exactly the bookings the update actually moved. If the update did not
+  // return rows at all, fall back to the pre-read: better to notify from the
+  // statuses we saw a moment ago than to cancel a booking in silence.
+  const movedRows: any[] = cancelled
+    ?? (bookings ?? []).filter((b: any) => UNACCEPTED_BOOKING_STATUSES.includes(b.status));
+  const cancelledIds = new Set(movedRows.map((b: any) => b.id));
+
+  const untouched = (bookings ?? []).filter((b: any) => !cancelledIds.has(b.id));
+  if (untouched.length > 0) {
+    console.warn(
+      `[payment-webhook][RECONCILE] Payment ${paymentId} (${transactionStatus}): ` +
+      `booking(s) ${untouched.map((b: any) => b.id).join(', ')} were already accepted or ` +
+      'closed and were left alone. They need a support decision.'
+    );
+  }
+
+  for (const booking of bookings ?? []) {
+    if (!cancelledIds.has(booking.id)) continue;
+
+    const when = formatInTimeZone(
+      new Date(booking.start_time),
+      booking.timezone || 'Asia/Jakarta',
+      'dd MMMM HH:mm'
+    );
+    await safeNotify({
+      user_id: booking.client_id,
+      streamer_id: booking.streamer_id,
+      message: kind === 'reversed'
+        ? `Pembayaran untuk pesanan pada ${when} telah dikembalikan (${transactionStatus}), jadi pesanannya dibatalkan.`
+        : `Pembayaran untuk pesanan pada ${when} tidak berhasil diselesaikan (${transactionStatus}). Pesanan dibatalkan.`,
+      type: 'booking_cancelled',
+      booking_id: booking.id,
+      is_read: false,
+    }, `cancelled booking ${booking.id}`);
+  }
+}
+
 export async function POST(request: Request) {
   try {
     const serverKey = process.env.MIDTRANS_SERVER_KEY;
@@ -43,7 +319,15 @@ export async function POST(request: Request) {
     // Midtrans calls this server-to-server with no user session, and it writes
     // to RLS-protected tables. Use the service-role client so it bypasses RLS
     // (fall back to the anon server client only if the key isn't configured).
-    const supabase = createAdminClient() ?? createClient();
+    const adminClient = createAdminClient();
+    if (!adminClient) {
+      console.error(
+        'Payment webhook: SUPABASE_SERVICE_ROLE_KEY is not set, so this handler runs with the ' +
+        'anon key. payments/bookings have RLS enabled with no policy for it, so every write ' +
+        'below will be refused. This is a configuration problem, not a data problem.'
+      );
+    }
+    const supabase = adminClient ?? createClient();
     const payload = await request.json();
 
     // Validate the payment notification shape.
@@ -61,27 +345,29 @@ export async function POST(request: Request) {
     }
 
     const transactionStatus: string = payload.transaction_status;
-    const fraudStatus: string | undefined = payload.fraud_status;
-    // Treat a `capture` as paid only when it is not flagged as fraud.
-    const isPaid =
-      PAID_STATUSES.has(transactionStatus) &&
-      (transactionStatus !== 'capture' || fraudStatus === 'accept');
-    const isFailed = FAILED_STATUSES.has(transactionStatus);
+    const incoming = classify(transactionStatus, payload.fraud_status);
 
     // 2. Match the payment by its stored transaction_id (== Midtrans order_id).
     //    This is the correct join key: createBookingAfterPayment stores the
     //    order_id in payments.transaction_id, and bookings.payment_group_id
-    //    references payments.id. The previous `order_id.split('-')[1]` parsing
-    //    extracted the timestamp segment and never matched a real row.
-    const { data: payment, error: paymentFetchError } = await supabase
+    //    references payments.id.
+    //
+    //    NOT `.maybeSingle()`. On a database where the unique index from
+    //    20260806110000_payment_idempotency.sql has not been applied yet, a
+    //    duplicated callback may have left two rows for one order — and
+    //    maybeSingle() answers that with an error, which threw, returned a 500,
+    //    and made Midtrans retry the same notification forever while the
+    //    payment never reconciled. A duplicate is a data problem to shout
+    //    about, not a reason to stop processing the notification.
+    const { data: paymentRows, error: paymentFetchError } = await supabase
       .from('payments')
       .select('id, status, payment_status')
       .eq('transaction_id', payload.order_id)
-      .maybeSingle();
+      .order('created_at', { ascending: true });
 
     if (paymentFetchError) throw paymentFetchError;
 
-    if (!payment) {
+    if (!paymentRows || paymentRows.length === 0) {
       // The client-side callback may not have recorded the payment yet
       // (Midtrans often calls the webhook before the browser redirect).
       // Acknowledge so Midtrans doesn't hammer retries; the callback path
@@ -90,108 +376,80 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true, note: 'payment not yet recorded' });
     }
 
-    // 3. Idempotency: if we've already recorded this payment's terminal state
-    //    and the incoming notification repeats it, do nothing (Midtrans retries
-    //    the same notification until it gets a 200).
-    const alreadyPaid =
-      PAID_STATUSES.has(payment.status) || PAID_STATUSES.has(payment.payment_status);
-    const alreadyFailed =
-      FAILED_STATUSES.has(payment.status) || FAILED_STATUSES.has(payment.payment_status);
-    if ((isPaid && alreadyPaid) || (isFailed && alreadyFailed)) {
-      return NextResponse.json({ received: true, note: 'already processed' });
+    if (paymentRows.length > 1) {
+      console.error(
+        `[payment-webhook][RECONCILE] Order ${payload.order_id} has ${paymentRows.length} payment ` +
+        'rows — one captured payment was recorded more than once, so it also has duplicate ' +
+        'bookings. Apply supabase/migrations/20260806110000_payment_idempotency.sql (its ' +
+        'section 3 has the cleanup). Processing all of them so the notification still settles.'
+      );
     }
 
-    // 4. Sync the authoritative status onto the payment row.
-    const { error: updateError } = await supabase
-      .from('payments')
-      .update({
-        status: transactionStatus,
-        payment_status: transactionStatus,
-        midtrans_response: payload,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', payment.id);
+    // 3. Apply the state machine to each matched row.
+    const results = [];
+    for (const payment of paymentRows) {
+      const stored = storedState(payment);
+      const transition = decideTransition(stored, incoming, transactionStatus);
 
-    if (updateError) throw updateError;
-
-    // 5. Only notify on a genuine unpaid -> paid transition. In the normal
-    //    flow the callback already created the "payment confirmed"
-    //    notifications and set the payment to settled, so `alreadyPaid` is
-    //    true here and we skip — preventing duplicate notifications.
-    if (isPaid && !alreadyPaid) {
-      const { data: bookings, error: bookingError } = await supabase
-        .from('bookings')
-        .select('*, streamers(user_id, first_name, last_name)')
-        .eq('payment_group_id', payment.id);
-
-      if (bookingError) throw bookingError;
-
-      for (const booking of bookings ?? []) {
-        const when = formatInTimeZone(
-          new Date(booking.start_time),
-          booking.timezone || 'Asia/Jakarta',
-          'dd MMMM HH:mm'
+      if (!transition.apply) {
+        console.log(
+          `Payment webhook: ${payload.order_id} (${payment.id}) ${stored} <- ${transactionStatus}: ` +
+          `ignored — ${transition.reason}`
         );
+        results.push({ payment_id: payment.id, from: stored, applied: false, reason: transition.reason });
+        continue;
+      }
 
-        // Notify the client.
-        await createNotification({
-          user_id: booking.client_id,
-          streamer_id: booking.streamer_id,
-          message: `Payment confirmed for your booking with ${booking.streamers?.first_name ?? ''} on ${when}.`,
-          type: 'booking_payment',
-          booking_id: booking.id,
-          is_read: false,
-        });
+      const { error: updateError } = await supabase
+        .from('payments')
+        .update({
+          status: transactionStatus,
+          payment_status: transactionStatus,
+          midtrans_response: payload,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', payment.id);
 
-        // Notify the streamer (addressed to their user account).
-        if (booking.streamers?.user_id) {
-          await createNotification({
-            user_id: booking.streamers.user_id,
-            streamer_id: booking.streamer_id,
-            message: `New booking payment received from ${booking.client_first_name ?? 'a client'} for ${when}.`,
-            type: 'booking_payment',
-            booking_id: booking.id,
-            is_read: false,
-          });
+      if (updateError) throw updateError;
+
+      // The status is now recorded, which means a retry of this notification
+      // will be ignored — so a failure in the follow-up work below can never be
+      // fixed by returning a 500, it would only cost Midtrans retries. Log it
+      // for reconciliation and still acknowledge.
+      try {
+        if (transition.effect === 'notify_paid') {
+          if (stored === 'failed') {
+            console.warn(
+              `[payment-webhook][RECONCILE] Payment ${payment.id} settled after being recorded as ` +
+              'failed. Its bookings may already have been cancelled by the earlier notification and ' +
+              'are NOT reinstated automatically.'
+            );
+          }
+          await notifyPaid(supabase, payment.id);
+        } else if (transition.effect === 'cancel_unpaid') {
+          await cancelBookings(supabase, payment.id, transactionStatus, 'unpaid');
+        } else if (transition.effect === 'cancel_reversed') {
+          await cancelBookings(supabase, payment.id, transactionStatus, 'reversed');
         }
-      }
-    } else if (isFailed && !alreadyFailed) {
-      // Payment failed / was cancelled / expired. Cancel the bookings that are
-      // still waiting on payment (don't touch ones a streamer already acted on)
-      // and let the client know.
-      const { data: bookings, error: bookingError } = await supabase
-        .from('bookings')
-        .select('*, streamers(first_name, last_name)')
-        .eq('payment_group_id', payment.id);
-
-      if (bookingError) throw bookingError;
-
-      const { error: cancelError } = await supabase
-        .from('bookings')
-        .update({ status: 'cancelled', updated_at: new Date().toISOString() })
-        .eq('payment_group_id', payment.id)
-        .in('status', ['pending', 'payment_pending']);
-
-      if (cancelError) throw cancelError;
-
-      for (const booking of bookings ?? []) {
-        const when = formatInTimeZone(
-          new Date(booking.start_time),
-          booking.timezone || 'Asia/Jakarta',
-          'dd MMMM HH:mm'
+      } catch (effectError) {
+        console.error(
+          `[payment-webhook][RECONCILE] Payment ${payment.id}: status was set to ` +
+          `${transactionStatus} but the follow-up (${transition.effect}) failed. This will not be ` +
+          'retried — the bookings for this payment need a manual check.',
+          effectError
         );
-        await createNotification({
-          user_id: booking.client_id,
-          streamer_id: booking.streamer_id,
-          message: `Your payment for the booking on ${when} could not be completed (${transactionStatus}). The booking has been cancelled.`,
-          type: 'booking_cancelled',
-          booking_id: booking.id,
-          is_read: false,
-        });
       }
+
+      results.push({
+        payment_id: payment.id,
+        from: stored,
+        to: incoming,
+        applied: true,
+        reason: transition.reason,
+      });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, results });
   } catch (error) {
     console.error('Error processing payment webhook:', error);
     return NextResponse.json(
