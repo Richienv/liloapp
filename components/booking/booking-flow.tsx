@@ -31,6 +31,20 @@ import {
   validateTimeSlotSelection,
 } from '@/lib/booking-rules';
 
+/*
+ * Toast looks, named once.
+ *
+ * These were eleven copies of the same literal, in Tailwind's own red / yellow /
+ * green rather than the design's state tokens — so a booking error and a
+ * verification error, raised two functions apart, could disagree about what red
+ * is. `border-2` went to a hairline with everything else.
+ */
+const TOAST_BASE = 'bg-surface px-4 py-3 rounded-panel border';
+const TOAST_ERROR = `${TOAST_BASE} text-destructive-emphasis border-destructive/30`;
+const TOAST_CAUTION = `${TOAST_BASE} text-caution border-caution-line`;
+const TOAST_SUCCESS = `${TOAST_BASE} text-positive border-positive-line`;
+
+
 function streamerCityValue(streamer: Pick<Streamer, 'location' | 'city_slug'>): string {
   return streamer.city_slug || streamer.location || '';
 }
@@ -394,7 +408,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(requiredFieldsValidation.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       return;
@@ -412,7 +426,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(dateValidation.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
+        className: TOAST_ERROR,
       });
       return;
     }
@@ -497,7 +511,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(UNVERIFIED_BOOKING_MESSAGE, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
+        className: TOAST_ERROR,
       });
       return;
     }
@@ -662,7 +676,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(isRequirementsValid.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       return;
@@ -683,7 +697,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error("Tidak ada tanggal yang tersedia untuk pemilihan", {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       setActiveBulkMode(null);
@@ -695,7 +709,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(`${invalidDates.length} tanggal dilewati karena pembatasan waktu`, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-yellow-600 border-2 border-yellow-100 px-4 py-3 rounded-panel',
+        className: TOAST_CAUTION,
         icon: '⚠️',
       });
     }
@@ -744,7 +758,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
         `Berhasil memilih ${newSelectedDates.size} hari dengan total ${Array.from(newSelectedDates.values()).reduce((total, date) => total + date.totalHours, 0)} jam`, {
           duration: 4000,
           position: 'top-center',
-          className: 'bg-surface text-green-600 border-2 border-green-100 px-4 py-3 rounded-panel',
+          className: TOAST_SUCCESS,
           icon: '✓',
         }
       );
@@ -752,7 +766,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error("Tidak ada slot waktu yang tersedia untuk periode yang dipilih", {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       setActiveBulkMode(null);
@@ -777,7 +791,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
           toast.error(validation.error, {
             duration: 3000,
             position: 'top-center',
-            className: 'bg-surface text-red-600 border-2 border-red-100',
+            className: TOAST_ERROR,
           });
           return prev;
         }
@@ -802,7 +816,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             toast.error("Tidak dapat memilih jam ini karena durasi 2 jam berikutnya tidak tersedia (total 3 slot)", {
               duration: 3000,
               position: 'top-center',
-              className: 'bg-surface text-red-600 border-2 border-red-100',
+              className: TOAST_ERROR,
             });
             return prev;
           }
@@ -815,7 +829,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             toast.error(validation.error, {
               duration: 3000,
               position: 'top-center',
-              className: 'bg-surface text-red-600 border-2 border-red-100',
+              className: TOAST_ERROR,
             });
             return prev;
           }
