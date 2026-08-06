@@ -42,7 +42,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Salda by TROLIVE - Platform Live Selling Shopee & TikTok Terbaik di Indonesia",
-  description: "Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online Anda dengan host live streaming berpengalaman.",
+  description: "Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online kamu dengan host live streaming berpengalaman.",
   keywords: "salda, trolive, live selling, live streaming, shopee live, tiktok live, host live streaming, jasa live streaming, live commerce indonesia, live seller, live shopping, penyedia jasa live streaming, livestreaming marketplace, umkm digital, platform live selling terbaik, jasa live selling terpercaya, host tiktok shop, host shopee live",
   // NOTE: no `alternates.canonical` here, deliberately. Next merges metadata
   // layout -> page, so a canonical declared on the ROOT layout is inherited
@@ -83,7 +83,7 @@ export const metadata = {
   openGraph: {
     type: 'website',
     title: 'Salda by TROLIVE - Platform Live Selling Shopee & TikTok Terbaik di Indonesia',
-    description: 'Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online Anda dengan host live streaming berpengalaman.',
+    description: 'Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online kamu dengan host live streaming berpengalaman.',
     url: SITE_URL,
     siteName: 'Salda by TROLIVE',
     locale: 'id_ID',
@@ -99,7 +99,7 @@ export const metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Salda by TROLIVE - Platform Live Selling Shopee & TikTok Terbaik di Indonesia',
-    description: 'Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online Anda dengan host live streaming berpengalaman.',
+    description: 'Platform live selling terbaik dari TROLIVE yang menghubungkan UMKM dengan live streamer profesional untuk Shopee dan TikTok Live. Tingkatkan penjualan online kamu dengan host live streaming berpengalaman.',
     images: ['/android-chrome-512x512.png'],
     site: '@salda_id',
   },

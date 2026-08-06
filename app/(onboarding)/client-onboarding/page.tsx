@@ -33,7 +33,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Selamat Datang di Salda! 👋",
-    description: "Platform yang menghubungkan brand Anda dengan host live shopping terbaik.",
+    description: "Platform yang menghubungkan brand kamu dengan host live shopping terbaik.",
     points: [
       "Akses ke 250+ host profesional terlatih",
       "Tingkatkan penjualan dengan live shopping",
@@ -44,7 +44,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Host Berkualitas 🌟",
-    description: "Tim host profesional yang siap membantu penjualan Anda.",
+    description: "Tim host profesional yang siap membantu penjualan kamu.",
     points: [
       "Host terlatih dengan pengalaman live shopping",
       "Spesialisasi di berbagai kategori produk",
@@ -55,7 +55,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Keamanan Terjamin 🔒",
-    description: "Sistem yang melindungi transaksi dan kepentingan brand Anda.",
+    description: "Sistem yang melindungi transaksi dan kepentingan brand kamu.",
     points: [
       "Verifikasi ketat untuk setiap host",
       "Perlindungan dari penipuan dan fraud",
@@ -77,7 +77,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Notifikasi Real-time 📱",
-    description: "Pantau setiap perkembangan live shopping Anda.",
+    description: "Pantau setiap perkembangan live shopping kamu.",
     points: [
       "Update status booking secara langsung",
       "Notifikasi performa selama live",
@@ -88,7 +88,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Pilihan Host Terlengkap 🎯",
-    description: "Temukan host yang tepat untuk produk Anda.",
+    description: "Temukan host yang tepat untuk produk kamu.",
     points: [
       "250+ host aktif dari berbagai platform",
       "Filter berdasarkan kategori dan pengalaman",
@@ -110,7 +110,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Harga Kompetitif 💰",
-    description: "Investasi yang sepadan untuk pertumbuhan bisnis Anda.",
+    description: "Investasi yang sepadan untuk pertumbuhan bisnis kamu.",
     points: [
       "Tarif yang bersaing di industri",
       "Paket booking yang fleksibel",
@@ -121,7 +121,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "safety",
     title: "⚠️ PENTING ⚠️",
-    description: "Pastikan keamanan transaksi Anda di Salda.",
+    description: "Pastikan keamanan transaksi kamu di Salda.",
     points: [
       "Selalu gunakan sistem pembayaran Salda",
       "Jangan melakukan transaksi di luar platform",
@@ -137,9 +137,9 @@ const onboardingSteps: OnboardingStep[] = [
  */
 const brandProfileStep: OnboardingStep = {
   kind: "brand-profile",
-  title: "Ceritakan tentang brand Anda ✍️",
+  title: "Ceritakan tentang brand kamu ✍️",
   description:
-    "Host membaca ini sebelum menerima booking. Boleh dilewati — Anda tetap bisa mulai mencari host sekarang.",
+    "Host membaca ini sebelum menerima booking. Boleh dilewati — kamu tetap bisa mulai mencari host sekarang.",
   points: [],
   video: ""
 };
@@ -271,7 +271,7 @@ export default function ClientOnboarding() {
       <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
         <div className="flex flex-col items-center gap-3 text-gray-500">
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
-          <p className="text-sm">Menyiapkan akun Anda...</p>
+          <p className="text-sm">Menyiapkan akun kamu...</p>
         </div>
       </div>
     );
@@ -287,7 +287,7 @@ export default function ClientOnboarding() {
           <Textarea
             value={brandDescription}
             onChange={(e) => setBrandDescription(e.target.value)}
-            placeholder="Cerita, misi, dan target audiens brand Anda"
+            placeholder="Cerita, misi, dan target audiens brand kamu"
             className="min-h-[140px] resize-none rounded-xl border-gray-200 bg-white text-base
               focus:border-blue-500 focus:ring-blue-500"
           />

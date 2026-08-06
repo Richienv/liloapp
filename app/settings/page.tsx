@@ -524,7 +524,7 @@ function SettingsContent() {
         // Check for specific error types and show appropriate messages
         if (errorMessage.includes('24 hours')) {
           const nextUpdate = nextAvailableUpdate ? format(new Date(nextAvailableUpdate), 'HH:mm, dd MMMM yyyy') : 'besok';
-          toast.error(`Anda sudah mengubah harga hari ini. Silakan coba lagi pada ${nextUpdate} WIB`);
+          toast.error(`kamu sudah mengubah harga hari ini. Silakan coba lagi pada ${nextUpdate} WIB`);
         } else if (errorMessage.includes('25%')) {
           const minPrice = calculatePriceLimits(price).minPrice;
           const maxPrice = calculatePriceLimits(price).maxPrice;
@@ -554,7 +554,7 @@ function SettingsContent() {
       case 'Price can only be updated once every 24 hours':
         const nextUpdateTime = nextAvailableUpdate ? format(new Date(nextAvailableUpdate), 'HH:mm') : '';
         const nextUpdateDate = nextAvailableUpdate ? format(new Date(nextAvailableUpdate), 'dd MMMM yyyy') : '';
-        return `Anda sudah mengubah harga hari ini. Perubahan harga berikutnya dapat dilakukan besok pada ${nextUpdateTime} WIB, ${nextUpdateDate}`;
+        return `kamu sudah mengubah harga hari ini. Perubahan harga berikutnya dapat dilakukan besok pada ${nextUpdateTime} WIB, ${nextUpdateDate}`;
       case 'Price change cannot exceed 25%':
         const minPrice = calculatePriceLimits(price).minPrice;
         const maxPrice = calculatePriceLimits(price).maxPrice;
@@ -935,7 +935,7 @@ function SettingsContent() {
                                 id="fullAddress"
                                 value={fullAddress}
                                 onChange={(e) => setFullAddress(e.target.value)}
-                                placeholder="Masukkan alamat lengkap Anda..."
+                                placeholder="Masukkan alamat lengkap kamu..."
                                 className="min-h-[80px]"
                               />
                             </div>
@@ -1054,7 +1054,7 @@ function SettingsContent() {
                                 id="location"
                                 value={location}
                                 onChange={(e) => setLocation(e.target.value)}
-                                placeholder="Masukkan kota Anda"
+                                placeholder="Masukkan kota kamu"
                               />
                             </div>
                           </div>
@@ -1086,7 +1086,7 @@ function SettingsContent() {
                                 id="brandName"
                                 value={brandName}
                                 onChange={(e) => setBrandName(e.target.value)}
-                                placeholder="Masukkan nama brand Anda"
+                                placeholder="Masukkan nama brand kamu"
                               />
                             </div>
                             <div className="space-y-2">
@@ -1095,7 +1095,7 @@ function SettingsContent() {
                                 id="brandDescription"
                                 value={bio}
                                 onChange={(e) => setBio(e.target.value)}
-                                placeholder="Ceritakan tentang brand Anda..."
+                                placeholder="Ceritakan tentang brand kamu..."
                                 className="min-h-[120px]"
                               />
                             </div>

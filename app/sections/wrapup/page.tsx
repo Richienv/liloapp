@@ -76,9 +76,9 @@ export default function Wrapup() {
           {/* Gradient Container */}
           <div className="absolute inset-0 pointer-events-none max-w-[1400px] mx-auto left-0 right-0">
             {/* Left Gradient */}
-            <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-white to-transparent z-20" />
+            <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-r from-canvas to-transparent z-20" />
             {/* Right Gradient */}
-            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-white to-transparent z-20" />
+            <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 bg-gradient-to-l from-canvas to-transparent z-20" />
           </div>
 
           {/* Testimonials Slider Container */}
@@ -107,7 +107,7 @@ export default function Wrapup() {
                   {doubledTestimonials.map((testimonial, index) => (
                     <div
                       key={index}
-                      className="flex-shrink-0 w-[260px] sm:w-[320px] md:w-[400px] bg-[#faf9f4] rounded-2xl md:rounded-3xl p-4 md:p-6 relative z-10"
+                      className="flex-shrink-0 w-[260px] sm:w-[320px] md:w-[400px] bg-canvas rounded-2xl md:rounded-3xl p-4 md:p-6 relative z-10"
                     >
                       {/* Rating */}
                       <div className="flex gap-1 mb-3 md:mb-4">

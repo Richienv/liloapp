@@ -705,7 +705,7 @@ async function createNotificationsAsync(
       notifications.push({
         user_id: metadata.userId,
         streamer_id: parseInt(metadata.streamerId),
-        message: `Payment confirmed for your booking on ${bookingDateStr}. Menunggu streamer menerima pesanan Anda.`,
+        message: `Payment confirmed for your booking on ${bookingDateStr}. Menunggu streamer menerima pesanan kamu.`,
         type: 'booking_payment',
         booking_id: booking.id,
         is_read: false,

@@ -1845,7 +1845,7 @@ export async function acceptBooking(bookingId: number) {
     await createNotification({
       user_id: bookingData.client_id,
       streamer_id: bookingData.streamer_id,
-      message: `${bookingData.streamers.first_name} telah menerima booking Anda untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.`,
+      message: `${bookingData.streamers.first_name} telah menerima booking kamu untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.`,
       type: 'booking_accepted',
       booking_id: bookingId,
       is_read: false
@@ -1896,7 +1896,7 @@ export async function rejectBooking(bookingId: number, reason?: string) {
     await createNotification({
       user_id: bookingData.client_id,
       streamer_id: bookingData.streamer_id,
-      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} telah menolak booking Anda untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.${reason ? ` Alasan: ${reason}` : ''}`,
+      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} telah menolak booking kamu untuk ${format(new Date(bookingData.start_time), 'dd MMMM HH:mm')} pada platform ${bookingData.platform}.${reason ? ` Alasan: ${reason}` : ''}`,
       type: 'booking_rejected',
       booking_id: bookingId,
       is_read: false
@@ -2265,7 +2265,7 @@ export async function requestReschedule(bookingId: number, reason: string) {
     await createNotification({
       user_id: bookingData.client_id,
       streamer_id: bookingData.streamer_id,
-      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} mengajukan reschedule untuk sesi live streaming Anda. Alasan: ${reason}`,
+      message: `${bookingData.streamers.first_name} ${bookingData.streamers.last_name} mengajukan reschedule untuk sesi live streaming kamu. Alasan: ${reason}`,
       type: 'reschedule_request',
       booking_id: bookingId,
       is_read: false

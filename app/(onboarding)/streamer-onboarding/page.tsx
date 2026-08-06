@@ -33,7 +33,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Selamat Bergabung di Salda! 👋",
-    description: "Platform yang menghubungkan Anda dengan brand-brand terbaik untuk live shopping.",
+    description: "Platform yang menghubungkan kamu dengan brand-brand terbaik untuk live shopping.",
     points: [
       "Dapatkan akses ke berbagai brand ternama",
       "Kelola jadwal live shopping dengan mudah",
@@ -55,7 +55,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Dukungan Admin 🤝",
-    description: "Tim admin Salda siap membantu melancarkan setiap sesi live shopping Anda.",
+    description: "Tim admin Salda siap membantu melancarkan setiap sesi live shopping kamu.",
     points: [
       "Mediasi komunikasi dengan client",
       "Bantuan teknis selama live shopping",
@@ -99,7 +99,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Kelola Booking dengan Mudah 📅",
-    description: "Terima atau tolak permintaan booking sesuai jadwal Anda.",
+    description: "Terima atau tolak permintaan booking sesuai jadwal kamu.",
     points: [
       "Atur harga dan durasi ketersediaan kamu sesuai keinginan",
       "Dapatkan permintaan langsung dari brand-brand terpercaya",
@@ -110,7 +110,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "feature",
     title: "Atur Jadwal Fleksibel ⏰",
-    description: "Tentukan waktu ketersediaan sesuai kenyamanan Anda.",
+    description: "Tentukan waktu ketersediaan sesuai kenyamanan kamu.",
     points: [
       "Set jadwal aktif kamu dengan detail jam ketersediaan kamu",
       "Blokir waktu untuk keperluan pribadi",
@@ -121,7 +121,7 @@ const onboardingSteps: OnboardingStep[] = [
   {
     kind: "safety",
     title: "⚠️ PENTING ⚠️",
-    description: "Lindungi diri Anda dengan mengikuti protokol keamanan Salda.",
+    description: "Lindungi diri kamu dengan mengikuti protokol keamanan Salda.",
     points: [
       "Jangan bagikan data pribadi di luar platform",
       "Semua transaksi WAJIB melalui Salda",

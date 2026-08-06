@@ -225,8 +225,8 @@ function ItemAcceptanceModal({
               <div>
                 <p className="text-sm font-medium text-gray-900 mb-1">Penting:</p>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Pastikan Anda telah menyimpan foto bukti penerimaan barang sebelum melanjutkan. 
-                  Foto ini diperlukan untuk dokumentasi dan perlindungan Anda sebagai streamer.
+                  Pastikan kamu telah menyimpan foto bukti penerimaan barang sebelum melanjutkan. 
+                  Foto ini diperlukan untuk dokumentasi dan perlindungan kamu sebagai streamer.
                 </p>
               </div>
             </div>
@@ -337,7 +337,7 @@ function RescheduleModal({
             <ul className="space-y-3 pl-11">
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Pengajuan reschedule akan mempengaruhi performa dan reputasi Anda sebagai streamer</span>
+                <span className="text-sm">Pengajuan reschedule akan mempengaruhi performa dan reputasi kamu sebagai streamer</span>
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
@@ -345,11 +345,11 @@ function RescheduleModal({
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Pastikan Anda memiliki alasan yang kuat sebelum mengajukan reschedule</span>
+                <span className="text-sm">Pastikan kamu memiliki alasan yang kuat sebelum mengajukan reschedule</span>
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Pengajuan reschedule yang terlalu sering dapat mempengaruhi visibilitas profil Anda</span>
+                <span className="text-sm">Pengajuan reschedule yang terlalu sering dapat mempengaruhi visibilitas profil kamu</span>
               </li>
             </ul>
           </div>
@@ -371,7 +371,7 @@ function RescheduleModal({
                     setReason(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder="Mohon jelaskan alasan Anda mengajukan reschedule..."
+                  placeholder="Mohon jelaskan alasan kamu mengajukan reschedule..."
                   className={`mt-2 w-full min-h-[100px] p-3 text-sm text-gray-900 rounded-lg border ${
                     error ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'
                   } focus:border-transparent focus:ring-2 bg-white resize-none`}
@@ -1229,7 +1229,7 @@ function RejectionModal({
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
               <span className="font-medium">Perhatian</span>
             </div>
-            <p>Penolakan booking akan mempengaruhi performa dan reputasi Anda sebagai streamer.</p>
+            <p>Penolakan booking akan mempengaruhi performa dan reputasi kamu sebagai streamer.</p>
           </div>
 
           <div className="space-y-2">
@@ -1489,13 +1489,13 @@ const getStatusColor = (status: string) => {
 const getStatusInfo = (status: string) => {
   switch (status.toLowerCase()) {
     case 'pending':
-      return 'Menunggu streamer menerima pesanan Anda. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
+      return 'Menunggu streamer menerima pesanan kamu. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
     case 'accepted':
-      return 'Pesanan Anda telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
+      return 'Pesanan kamu telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
     case 'completed':
       return 'Sesi streaming telah selesai. Terima kasih telah menggunakan layanan kami.';
     case 'rejected':
-      return 'Maaf, streamer tidak dapat menerima pesanan Anda. Silakan coba waktu lain atau streamer lainnya.';
+      return 'Maaf, streamer tidak dapat menerima pesanan kamu. Silakan coba waktu lain atau streamer lainnya.';
     case 'live':
       return 'Sesi streaming sedang berlangsung.';
     default:
@@ -2151,7 +2151,7 @@ function StartLiveModal({
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Salin dan tempel link stream dari platform Anda</span>
+                <span className="text-sm">Salin dan tempel link stream dari platform kamu</span>
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />

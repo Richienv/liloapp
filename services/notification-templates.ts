@@ -24,7 +24,7 @@ type NotificationTemplates = {
 
 export const NOTIFICATION_TEMPLATES: NotificationTemplates = {
   booking_request: {
-    client: "Permintaan booking Anda untuk {streamer_name} pada {start_time} sedang diproses.",
+    client: "Permintaan booking kamu untuk {streamer_name} pada {start_time} sedang diproses.",
     streamer: "{client_name} telah melakukan booking untuk {start_time} - {end_time} ({duration} jam)."
   },
   booking_payment: {
@@ -32,44 +32,44 @@ export const NOTIFICATION_TEMPLATES: NotificationTemplates = {
     streamer: "Pembayaran dari {client_name} untuk sesi pada {start_time} telah diterima."
   },
   booking_accepted: {
-    client: "{streamer_name} telah menerima booking Anda untuk {start_time} pada platform {platform}.",
-    streamer: "Anda telah menerima booking dari {client_name} untuk {start_time}."
+    client: "{streamer_name} telah menerima booking kamu untuk {start_time} pada platform {platform}.",
+    streamer: "kamu telah menerima booking dari {client_name} untuk {start_time}."
   },
   booking_rejected: {
-    client: "{streamer_name} telah menolak booking Anda untuk {start_time} pada platform {platform}.",
-    streamer: "Anda telah menolak booking dari {client_name} untuk {start_time}."
+    client: "{streamer_name} telah menolak booking kamu untuk {start_time} pada platform {platform}.",
+    streamer: "kamu telah menolak booking dari {client_name} untuk {start_time}."
   },
   booking_cancelled: {
-    client: "Booking Anda dengan {streamer_name} untuk {start_time} telah dibatalkan.",
+    client: "Booking kamu dengan {streamer_name} untuk {start_time} telah dibatalkan.",
     streamer: "Booking dari {client_name} untuk {start_time} telah dibatalkan."
   },
   stream_started: {
-    client: "{streamer_name} telah memulai live stream untuk booking Anda pada {start_time}.[[stream_link]]",
-    streamer: "Anda telah memulai live stream dengan {client_name}."
+    client: "{streamer_name} telah memulai live stream untuk booking kamu pada {start_time}.[[stream_link]]",
+    streamer: "kamu telah memulai live stream dengan {client_name}."
   },
   stream_ended: {
-    client: "{streamer_name} telah mengakhiri live stream untuk booking Anda.",
-    streamer: "Anda telah mengakhiri live stream dengan {client_name}."
+    client: "{streamer_name} telah mengakhiri live stream untuk booking kamu.",
+    streamer: "kamu telah mengakhiri live stream dengan {client_name}."
   },
   reschedule_request: {
-    client: "{streamer_name} mengajukan perubahan jadwal untuk sesi live streaming Anda. Alasan: {reason}",
-    streamer: "Anda mengajukan perubahan jadwal untuk sesi dengan {client_name}. Alasan: {reason}"
+    client: "{streamer_name} mengajukan perubahan jadwal untuk sesi live streaming kamu. Alasan: {reason}",
+    streamer: "kamu mengajukan perubahan jadwal untuk sesi dengan {client_name}. Alasan: {reason}"
   },
   reschedule_accepted: {
     client: "Permintaan perubahan jadwal telah diterima oleh {streamer_name}.",
-    streamer: "Anda telah menerima permintaan perubahan jadwal dari {client_name}."
+    streamer: "kamu telah menerima permintaan perubahan jadwal dari {client_name}."
   },
   reschedule_rejected: {
     client: "Permintaan perubahan jadwal telah ditolak oleh {streamer_name}.",
-    streamer: "Anda telah menolak permintaan perubahan jadwal dari {client_name}."
+    streamer: "kamu telah menolak permintaan perubahan jadwal dari {client_name}."
   },
   item_received: {
-    client: "{streamer_name} telah menerima barang Anda dan siap untuk memulai live streaming.",
-    streamer: "Anda telah menerima barang dari {client_name} untuk sesi live streaming."
+    client: "{streamer_name} telah menerima barang kamu dan siap untuk memulai live streaming.",
+    streamer: "kamu telah menerima barang dari {client_name} untuk sesi live streaming."
   },
   new_message: {
-    client: "Anda menerima pesan baru dari {streamer_name}",
-    streamer: "Anda menerima pesan baru dari {client_name}"
+    client: "kamu menerima pesan baru dari {streamer_name}",
+    streamer: "kamu menerima pesan baru dari {client_name}"
   },
   info: {
     client: "{message}",

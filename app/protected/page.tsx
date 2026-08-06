@@ -450,7 +450,7 @@ export default function ProtectedPage() {
                       No streamers found
                     </h3>
                     <p className="text-gray-600 text-center max-w-md mb-8">
-                      Maaf, kami tidak dapat menemukan streamer yang sesuai dengan filter Anda. Coba sesuaikan kriteria pencarian atau jelajahi pilihan lainnya.
+                      Maaf, kami tidak dapat menemukan streamer yang sesuai dengan filter kamu. Coba sesuaikan kriteria pencarian atau jelajahi pilihan lainnya.
                     </p>
                     <Button
                       onClick={() => {

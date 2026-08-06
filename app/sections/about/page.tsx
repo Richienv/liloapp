@@ -54,17 +54,17 @@ const tutorialSlides: TutorialSlide[] = [
 
 export default function About() {
   return (
-    <section className="relative bg-[#faf9f4] overflow-hidden">
+    <section className="relative bg-canvas overflow-hidden">
       {/* Header Section */}
-      <div className="sticky top-0 z-30 bg-[#faf9f4]/80 backdrop-blur-sm pt-16 sm:pt-24 pb-8 sm:pb-12">
+      <div className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-sm pt-16 sm:pt-24 pb-8 sm:pb-12">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="text-center">
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif mb-4 sm:mb-6 tracking-[-0.02em] text-gray-900">
               Cara Menggunakan Salda
             </h2>
             <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed md:leading-relaxed font-light max-w-2xl mx-auto px-2">
-              Mulai perjalanan live commerce Anda dengan langkah-langkah sederhana. 
-              Kami akan membantu Anda di setiap tahap untuk memastikan kesuksesan penjualan.
+              Mulai perjalanan live commerce kamu dengan langkah-langkah sederhana. 
+              Kami akan membantu kamu di setiap tahap untuk memastikan kesuksesan penjualan.
             </p>
           </div>
         </div>
@@ -129,8 +129,8 @@ export default function About() {
 
       {/* Background Decorations */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 -left-12 w-24 h-24 bg-gradient-to-r from-[#1e40af] to-[#6b21a8] rounded-full opacity-[0.03] blur-2xl" />
-        <div className="absolute bottom-1/4 -right-12 w-24 h-24 bg-gradient-to-r from-[#6b21a8] to-[#1e40af] rounded-full opacity-[0.03] blur-2xl" />
+        
+        
       </div>
     </section>
   );

@@ -100,8 +100,8 @@ export async function createStreamNotifications({
 
     // Create the notification message
     const message = type === 'stream_started'
-      ? `${streamer_name} telah memulai live stream untuk booking Anda pada ${start_time} di platform ${platform}${stream_link ? `. Klik untuk bergabung.` : ''}`
-      : `${streamer_name} telah mengakhiri live stream untuk booking Anda.`;
+      ? `${streamer_name} telah memulai live stream untuk booking kamu pada ${start_time} di platform ${platform}${stream_link ? `. Klik untuk bergabung.` : ''}`
+      : `${streamer_name} telah mengakhiri live stream untuk booking kamu.`;
 
     // Create the notification
     return await createNotification({
@@ -136,7 +136,7 @@ export async function createItemReceivedNotification({
     return await createNotification({
       user_id: client_id,
       streamer_id,
-      message: `${firstName} telah menerima barang Anda dan siap untuk memulai live streaming.`,
+      message: `${firstName} telah menerima barang kamu dan siap untuk memulai live streaming.`,
       type: 'item_received',
       booking_id,
       is_read: false
