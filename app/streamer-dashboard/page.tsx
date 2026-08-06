@@ -2777,7 +2777,7 @@ function NowCard({
           <p className="mt-4 text-meta text-ink-soft">
             {stage === 'live'
               ? 'Sesi ini sedang berlangsung. Tempel tautan siaran kamu supaya brand bisa menonton.'
-              : `Sesi berikutnya ${format(new Date(subject.start_time), 'EEEE, d MMMM')}.`}
+              : `Sesi berikutnya ${format(new Date(subject.start_time), 'EEEE, d MMMM', { locale: idLocale })}.`}
           </p>
         </div>
       ) : null}
@@ -2826,21 +2826,40 @@ function EarningsBar({ bookings }: { bookings: Booking[] }) {
         <p className="text-mini text-ink-soft">7 hari terakhir</p>
       </div>
 
-      <div className="mt-4 flex h-24 items-end gap-1.5">
+      {/*
+        The bars are percentage-height, so every ancestor between them and the
+        fixed h-24 needs a definite height of its own. The first version nested
+        each bar in an auto-height column, and a percentage against an auto
+        height resolves to auto — which for an empty div is zero. The whole
+        chart rendered as a blank strip.
+
+        So: the h-24 row holds only full-height columns, each pushing its bar to
+        the bottom with justify-end, and the day labels sit in a separate row
+        underneath rather than inside the measured area.
+      */}
+      <div className="mt-4 flex h-24 items-stretch gap-1.5">
         {days.map(({ day, total }) => (
-          <div key={day.toISOString()} className="flex flex-1 flex-col items-center gap-1.5">
+          <div key={day.toISOString()} className="flex h-full flex-1 flex-col justify-end">
             <div
               className={cn(
                 'w-full rounded-chip transition-colors',
                 total > 0 ? 'bg-brand' : 'bg-surface-deep',
               )}
               style={{ height: `${peak > 0 ? Math.max((total / peak) * 100, 3) : 3}%` }}
-              title={`${format(day, 'EEEE d MMMM')}: ${formatPrice(total)}`}
+              title={`${format(day, 'EEEE d MMMM', { locale: idLocale })}: ${formatPrice(total)}`}
             />
-            <span className="text-micro tracking-normal text-ink-faint">
-              {format(day, 'EEEEE')}
-            </span>
           </div>
+        ))}
+      </div>
+
+      <div className="mt-1.5 flex gap-1.5">
+        {days.map(({ day }) => (
+          <span
+            key={day.toISOString()}
+            className="flex-1 text-center text-micro tracking-normal text-ink-faint"
+          >
+            {format(day, 'EEEEE', { locale: idLocale })}
+          </span>
         ))}
       </div>
 

@@ -399,7 +399,33 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
     }
 
     const dateKey = format(date, 'yyyy-MM-dd');
-    
+
+    /**
+     * Focus this date so the hour grid below the calendar renders for it.
+     *
+     * In the modal this was the `<BookingCalendar>` component's job — it was the
+     * only caller of `setSelectedDate` in the entire file, via its `onTimeSelect`
+     * prop. The page does not use that component, so nothing set it and
+     * `selectedDate` stayed null forever.
+     *
+     * That was not a cosmetic loss. The block below pre-fills `hours` with EVERY
+     * available hour of the day, and the hour grid is the only way to narrow it.
+     * With the grid unreachable, picking a date silently committed the brand to
+     * the host's whole working day — and because a full day easily clears the
+     * two-consecutive-hour minimum, the "Lanjut ke pembayaran" button was
+     * enabled the entire time. It would have taken payment for it.
+     *
+     * Toggling a date off moves focus to whatever is still selected, so the grid
+     * never points at a date the brand has just removed.
+     */
+    const wasSelected = selectedDates.has(dateKey);
+    if (wasSelected) {
+      const remaining = Array.from(selectedDates.keys()).filter((key) => key !== dateKey);
+      setSelectedDate(remaining.length > 0 ? new Date(`${remaining[0]}T00:00:00`) : null);
+    } else {
+      setSelectedDate(date);
+    }
+
     setSelectedDates(prev => {
       const next = new Map(prev);
       if (next.has(dateKey)) {
@@ -864,7 +890,12 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
    * the platform, and the stepper still claims you are on step three. Deriving
    * it means the indicator cannot lie about the state of the form.
    */
-  const activeStep = !isRequirementsValid ? 0 : selectedDates.size === 0 || !minimumMet ? 1 : 2;
+  // `isRequirementsValid` is the {isValid, error} object the validator returns,
+  // not a boolean. `!isRequirementsValid` is therefore always false — the
+  // stepper could never show step 1 as active, and the hint below could never
+  // render. Read the field, not the object.
+  const requirementsMet = isRequirementsValid.isValid;
+  const activeStep = !requirementsMet ? 0 : selectedDates.size === 0 || !minimumMet ? 1 : 2;
 
   /**
    * The empty-day guard.
@@ -1142,7 +1173,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             secondaryLabel="Batal"
             onSecondary={() => router.back()}
           >
-            {!isRequirementsValid ? (
+            {!requirementsMet ? (
               'Pilih pengiriman dan platform dulu.'
             ) : !minimumMet ? (
               'Pilih minimal 2 jam berurutan.'
