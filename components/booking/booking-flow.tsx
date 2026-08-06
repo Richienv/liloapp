@@ -83,7 +83,25 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
 
   const [bookings, setBookings] = useState<any[]>([]);
 
+  /**
+   * The visible week.
+   *
+   * Seeded from the server's clock, because this is a client component and Next
+   * still server-renders it. If the server and the viewer are on different
+   * sides of a week boundary — which for an Indonesian audience on US-hosted
+   * infrastructure is most of Sunday — the markup React hydrates disagrees with
+   * the markup it would have produced, and the calendar visibly jumps a week
+   * after paint. Re-seeding on mount makes the browser's clock authoritative,
+   * and the guard means it is a no-op whenever the two already agree.
+   */
   const [currentWeekStart, setCurrentWeekStart] = useState(() => startOfWeek(new Date()));
+
+  useEffect(() => {
+    const local = startOfWeek(new Date());
+    setCurrentWeekStart((current) =>
+      current.getTime() === local.getTime() ? current : local,
+    );
+  }, []);
 
   const [selectedDates, setSelectedDates] = useState<Map<string, SelectedDateInfo>>(new Map());
 

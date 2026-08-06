@@ -63,11 +63,15 @@ function RatingStars({ rating }: { rating: number | null | undefined }) {
           className={`w-3 h-3 ${
             hasRating && i < Math.floor(rating)
               ? "fill-yellow-400 text-yellow-400"
-              : "text-gray-300"
+              : "text-white/30"
           }`}
         />
       ))}
-      <span className="text-xs text-gray-600 ml-1">
+      {/* white/70, like every other label on this card. It was text-gray-600 —
+          invisible on the dark photo scrim these cards sit on. Nobody had seen
+          it because until the fabricated ratings were removed, `hasRating` was
+          always true and this branch was unreachable. */}
+      <span className="ml-1 text-xs text-white/70">
         {hasRating ? rating.toFixed(1) : "Belum ada rating"}
       </span>
     </div>

@@ -120,7 +120,7 @@ const ROLE_PANELS: Record<UserRole, {
  */
 function StepCount({ step }: { step: 1 | 2 }) {
   return (
-    <p className="text-micro font-semibold tracking-normal text-ink-faint">
+    <p className="text-micro font-semibold tracking-normal text-ink-soft">
       LANGKAH {step} DARI 2
     </p>
   );
@@ -536,7 +536,9 @@ export default function RolePicker() {
       >
         <p
           className={`text-micro font-semibold tracking-normal ${
-            panel.dark ? "text-white/55" : "text-ink-faint"
+            // ink-faint (#8a8880) on the #f2f1ee panel is ~3.0:1 — under the
+            // 4.5:1 floor this 10px label needs. ink-muted clears it at ~6.9:1.
+            panel.dark ? "text-white/55" : "text-ink-muted"
           }`}
         >
           {panel.eyebrow.toUpperCase()}
