@@ -130,7 +130,7 @@ export default function CancelBookingModal({
         <div className="mt-4">
           <div className="mb-6 text-sm">
             <h4 className="font-semibold mb-2">Kebijakan Pembatalan & Pengembalian Dana:</h4>
-            <ul className="list-disc pl-5 space-y-1 text-gray-600">
+            <ul className="list-disc pl-5 space-y-1 text-ink-muted">
               <li>Pembatalan 24 jam sebelum jadwal akan mendapatkan pengembalian dana penuh (100%)</li>
               <li>Pembatalan kurang dari 24 jam akan dikenakan biaya pembatalan sebesar 50%</li>
               <li>Pembatalan kurang dari 3 jam sebelum jadwal tidak mendapatkan pengembalian dana</li>

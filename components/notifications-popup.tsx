@@ -420,7 +420,7 @@ export function NotificationsPopup() {
         <Button 
           variant="ghost" 
           size="icon" 
-          className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-gray-100 transition-colors" 
+          className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors" 
           onClick={() => {
             if (isMobile) {
               router.push('/notifications');
@@ -440,12 +440,12 @@ export function NotificationsPopup() {
       </PopoverTrigger>
       {!isMobile && (
         <PopoverContent 
-          className="notification-popup w-96 p-0 rounded-lg shadow-lg"
+          className="notification-popup w-96 p-0 rounded-lg"
           align="end"
           sideOffset={4}
         >
           <div className="flex flex-col h-full">
-            <div className="bg-gray-100 px-4 py-3 flex justify-between items-center border-b border-gray-200 flex-shrink-0">
+            <div className="bg-surface-tint px-4 py-3 flex justify-between items-center border-b border-hairline-input flex-shrink-0">
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">Notifikasi</h3>
                 {unreadCount > 0 && (
@@ -459,7 +459,7 @@ export function NotificationsPopup() {
                   variant="ghost"
                   size="sm"
                   onClick={handleMarkAllAsRead}
-                  className="text-sm text-gray-600"
+                  className="text-sm text-ink-muted"
                 >
                   <CheckCheck className="w-4 h-4 mr-1.5" />
                   <span className="hidden sm:inline">Tandai Semua</span>
@@ -477,20 +477,20 @@ export function NotificationsPopup() {
             >
               {notifications.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 px-4">
-                  <Bell className="w-12 h-12 text-gray-300 mb-3" />
-                  <p className="text-gray-500 text-center">Tidak ada notifikasi baru</p>
+                  <Bell className="w-12 h-12 text-ink-ghost mb-3" />
+                  <p className="text-ink-soft text-center">Tidak ada notifikasi baru</p>
                 </div>
               ) : (
                 <div className="pb-safe">
                   {groupNotifications(notifications).map((group) => (
                     <div key={group.title} className="mb-2">
-                      <div className="bg-gray-50/80 px-4 py-2 text-sm font-medium text-gray-600 sticky top-0">
+                      <div className="bg-surface-tint/80 px-4 py-2 text-sm font-medium text-ink-muted sticky top-0">
                         {group.title}
                       </div>
                       {group.notifications.map((notification) => (
                         <div 
                           key={notification.id} 
-                          className={`notification-item px-4 py-3 border-b border-gray-100 ${
+                          className={`notification-item px-4 py-3 border-b border-hairline ${
                             !notification.is_read ? 'bg-blue-50/60' : ''
                           } ${
                             expandedNotifications[notification.id] ? 'expanded' : ''
@@ -502,21 +502,21 @@ export function NotificationsPopup() {
                             </span>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center justify-between gap-2">
-                                <h4 className="font-medium text-sm text-gray-900 truncate">
+                                <h4 className="font-medium text-sm text-ink truncate">
                                   {getNotificationTitle(notification.type)}
                                 </h4>
                                 <div className="flex items-center gap-2">
-                                  <time className="text-xs text-gray-500 whitespace-nowrap">
+                                  <time className="text-xs text-ink-soft whitespace-nowrap">
                                     {format(new Date(notification.created_at), 'HH:mm', { locale: id })}
                                   </time>
                                   <button
                                     onClick={(e) => toggleNotificationExpansion(notification.id, e)}
-                                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                    className="p-1 hover:bg-surface-tint rounded-full transition-colors"
                                   >
                                     {expandedNotifications[notification.id] ? (
-                                      <ChevronUp className="h-4 w-4 text-gray-500" />
+                                      <ChevronUp className="h-4 w-4 text-ink-soft" />
                                     ) : (
-                                      <ChevronDown className="h-4 w-4 text-gray-500" />
+                                      <ChevronDown className="h-4 w-4 text-ink-soft" />
                                     )}
                                   </button>
                                 </div>
@@ -526,7 +526,7 @@ export function NotificationsPopup() {
                                   expandedNotifications[notification.id] ? 'max-h-96' : 'max-h-12'
                                 }`}
                               >
-                                <p className={`text-sm text-gray-600 mt-0.5 ${
+                                <p className={`text-sm text-ink-muted mt-0.5 ${
                                   expandedNotifications[notification.id] ? '' : 'notification-preview'
                                 }`}>
                                   {notification.type === 'stream_started' && notification.bookings?.stream_link ? (
@@ -562,7 +562,7 @@ export function NotificationsPopup() {
                                 </p>
                               </div>
                               <div className="flex items-center justify-between mt-2">
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-ink-faint">
                                   {format(new Date(notification.created_at), 'dd MMM yyyy', { locale: id })}
                                 </p>
                                 {!notification.is_read && (

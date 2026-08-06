@@ -48,7 +48,7 @@ export default function FAQ() {
   ];
 
   return (
-    <section className="relative py-16 sm:py-20 md:py-24 bg-white overflow-hidden">
+    <section className="relative py-16 sm:py-20 md:py-24 bg-surface overflow-hidden">
       <div className="container mx-auto px-3 sm:px-4">
         <div className="max-w-[1000px] mx-auto">
           {/* Section Header */}
@@ -59,7 +59,7 @@ export default function FAQ() {
                 Ditanyakan
               </span>
             </h2>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed font-light max-w-2xl mx-auto">
+            <p className="text-xs sm:text-sm md:text-base text-ink-muted leading-relaxed font-light max-w-2xl mx-auto">
               Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya
             </p>
           </div>
@@ -73,15 +73,15 @@ export default function FAQ() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-10%" }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="border border-gray-200 rounded-lg sm:rounded-xl overflow-hidden bg-white hover:border-gray-300 transition-all duration-300"
+                className="border border-hairline-input rounded-lg sm:rounded-panel overflow-hidden bg-surface hover:border-hairline-strong transition-all duration-300"
               >
                 <button
                   className="w-full px-4 sm:px-6 py-3 sm:py-4 text-left flex items-center justify-between gap-4"
                   onClick={() => setOpenIndex(openIndex === index ? null : index)}
                 >
-                  <span className="text-sm sm:text-base font-medium text-gray-900 pr-4">{faq.question}</span>
+                  <span className="text-sm sm:text-base font-medium text-ink pr-4">{faq.question}</span>
                   <ChevronDown
-                    className={`w-4 h-4 sm:w-5 sm:h-5 text-gray-500 transition-transform flex-shrink-0 ${
+                    className={`w-4 h-4 sm:w-5 sm:h-5 text-ink-soft transition-transform flex-shrink-0 ${
                       openIndex === index ? "rotate-180" : ""
                     }`}
                   />
@@ -95,7 +95,7 @@ export default function FAQ() {
                       transition={{ duration: 0.2 }}
                       className="overflow-hidden"
                     >
-                      <div className="px-4 sm:px-6 pb-4 text-xs sm:text-sm text-gray-600 font-light">
+                      <div className="px-4 sm:px-6 pb-4 text-xs sm:text-sm text-ink-muted font-light">
                         {faq.answer}
                       </div>
                     </motion.div>
@@ -107,7 +107,7 @@ export default function FAQ() {
 
           {/* Support Link */}
           <div className="text-center mt-8 sm:mt-10 md:mt-12">
-            <p className="text-xs sm:text-sm text-gray-600">
+            <p className="text-xs sm:text-sm text-ink-muted">
               Masih punya pertanyaan?{" "}
               <a
                 href="https://wa.me/62895700120901"

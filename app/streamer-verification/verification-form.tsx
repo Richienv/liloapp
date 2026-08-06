@@ -123,7 +123,7 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+      <div className="rounded-panel border border-blue-100 bg-blue-50/60 p-4">
         <p className="flex items-start gap-2 text-sm text-blue-900">
           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
@@ -135,7 +135,7 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="platform_handle" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="platform_handle" className="text-sm font-medium text-ink-body">
           Username akun live kamu
         </Label>
         <Input
@@ -144,10 +144,10 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
           required
           defaultValue={defaultHandle ?? ""}
           placeholder="@username"
-          className="h-11 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white"
+          className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 focus:bg-surface"
           style={{ fontSize: "16px" }}
         />
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ink-soft">
           Tulis persis seperti di TikTok atau Shopee Live, agar cocok dengan screenshot.
         </p>
       </div>
@@ -158,14 +158,14 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
 
         return (
           <div key={field.name} className="space-y-2">
-            <Label htmlFor={field.name} className="text-sm font-medium text-gray-700">
+            <Label htmlFor={field.name} className="text-sm font-medium text-ink-body">
               {field.label}
             </Label>
 
             <label
               htmlFor={field.name}
-              className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed
-                border-gray-200 bg-gray-50/50 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/40"
+              className="flex cursor-pointer items-center gap-3 rounded-panel border-2 border-dashed
+                border-hairline-input bg-surface-tint/50 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/40"
             >
               {preview ? (
                 // eslint-disable-next-line @next/next/no-img-element
@@ -175,16 +175,16 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
                   className="h-16 w-16 rounded-lg object-cover"
                 />
               ) : (
-                <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-white text-gray-400">
+                <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-surface text-ink-faint">
                   <Upload className="h-5 w-5" />
                 </span>
               )}
 
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-gray-900">
+                <span className="block truncate text-sm font-medium text-ink">
                   {selected ? selected.name : "Pilih file"}
                 </span>
-                <span className="block text-xs text-gray-500">{field.help}</span>
+                <span className="block text-xs text-ink-soft">{field.help}</span>
               </span>
 
               {selected && (
@@ -197,7 +197,7 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
                     const input = document.getElementById(field.name) as HTMLInputElement | null;
                     if (input) input.value = "";
                   }}
-                  className="rounded-full p-1 text-gray-400 transition-colors hover:bg-white hover:text-gray-700"
+                  className="rounded-full p-1 text-ink-faint transition-colors hover:bg-surface hover:text-ink-body"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -221,7 +221,7 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
         <p
           role="alert"
           aria-live="assertive"
-          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
+          className="rounded-panel border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
         >
           {error}
         </p>
@@ -230,8 +230,8 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-medium
-          text-white transition-all hover:from-blue-700 hover:to-indigo-700"
+        className="h-11 w-full rounded-panel bg-brand font-medium
+          text-white transition-all"
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">

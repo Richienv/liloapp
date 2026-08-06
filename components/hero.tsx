@@ -20,7 +20,7 @@ export function Hero() {
   ];
 
   return (
-    <div className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-gradient-to-b from-custom-light-navy to-white px-4 sm:px-6 lg:px-8">
+    <div className="relative h-[60vh] flex items-center justify-center overflow-hidden bg-canvas px-4 sm:px-6 lg:px-8">
       {/* Background effects */}
       <div className="absolute inset-0 bg-grid-black/[0.02] bg-[size:20px_20px]" />
       <div 
@@ -55,11 +55,10 @@ export function Hero() {
           {cards.map((card, index) => (
             <div key={index} className="relative group">
               {/* Shadow gradient */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-custom-navy via-blue-600 to-black rounded-xl blur-lg opacity-30 group-hover:opacity-40 transition duration-500"></div>
               
               {/* Card */}
               <div 
-                className="relative p-6 rounded-xl overflow-hidden bg-gradient-to-b from-gray-50 via-white to-gray-50 border border-white/20 shadow-2xl h-full"
+                className="relative p-6 rounded-panel overflow-hidden bg-surface border border-hairline h-full"
                 style={{
                   backgroundImage: `
                     linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%),
@@ -69,7 +68,7 @@ export function Hero() {
                 }}
               >
                 <h3 className="text-xl font-bold text-custom-navy mb-2">{card.title}</h3>
-                <p className="text-gray-600">{card.description}</p>
+                <p className="text-ink-muted">{card.description}</p>
               </div>
             </div>
           ))}
@@ -80,7 +79,7 @@ export function Hero() {
           <Link href="/sign-in">
             <Button 
               size="lg" 
-              className="bg-gradient-to-r from-custom-navy to-blue-600 hover:from-blue-800 hover:to-custom-navy text-white font-semibold px-12 py-6 rounded-full transform hover:scale-105 transition-all duration-300 shadow-lg text-lg"
+              className="bg-brand hover:bg-brand-hover text-white font-semibold px-12 py-6 rounded-full transform hover:scale-105 transition-all duration-300 text-lg"
             >
               Sign In
             </Button>

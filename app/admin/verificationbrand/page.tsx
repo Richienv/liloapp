@@ -104,8 +104,8 @@ export default function BrandVerificationPage() {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Brand Verification</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-ink">Brand Verification</h1>
+          <p className="mt-1 text-sm text-ink-soft">
             Review and verify brand registration requests
           </p>
         </div>
@@ -114,7 +114,7 @@ export default function BrandVerificationPage() {
       {/* Filters */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ink-faint" />
           <Input
             placeholder="Search by company name or email..."
             value={searchQuery}
@@ -139,10 +139,10 @@ export default function BrandVerificationPage() {
       </div>
 
       {/* Verification Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50">
+            <TableRow className="bg-surface-tint/50">
               <TableHead className="font-medium w-[250px]">Company</TableHead>
               <TableHead className="font-medium">Industry</TableHead>
               <TableHead className="font-medium">Status</TableHead>
@@ -153,16 +153,16 @@ export default function BrandVerificationPage() {
           </TableHeader>
           <TableBody>
             {mockBrands.map((brand) => (
-              <TableRow key={brand.id} className="hover:bg-gray-50/50">
+              <TableRow key={brand.id} className="hover:bg-surface-tint/50">
                 <TableCell>
                   <div>
-                    <div className="font-medium text-gray-900">{brand.companyName}</div>
-                    <div className="text-sm text-gray-500">{brand.email}</div>
+                    <div className="font-medium text-ink">{brand.companyName}</div>
+                    <div className="text-sm text-ink-soft">{brand.email}</div>
                   </div>
                 </TableCell>
                 <TableCell>{brand.industry}</TableCell>
                 <TableCell>{getStatusBadge(brand.status)}</TableCell>
-                <TableCell className="text-gray-500">
+                <TableCell className="text-ink-soft">
                   {new Date(brand.submittedAt).toLocaleDateString()}
                 </TableCell>
                 <TableCell>
@@ -196,8 +196,8 @@ export default function BrandVerificationPage() {
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-4 border-t border-gray-200">
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-between px-4 py-4 border-t border-hairline-input">
+          <div className="text-sm text-ink-soft">
             Showing 1-2 of 2 requests
           </div>
           <div className="flex items-center gap-2">

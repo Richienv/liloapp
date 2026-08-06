@@ -127,11 +127,11 @@ export function PhoneInput({
     <div className="space-y-2">
       <div
         className={cn(
-          "flex h-12 w-full items-center rounded-xl border bg-gray-50 transition-all duration-200",
+          "flex h-12 w-full items-center rounded-panel border bg-surface-tint transition-all duration-200",
           "focus-within:ring-1",
           showError || showEmptyError
             ? "border-red-300 focus-within:border-red-500 focus-within:ring-red-500"
-            : "border-gray-200 focus-within:border-blue-500 focus-within:ring-blue-500",
+            : "border-hairline-input focus-within:border-blue-500 focus-within:ring-blue-500",
           disabled && "cursor-not-allowed opacity-50",
           className
         )}
@@ -140,7 +140,7 @@ export function PhoneInput({
             rather than a country picker nobody would change. */}
         <span
           aria-hidden="true"
-          className="flex h-full select-none items-center gap-2 border-r border-gray-200 px-4 text-base font-medium text-gray-600"
+          className="flex h-full select-none items-center gap-2 border-r border-hairline-input px-4 text-base font-medium text-ink-muted"
         >
           🇮🇩 +62
         </span>
@@ -169,7 +169,7 @@ export function PhoneInput({
           // in toNationalDigits() instead, after the noise is removed.
           onChange={(e) => onChange(toNationalDigits(e.target.value))}
           onBlur={() => setTouched(true)}
-          className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none placeholder:text-gray-400 disabled:cursor-not-allowed"
+          className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none placeholder:text-ink-faint disabled:cursor-not-allowed"
         />
       </div>
 
@@ -204,7 +204,7 @@ export function PhoneInput({
           Nomor tersimpan sebagai {formatPhoneLocal(normalizePhone(national))}
         </p>
       ) : (
-        <p id={hintId} className="text-sm text-gray-500">
+        <p id={hintId} className="text-sm text-ink-soft">
           Nomor WhatsApp aktif, tulis tanpa awalan +62 atau 0 — dipakai admin
           Salda dan pihak brand untuk menghubungi kamu soal booking.
         </p>

@@ -83,8 +83,8 @@ export default function ReportsPage() {
       {/* Header with Time Range Filter */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Reports & Analytics</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-ink">Reports & Analytics</h1>
+          <p className="mt-1 text-sm text-ink-soft">
             Monitor platform performance and analyze booking trends.
           </p>
         </div>
@@ -109,7 +109,7 @@ export default function ReportsPage() {
         {overviewStats.map((stat, i) => (
           <div
             key={i}
-            className="bg-white p-6 rounded-xl border border-gray-200"
+            className="bg-surface p-6 rounded-panel border border-hairline-input"
           >
             <div className="flex items-center justify-between">
               <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
@@ -127,8 +127,8 @@ export default function ReportsPage() {
               </div>
             </div>
             <div className="mt-4">
-              <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-              <p className="mt-1 text-2xl font-semibold text-gray-900">{stat.value}</p>
+              <p className="text-sm font-medium text-ink-muted">{stat.title}</p>
+              <p className="mt-1 text-2xl font-semibold text-ink">{stat.value}</p>
             </div>
           </div>
         ))}
@@ -136,23 +136,23 @@ export default function ReportsPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Clients */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Top Clients</h2>
-              <Building2 className="w-5 h-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-ink">Top Clients</h2>
+              <Building2 className="w-5 h-5 text-ink-faint" />
             </div>
             <div className="mt-6 space-y-6">
               {topClients.map((client, i) => (
                 <div key={i} className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">{client.name}</p>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="font-medium text-ink">{client.name}</p>
+                    <p className="mt-1 text-sm text-ink-soft">
                       {client.bookings} bookings
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-ink">
                       Rp {(client.spent / 1000000).toFixed(1)}M
                     </p>
                     <p className="mt-1 text-sm font-medium text-green-600">
@@ -166,23 +166,23 @@ export default function ReportsPage() {
         </div>
 
         {/* Top Teams */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Top Teams</h2>
-              <Users className="w-5 h-5 text-gray-400" />
+              <h2 className="text-lg font-semibold text-ink">Top Teams</h2>
+              <Users className="w-5 h-5 text-ink-faint" />
             </div>
             <div className="mt-6 space-y-6">
               {topTeams.map((team, i) => (
                 <div key={i} className="flex items-center justify-between">
                   <div>
-                    <p className="font-medium text-gray-900">{team.name}</p>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="font-medium text-ink">{team.name}</p>
+                    <p className="mt-1 text-sm text-ink-soft">
                       {team.streamers} streamers · {team.satisfaction} rating
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-ink">
                       Rp {(team.earnings / 1000000).toFixed(1)}M
                     </p>
                   </div>
@@ -193,16 +193,16 @@ export default function ReportsPage() {
         </div>
 
         {/* Peak Hours */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden lg:col-span-2">
+        <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden lg:col-span-2">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Peak Hours</h2>
-                <p className="mt-1 text-sm text-gray-500">
+                <h2 className="text-lg font-semibold text-ink">Peak Hours</h2>
+                <p className="mt-1 text-sm text-ink-soft">
                   Most active booking hours during the day
                 </p>
               </div>
-              <Clock className="w-5 h-5 text-gray-400" />
+              <Clock className="w-5 h-5 text-ink-faint" />
             </div>
             <div className="h-[200px] flex items-end gap-4">
               {peakHours.map((hour, i) => {
@@ -213,7 +213,7 @@ export default function ReportsPage() {
                       className="w-full bg-blue-100 rounded-t-lg transition-all duration-300"
                       style={{ height: `${height}%` }}
                     />
-                    <div className="text-sm text-gray-600">{hour.time}</div>
+                    <div className="text-sm text-ink-muted">{hour.time}</div>
                   </div>
                 );
               })}

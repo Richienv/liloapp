@@ -596,14 +596,14 @@ function SettingsContent() {
           <ChevronLeft className="w-4 h-4 mr-1" />
           Back
         </Button>
-        <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
+        <h1 className="text-2xl sm:text-3xl font-semibold text-ink">
           {type === 'streamer' ? 'Pengaturan Streamer' : 'Pengaturan Client'}
         </h1>
       </div>
 
-      <Card className="border-0 shadow-lg bg-[#faf9f6]">
-        <CardHeader className="border-b border-gray-100 bg-gradient-to-r from-gray-50 to-[#faf9f6] py-8">
-          <CardTitle className="text-xl sm:text-2xl font-semibold text-gray-900">Pengaturan Profil</CardTitle>
+      <Card className="border-0 bg-[#faf9f6]">
+        <CardHeader className="border-b border-hairline bg-surface-tint py-8">
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-ink">Pengaturan Profil</CardTitle>
         </CardHeader>
         <CardContent className="p-8">
           {loading ? (
@@ -633,7 +633,7 @@ function SettingsContent() {
                 <Button 
                   type="button" 
                   onClick={handleImageClick} 
-                  className="mt-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-6"
+                  className="mt-3 bg-brand hover:bg-brand-hover text-white px-6"
                 >
                   <Camera className="mr-2 h-4 w-4" />
                   {imageUrl ? 'Ganti Foto Profil' : 'Upload Foto Profil'}
@@ -656,17 +656,17 @@ function SettingsContent() {
               {type === 'streamer' && (
                 <>
                   {/* Pricing Card - Enhanced with rules and warnings */}
-                  <Card className="border border-[#E23744]/20 shadow-lg mb-8 relative overflow-hidden">
+                  <Card className="border border-[#E23744]/20 mb-8 relative overflow-hidden">
                     <div className="absolute top-0 left-0 w-1 h-full bg-[#E23744]" />
                     <Collapsible defaultOpen>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
                               <DollarSign className="h-5 w-5 text-[#E23744]" />
                               Pengaturan Harga
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -681,17 +681,17 @@ function SettingsContent() {
                               placeholder={price ? price.toString() : "Masukkan harga baru"}
                               className="pl-12 h-11 text-base sm:text-lg"
                             />
-                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-base sm:text-lg">
+                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft text-base sm:text-lg">
                               Rp.
                             </span>
                           </div>
 
                           {/* Price Rules and Guidelines */}
-                          <div className="flex items-start gap-2 p-4 sm:p-5 bg-[#E23744]/5 rounded-xl border border-[#E23744]/10">
+                          <div className="flex items-start gap-2 p-4 sm:p-5 bg-[#E23744]/5 rounded-panel border border-[#E23744]/10">
                             <AlertTriangle className="h-4 w-4 sm:h-5 sm:w-5 text-[#E23744] flex-shrink-0 mt-0.5" />
                             <div className="space-y-1">
-                              <p className="text-sm font-medium text-gray-900">Peraturan Perubahan Harga:</p>
-                              <ul className="text-xs sm:text-sm text-gray-600 list-disc pl-4 space-y-1">
+                              <p className="text-sm font-medium text-ink">Peraturan Perubahan Harga:</p>
+                              <ul className="text-xs sm:text-sm text-ink-muted list-disc pl-4 space-y-1">
                                 <li>Perubahan harga dibatasi maksimal <strong>25%</strong> naik atau turun per hari</li>
                                 <li>Harga yang dilihat client akan otomatis ditambah <strong>30%</strong> sebagai biaya layanan platform</li>
                                 <li>Perubahan harga hanya dapat dilakukan <strong>1 kali dalam 24 jam</strong></li>
@@ -702,15 +702,15 @@ function SettingsContent() {
                           {/* Price Limits Display */}
                           {price > 0 && (
                             <div className="grid grid-cols-2 gap-4">
-                              <div className="bg-[#E23744]/5 rounded-xl p-4 border border-[#E23744]/10">
-                                <p className="text-sm text-gray-600 mb-1">Minimum</p>
-                                <p className="text-base font-semibold text-gray-900">
+                              <div className="bg-[#E23744]/5 rounded-panel p-4 border border-[#E23744]/10">
+                                <p className="text-sm text-ink-muted mb-1">Minimum</p>
+                                <p className="text-base font-semibold text-ink">
                                   Rp {calculatePriceLimits(price).minPrice.toLocaleString('id-ID')}
                                 </p>
                               </div>
-                              <div className="bg-[#E23744]/5 rounded-xl p-4 border border-[#E23744]/10">
-                                <p className="text-sm text-gray-600 mb-1">Maximum</p>
-                                <p className="text-base font-semibold text-gray-900">
+                              <div className="bg-[#E23744]/5 rounded-panel p-4 border border-[#E23744]/10">
+                                <p className="text-sm text-ink-muted mb-1">Maximum</p>
+                                <p className="text-base font-semibold text-ink">
                                   Rp {calculatePriceLimits(price).maxPrice.toLocaleString('id-ID')}
                                 </p>
                               </div>
@@ -718,8 +718,8 @@ function SettingsContent() {
                           )}
 
                           {/* Final Price Display */}
-                          <div className="bg-[#E23744]/10 rounded-xl p-4 border border-[#E23744]/20">
-                            <p className="text-sm font-medium text-gray-900 mb-1">
+                          <div className="bg-[#E23744]/10 rounded-panel p-4 border border-[#E23744]/20">
+                            <p className="text-sm font-medium text-ink mb-1">
                               Harga Yang Dilihat Client:
                             </p>
                             <p className="text-xl font-bold text-[#E23744]">
@@ -732,16 +732,16 @@ function SettingsContent() {
                   </Card>
 
                   {/* Personal Information Card */}
-                  <Card className="border border-gray-200 shadow-sm mb-8">
+                  <Card className="border border-hairline-input mb-8">
                     <Collapsible>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <User className="h-5 w-5 text-gray-600" />
+                              <User className="h-5 w-5 text-ink-muted" />
                               Informasi Pribadi
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -813,16 +813,16 @@ function SettingsContent() {
                   </Card>
 
                   {/* Streamer Profile Card */}
-                  <Card className="border border-gray-200 shadow-sm mb-8">
+                  <Card className="border border-hairline-input mb-8">
                     <Collapsible>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <Monitor className="h-5 w-5 text-gray-600" />
+                              <Monitor className="h-5 w-5 text-ink-muted" />
                               Profil Streamer
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -857,7 +857,7 @@ function SettingsContent() {
                                       h-10 px-6 rounded-lg border text-sm font-medium transition-all duration-200
                                       ${platform.split(',').includes(platformOption)
                                         ? 'border-blue-600 bg-blue-50 text-blue-600'
-                                        : 'border-gray-200 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600'
+                                        : 'border-hairline-input hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600'
                                       }
                                     `}
                                   >
@@ -889,7 +889,7 @@ function SettingsContent() {
                                       cursor-pointer p-2 rounded-lg border transition-all duration-200
                                       ${category.split(',').includes(cat)
                                         ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                        : 'border-gray-200 hover:border-purple-500 hover:bg-purple-50/50'
+                                        : 'border-hairline-input hover:border-purple-500 hover:bg-purple-50/50'
                                       }
                                     `}
                                   >
@@ -905,16 +905,16 @@ function SettingsContent() {
                   </Card>
 
                   {/* Location & Contact Card */}
-                  <Card className="border border-gray-200 shadow-sm mb-8">
+                  <Card className="border border-hairline-input mb-8">
                     <Collapsible>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <MapPin className="h-5 w-5 text-gray-600" />
+                              <MapPin className="h-5 w-5 text-ink-muted" />
                               Lokasi & Kontak
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -946,16 +946,16 @@ function SettingsContent() {
                   </Card>
 
                   {/* Media & Gallery Card */}
-                  <Card className="border border-gray-200 shadow-sm mb-8">
+                  <Card className="border border-hairline-input mb-8">
                     <Collapsible>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <ImageIcon className="h-5 w-5 text-gray-600" />
+                              <ImageIcon className="h-5 w-5 text-ink-muted" />
                               Media & Galeri
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -993,7 +993,7 @@ function SettingsContent() {
                                     <button
                                       type="button"
                                       onClick={() => removeGalleryPhoto(index)}
-                                      className="absolute -top-2 -right-2 bg-white rounded-full p-1 shadow-md hover:bg-gray-100"
+                                      className="absolute -top-2 -right-2 bg-surface rounded-full p-1 hover:bg-surface-tint"
                                     >
                                       <XCircle className="h-5 w-5 text-red-500" />
                                     </button>
@@ -1012,16 +1012,16 @@ function SettingsContent() {
               {type !== 'streamer' && (
                 <>
                   {/* Client Profile Card */}
-                  <Card className="border border-gray-200 shadow-sm mb-8">
+                  <Card className="border border-hairline-input mb-8">
                     <Collapsible defaultOpen>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <User className="h-5 w-5 text-gray-600" />
+                              <User className="h-5 w-5 text-ink-muted" />
                               Informasi Pribadi
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -1064,16 +1064,16 @@ function SettingsContent() {
                   </Card>
 
                   {/* Brand Information Card */}
-                  <Card className="border border-gray-200 shadow-sm mb-8">
+                  <Card className="border border-hairline-input mb-8">
                     <Collapsible defaultOpen>
                       <CollapsibleTrigger className="w-full">
-                        <CardHeader className="bg-white hover:bg-gray-50 transition-colors">
+                        <CardHeader className="bg-surface hover:bg-surface-tint transition-colors">
                           <div className="flex items-center justify-between">
                             <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                              <FileText className="h-5 w-5 text-gray-600" />
+                              <FileText className="h-5 w-5 text-ink-muted" />
                               Informasi Brand
                             </CardTitle>
-                            <ChevronDown className="h-5 w-5 text-gray-500 transition-transform duration-200 ui-expanded:rotate-180" />
+                            <ChevronDown className="h-5 w-5 text-ink-soft transition-transform duration-200 ui-expanded:rotate-180" />
                           </div>
                         </CardHeader>
                       </CollapsibleTrigger>
@@ -1122,7 +1122,7 @@ function SettingsContent() {
                                     {brandGuidelineError}
                                   </p>
                                 )}
-                                <p className="text-sm text-gray-500">
+                                <p className="text-sm text-ink-soft">
                                   Upload file PDF atau DOC/DOCX (max. 5MB)
                                 </p>
                               </div>
@@ -1137,7 +1137,7 @@ function SettingsContent() {
 
               <Button 
                 type="submit" 
-                className="w-full h-14 text-white text-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200 bg-gradient-to-r from-[#2563eb] to-[#2563eb]/90 hover:from-[#2563eb]/90 hover:to-[#2563eb]"
+                className="w-full h-14 text-white text-lg font-medium transition-all duration-200 bg-brand hover:bg-brand-hover"
                 disabled={isLoading}
               >
                 {isLoading ? (

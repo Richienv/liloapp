@@ -41,8 +41,7 @@ export function AddressButton({ streamerId, clientId, onShowAddress, className }
   return (
     <button
       onClick={onShowAddress}
-      className={`px-3 py-1.5 bg-gradient-to-r from-[#1e40af] to-[#6b21a8] 
-                 hover:from-[#1e3a8a] hover:to-[#581c87] rounded-lg transition-all 
+      className={`px-3 py-1.5 bg-brand rounded-lg transition-all 
                  duration-200 ease-in-out flex items-center gap-2 text-white 
                  text-sm font-medium ${className || ''}`}
     >

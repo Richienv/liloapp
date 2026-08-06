@@ -85,11 +85,11 @@ export default function AdminShell({
     if (hasChildren && item.children) {
       return (
         <div key={item.href} className="space-y-1">
-          <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600">
+          <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-ink-muted">
             {item.icon}
             <span>{item.title}</span>
           </div>
-          <div className="ml-4 space-y-1 border-l-2 border-gray-100 pl-4">
+          <div className="ml-4 space-y-1 border-l-2 border-hairline pl-4">
             {item.children.map(child => (
               <Link
                 key={child.href}
@@ -98,7 +98,7 @@ export default function AdminShell({
                   "block py-2 px-3 text-sm rounded-lg transition-colors",
                   pathname === child.href
                     ? "text-blue-600 bg-blue-50 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    : "text-ink-muted hover:bg-surface-tint"
                 )}
               >
                 {child.title}
@@ -115,8 +115,8 @@ export default function AdminShell({
         href={item.href}
         className={cn(
           "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-          "hover:bg-gray-100",
-          isActive ? "text-blue-600 bg-blue-50" : "text-gray-600"
+          "hover:bg-surface-tint",
+          isActive ? "text-blue-600 bg-blue-50" : "text-ink-muted"
         )}
       >
         {item.icon}
@@ -126,16 +126,16 @@ export default function AdminShell({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
+    <div className="min-h-screen bg-surface-tint/30">
       <div className="flex h-screen flex-col">
         <div className="flex flex-1 overflow-hidden">
           {/* Sidebar */}
-          <aside className="w-64 border-r border-gray-200 bg-white px-4 py-6">
+          <aside className="w-64 border-r border-hairline-input bg-surface px-4 py-6">
             <div className="flex items-center gap-2 px-3 mb-8">
               <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
                 <span className="text-white font-semibold">A</span>
               </div>
-              <span className="font-semibold text-gray-900">Admin Portal</span>
+              <span className="font-semibold text-ink">Admin Portal</span>
             </div>
 
             <nav className="space-y-1">
@@ -146,20 +146,20 @@ export default function AdminShell({
           {/* Main Content */}
           <main className="flex-1 overflow-y-auto">
             {/* Breadcrumb */}
-            <div className="border-b border-gray-200 bg-white">
+            <div className="border-b border-hairline-input bg-surface">
               <div className="px-8 py-4">
                 <div className="flex items-center gap-2 text-sm">
                   {getBreadcrumbs().map((crumb, index) => (
                     <div key={crumb.href} className="flex items-center">
-                      {index > 0 && <span className="mx-2 text-gray-400">/</span>}
+                      {index > 0 && <span className="mx-2 text-ink-faint">/</span>}
                       {crumb.isLast ? (
-                        <span className="text-gray-900 font-medium">
+                        <span className="text-ink font-medium">
                           {crumb.title}
                         </span>
                       ) : (
                         <Link
                           href={crumb.href}
-                          className="text-gray-600 hover:text-gray-900"
+                          className="text-ink-muted hover:text-ink"
                         >
                           {crumb.title}
                         </Link>

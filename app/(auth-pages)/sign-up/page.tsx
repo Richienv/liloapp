@@ -192,7 +192,7 @@ export default function SignUp({
             <h1 className="font-serif text-section font-medium text-ink">
               Buat akun Salda
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-ink-muted">
               Sudah punya akun?{" "}
               <Link
                 href="/sign-in"
@@ -211,12 +211,12 @@ export default function SignUp({
                 <div
                   key={index}
                   className={`h-1.5 flex-1 rounded-full transition-colors duration-200 ${
-                    index <= step ? "bg-blue-600" : "bg-gray-200"
+                    index <= step ? "bg-blue-600" : "bg-surface-deep"
                   }`}
                 />
               ))}
             </div>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-ink-soft">
               Langkah {step} dari {TOTAL_STEPS} ·{" "}
               {step === 1 ? "Email & kata sandi" : "Nama & WhatsApp"}
             </p>
@@ -228,10 +228,10 @@ export default function SignUp({
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-hairline-input" />
                 </div>
                 <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-4 text-gray-500">atau</span>
+                  <span className="bg-surface px-4 text-ink-soft">atau</span>
                 </div>
               </div>
             </>
@@ -243,7 +243,7 @@ export default function SignUp({
                 <div className="space-y-2">
                   <Label
                     htmlFor="email"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-ink-body"
                   >
                     Alamat email
                   </Label>
@@ -257,8 +257,8 @@ export default function SignUp({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 bg-gray-50/50 pl-4 text-base transition-all
-                      duration-200 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                    className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 text-base transition-all
+                      duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
                     style={{ fontSize: "16px" }}
                   />
                 </div>
@@ -266,7 +266,7 @@ export default function SignUp({
                 <div className="space-y-2">
                   <Label
                     htmlFor="password"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-ink-body"
                   >
                     Kata sandi
                   </Label>
@@ -281,8 +281,8 @@ export default function SignUp({
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-11 rounded-xl border-gray-200 bg-gray-50/50 pl-4 pr-11 text-base transition-all
-                        duration-200 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                      className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 pr-11 text-base transition-all
+                        duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
                       style={{ fontSize: "16px" }}
                     />
                     {/* A visible-password toggle instead of a confirmation
@@ -297,7 +297,7 @@ export default function SignUp({
                           : "Tampilkan kata sandi"
                       }
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-gray-700"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft transition-colors hover:text-ink-body"
                     >
                       {showPassword ? (
                         <EyeOff className="h-5 w-5" />
@@ -314,7 +314,7 @@ export default function SignUp({
                   <div className="space-y-2">
                     <Label
                       htmlFor="first_name"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-ink-body"
                     >
                       Nama depan
                     </Label>
@@ -327,15 +327,15 @@ export default function SignUp({
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="h-11 rounded-xl border-gray-200 bg-gray-50/50 pl-4 text-base transition-all
-                        duration-200 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                      className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 text-base transition-all
+                        duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
                       style={{ fontSize: "16px" }}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label
                       htmlFor="last_name"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-ink-body"
                     >
                       Nama belakang
                     </Label>
@@ -348,8 +348,8 @@ export default function SignUp({
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="h-11 rounded-xl border-gray-200 bg-gray-50/50 pl-4 text-base transition-all
-                        duration-200 focus:border-blue-600 focus:bg-white focus:ring-2 focus:ring-blue-100"
+                      className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 text-base transition-all
+                        duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
                       style={{ fontSize: "16px" }}
                     />
                   </div>
@@ -362,7 +362,7 @@ export default function SignUp({
                 <div className="space-y-2">
                   <Label
                     htmlFor="phone"
-                    className="text-sm font-medium text-gray-700"
+                    className="text-sm font-medium text-ink-body"
                   >
                     Nomor WhatsApp
                   </Label>
@@ -391,9 +391,9 @@ export default function SignUp({
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-11 w-full rounded-xl bg-brand font-medium
-                  text-white shadow-[0_4px_20px_rgba(0,0,0,0.1)] transition-all duration-200
-                  hover:bg-brand-hover hover:shadow-[0_4px_24px_rgba(0,0,0,0.15)]
+                className="h-11 w-full rounded-panel bg-brand font-medium
+                  text-white transition-all duration-200
+                  hover:bg-brand-hover hover:
                   disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? (
@@ -416,8 +416,8 @@ export default function SignUp({
                     setStep(1);
                   }}
                   disabled={isSubmitting}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-xl text-sm font-medium
-                    text-gray-600 transition-colors hover:bg-gray-50 hover:text-gray-900
+                  className="flex h-11 w-full items-center justify-center gap-2 rounded-panel text-sm font-medium
+                    text-ink-muted transition-colors hover:bg-surface-tint hover:text-ink
                     disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <ArrowLeft className="h-4 w-4" />
@@ -429,13 +429,13 @@ export default function SignUp({
 
           {/* Sets the expectation for what comes right after the account: one
               question, not another form. */}
-          <p className="mt-6 border-t border-gray-100 pt-5 text-sm text-gray-500">
+          <p className="mt-6 border-t border-hairline pt-5 text-sm text-ink-soft">
             {wantsToHost
               ? "Setelah akun jadi, kamu tinggal konfirmasi bahwa kamu ingin jadi host — lalu lengkapi profil kapan pun kamu siap."
               : "Setelah akun jadi, kamu cukup pilih satu hal: cari host untuk brand kamu, atau jadi host live."}
           </p>
 
-          <p className="mt-3 text-xs leading-relaxed text-gray-500">
+          <p className="mt-3 text-xs leading-relaxed text-ink-soft">
             Dengan membuat akun, kamu menyetujui{" "}
             <Link
               href="/terms"

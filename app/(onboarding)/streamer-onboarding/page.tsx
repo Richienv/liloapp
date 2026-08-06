@@ -221,8 +221,8 @@ export default function StreamerOnboarding() {
 
   if (authState === "checking") {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
+      <div className="flex min-h-screen w-full items-center justify-center bg-canvas">
+        <div className="flex flex-col items-center gap-3 text-ink-soft">
           <Loader2 className="h-6 w-6 animate-spin text-red-500" />
           <p className="text-sm">Menyiapkan akun kamu...</p>
         </div>
@@ -248,10 +248,10 @@ export default function StreamerOnboarding() {
               repeat: Infinity,
               ease: "easeInOut",
             }}
-            className="absolute inset-0 bg-red-100 rounded-lg lg:rounded-xl"
+            className="absolute inset-0 bg-red-100 rounded-lg lg:rounded-panel"
           />
 
-          <div className="relative bg-white/95 backdrop-blur-sm rounded-lg lg:rounded-xl border-2 border-red-500 p-4 lg:p-8 space-y-4 lg:space-y-6">
+          <div className="relative bg-white/95 backdrop-blur-sm rounded-lg lg:rounded-panel border-2 border-red-500 p-4 lg:p-8 space-y-4 lg:space-y-6">
             <motion.div
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
@@ -278,7 +278,7 @@ export default function StreamerOnboarding() {
               initial={{ y: 10, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.3 }}
-              className="text-base lg:text-lg text-gray-700"
+              className="text-base lg:text-lg text-ink-body"
             >
               {step.description}
             </motion.p>
@@ -290,7 +290,7 @@ export default function StreamerOnboarding() {
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-3 text-gray-800 bg-red-50 p-3 lg:p-4 rounded-lg border border-red-200"
+                  className="flex items-center gap-3 text-ink bg-red-50 p-3 lg:p-4 rounded-lg border border-red-200"
                 >
                   <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                     <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
@@ -318,8 +318,8 @@ export default function StreamerOnboarding() {
 
     return (
       <div className="space-y-6 lg:space-y-8">
-        <h1 className="text-2xl lg:text-4xl font-bold text-gray-900">{step.title}</h1>
-        <p className="text-base lg:text-lg text-gray-600">{step.description}</p>
+        <h1 className="text-2xl lg:text-4xl font-bold text-ink">{step.title}</h1>
+        <p className="text-base lg:text-lg text-ink-muted">{step.description}</p>
         <div className="space-y-3 lg:space-y-4">
           {step.points.map((point, index) => (
             <motion.div
@@ -330,7 +330,7 @@ export default function StreamerOnboarding() {
                 y: 0,
                 transition: { delay: index * 0.2 }
               }}
-              className="flex items-center gap-3 text-gray-700"
+              className="flex items-center gap-3 text-ink-body"
             >
               <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
                 <CheckCircle2 className="w-3 h-3 lg:w-4 lg:h-4 text-red-500" />
@@ -348,14 +348,13 @@ export default function StreamerOnboarding() {
       {/* Always-visible escape hatch — nobody should feel trapped in a tour. */}
       <button
         onClick={goToApp}
-        className="absolute right-4 top-4 z-20 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-gray-600
-          shadow-sm backdrop-blur transition-colors hover:text-gray-900"
+        className="absolute right-4 top-4 z-20 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-ink-muted backdrop-blur transition-colors hover:text-ink"
       >
         Lewati
       </button>
 
       {/* Video Section */}
-      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-white order-1 lg:order-2">
+      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-surface order-1 lg:order-2">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -377,7 +376,7 @@ export default function StreamerOnboarding() {
             ) : (
               // The safety step has no video; an empty <video src=""> renders as
               // a broken player, so show the brand mark instead.
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-red-50 via-white to-red-50">
+              <div className="flex h-full w-full items-center justify-center bg-canvas">
                 <Image
                   src="/images/salda-logoB.png"
                   alt="Salda"
@@ -392,7 +391,7 @@ export default function StreamerOnboarding() {
       </div>
 
       {/* Content Section */}
-      <div className="w-full lg:w-[45%] bg-gradient-to-br from-red-50 via-white to-red-50 p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
+      <div className="w-full lg:w-[45%] bg-canvas p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
         <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait">
             <motion.div
@@ -408,7 +407,7 @@ export default function StreamerOnboarding() {
                   <div key={index} className="flex-1 relative">
                     <div
                       className={`h-1.5 lg:h-2 rounded-full transition-all duration-500 ${
-                        index <= currentStep ? "bg-red-500" : "bg-gray-200"
+                        index <= currentStep ? "bg-red-500" : "bg-surface-deep"
                       }`}
                     />
                     {index <= currentStep && (
@@ -443,7 +442,7 @@ export default function StreamerOnboarding() {
                   </Button>
                   <Button
                     onClick={handleNext}
-                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
+                    className="flex-1 bg-destructive-emphasis hover:bg-destructive-emphasis/90 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
                   >
                     {isLastStep ? "Mulai" : "Lanjut"}
                     <ArrowRight className="w-4 h-4" />
@@ -463,7 +462,7 @@ export default function StreamerOnboarding() {
                       height={40}
                       className="opacity-50 group-hover:opacity-100 transition-opacity lg:w-[60px] lg:h-[60px]"
                     />
-                    <span className="text-xs lg:text-sm text-gray-500 underline group-hover:text-gray-700">
+                    <span className="text-xs lg:text-sm text-ink-soft underline group-hover:text-ink-body">
                       Lewati semua pengenalan
                     </span>
                   </button>

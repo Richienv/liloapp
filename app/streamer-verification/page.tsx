@@ -18,7 +18,7 @@ export const dynamic = "force-dynamic";
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
         <div className="p-6 sm:p-8">{children}</div>
       </div>
     </main>
@@ -45,14 +45,14 @@ export default async function StreamerVerificationPage() {
   if (!streamer) {
     return (
       <Shell>
-        <h1 className="text-xl font-semibold text-gray-900">Halaman khusus host</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-xl font-semibold text-ink">Halaman khusus host</h1>
+        <p className="mt-2 text-ink-muted">
           Akun ini terdaftar sebagai brand, bukan host. Kalau kamu ingin jadi host live
           streaming, daftar lewat halaman pendaftaran host.
         </p>
         <Link
           href="/streamer-sign-up"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-panel bg-blue-600 px-5
             font-medium text-white transition-colors hover:bg-blue-700"
         >
           Daftar sebagai host
@@ -75,13 +75,13 @@ export default async function StreamerVerificationPage() {
         <span className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
           <CheckCircle2 className="h-4 w-4" /> Terverifikasi
         </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">Akun kamu sudah terverifikasi</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="mt-4 text-xl font-semibold text-ink">Akun kamu sudah terverifikasi</h1>
+        <p className="mt-2 text-ink-muted">
           Profil kamu sudah tampil di Salda dan brand sudah bisa memesan jadwal live kamu.
         </p>
         <Link
           href="/streamer-dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-panel bg-blue-600 px-5
             font-medium text-white transition-colors hover:bg-blue-700"
         >
           Buka dashboard
@@ -96,8 +96,8 @@ export default async function StreamerVerificationPage() {
         <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700">
           <AlertTriangle className="h-4 w-4" /> Ditangguhkan
         </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">Akun kamu sedang ditangguhkan</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="mt-4 text-xl font-semibold text-ink">Akun kamu sedang ditangguhkan</h1>
+        <p className="mt-2 text-ink-muted">
           {submission?.notes
             ? submission.notes
             : "Hubungi dukungan Salda lewat WhatsApp untuk mengetahui langkah selanjutnya."}
@@ -113,20 +113,20 @@ export default async function StreamerVerificationPage() {
         <span className="inline-flex items-center gap-2 rounded-full bg-yellow-50 px-3 py-1 text-sm font-medium text-yellow-800">
           <Clock className="h-4 w-4" /> Sedang ditinjau
         </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">Pengajuan kamu sedang diperiksa</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="mt-4 text-xl font-semibold text-ink">Pengajuan kamu sedang diperiksa</h1>
+        <p className="mt-2 text-ink-muted">
           Tim kami sedang memeriksa dokumen untuk akun{" "}
-          <span className="font-medium text-gray-900">{submission.platform_handle}</span>. Proses ini
+          <span className="font-medium text-ink">{submission.platform_handle}</span>. Proses ini
           biasanya selesai dalam 1–2 hari kerja, dan kamu akan diberi tahu begitu selesai.
         </p>
-        <p className="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        <p className="mt-4 rounded-panel bg-surface-tint px-4 py-3 text-sm text-ink-muted">
           Selama menunggu, kamu sudah bisa melengkapi jadwal dan harga di dashboard. Profil kamu
           baru tampil untuk brand setelah verifikasi disetujui.
         </p>
         <Link
           href="/streamer-dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl border-2
-            border-gray-200 px-5 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+          className="mt-6 inline-flex h-11 items-center justify-center rounded-panel border-2
+            border-hairline-input px-5 font-medium text-ink-body transition-colors hover:bg-surface-tint"
         >
           Buka dashboard
         </Link>
@@ -142,10 +142,10 @@ export default async function StreamerVerificationPage() {
         <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
           <ShieldCheck className="h-4 w-4" /> Verifikasi host
         </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">
+        <h1 className="mt-4 text-xl font-semibold text-ink">
           {wasRejected ? "Kirim ulang dokumen verifikasi" : "Lengkapi verifikasi akun kamu"}
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-ink-muted">
           {wasRejected
             ? "Pengajuan sebelumnya belum bisa kami setujui. Perbaiki sesuai catatan di bawah, lalu kirim ulang."
             : "Satu langkah terakhir sebelum profil kamu bisa dipesan brand."}
@@ -153,9 +153,9 @@ export default async function StreamerVerificationPage() {
       </div>
 
       {wasRejected && submission?.notes && (
-        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
+        <div className="mb-6 rounded-panel border border-destructive/30 bg-destructive/5 px-4 py-3">
           <p className="text-sm font-medium text-destructive-emphasis">Catatan dari tim kami</p>
-          <p className="mt-1 text-sm text-gray-700">{submission.notes}</p>
+          <p className="mt-1 text-sm text-ink-body">{submission.notes}</p>
         </div>
       )}
 

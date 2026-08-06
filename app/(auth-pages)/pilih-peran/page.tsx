@@ -317,8 +317,8 @@ export default function RolePicker() {
                 setStep("choose");
               }}
               disabled={busy}
-              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-600
-                transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
+              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted
+                transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
             >
               <ArrowLeft className="h-4 w-4" />
               Kembali

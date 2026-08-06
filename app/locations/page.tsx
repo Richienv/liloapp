@@ -145,32 +145,32 @@ export default async function LocationsPage() {
 
       <main className="mx-auto max-w-5xl px-4 py-10">
         <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-ink-soft">
             <li>
               <Link href="/" className="hover:text-blue-600">
                 Beranda
               </Link>
             </li>
             <ChevronRight className="h-3 w-3" aria-hidden="true" />
-            <li aria-current="page" className="text-gray-900">
+            <li aria-current="page" className="text-ink">
               Kota
             </li>
           </ol>
         </nav>
 
         <header className="mb-10">
-          <p className="inline-flex items-center gap-1 text-sm text-gray-500">
+          <p className="inline-flex items-center gap-1 text-sm text-ink-soft">
             <MapPin className="h-4 w-4" /> Seluruh Indonesia
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">
             Live Streamer Profesional per Kota
           </h1>
-          <p className="mt-2 max-w-2xl text-gray-600">
+          <p className="mt-2 max-w-2xl text-ink-muted">
             {entries.length > 0
               ? `${total} host live streaming terverifikasi tersebar di ${entries.length} kota. Pilih kota kamu untuk melihat host yang tersedia.`
               : 'Belum ada host live streaming terverifikasi yang bisa ditampilkan saat ini.'}
           </p>
-          <p className="mt-2 max-w-2xl text-sm text-gray-500">
+          <p className="mt-2 max-w-2xl text-sm text-ink-soft">
             Live streaming berjalan sepenuhnya online. Kota hanya memengaruhi lama pengiriman
             produk kamu ke host, bukan kualitas siarannya — jadi kamu tetap bebas memilih host
             dari kota mana pun.
@@ -181,7 +181,7 @@ export default async function LocationsPage() {
           <div className="space-y-10">
             {groups.map((group) => (
               <section key={group.province}>
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-soft">
                   {group.province}
                 </h2>
                 <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -189,17 +189,17 @@ export default async function LocationsPage() {
                     <li key={city.slug}>
                       <Link
                         href={`/location/${city.slug}`}
-                        className="group flex items-center justify-between rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                        className="group flex items-center justify-between rounded-frame border border-hairline bg-surface p-4 transition-shadow"
                       >
                         <span>
-                          <span className="block font-semibold text-gray-900 group-hover:text-blue-600">
+                          <span className="block font-semibold text-ink group-hover:text-blue-600">
                             {city.name}
                           </span>
-                          <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-gray-500">
+                          <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-soft">
                             <Users className="h-3 w-3" /> {count} host tersedia
                           </span>
                         </span>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-gray-400 group-hover:text-blue-600" />
+                        <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint group-hover:text-blue-600" />
                       </Link>
                     </li>
                   ))}
@@ -208,8 +208,8 @@ export default async function LocationsPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
-            <p className="text-gray-600">
+          <div className="rounded-frame border border-dashed border-hairline-input bg-surface p-8 text-center">
+            <p className="text-ink-muted">
               Daftar kota akan muncul di sini begitu ada host yang terverifikasi.
             </p>
             <Link

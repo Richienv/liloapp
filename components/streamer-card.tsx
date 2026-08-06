@@ -200,7 +200,7 @@ function RatingStars({ rating }: { rating: number | null | undefined }) {
     return (
       <div className="flex items-center font-sans">
         {[...Array(5)].map((_, i) => (
-          <Star key={i} className="w-3 h-3 text-gray-300" />
+          <Star key={i} className="w-3 h-3 text-ink-ghost" />
         ))}
         <span className="ml-1 text-[10px] text-foreground/70">{NO_RATING_LABEL}</span>
       </div>
@@ -218,7 +218,7 @@ function RatingStars({ rating }: { rating: number | null | undefined }) {
       ))}
       {hasHalfStar && <StarHalf className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
       {[...Array(Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0)))].map((_, i) => (
-        <Star key={i + fullStars + (hasHalfStar ? 1 : 0)} className="w-3 h-3 text-gray-300" />
+        <Star key={i + fullStars + (hasHalfStar ? 1 : 0)} className="w-3 h-3 text-ink-ghost" />
       ))}
       <span className="ml-1 text-[10px] text-foreground/70">
         {safeRating.toFixed(1)}
@@ -886,15 +886,15 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             */
             className="max-w-2xl w-full h-[85vh] z-[9999] fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] p-0 dialog-content-mobile flex flex-col overflow-hidden"
           >
-            <DialogHeader className="shrink-0 bg-white px-6 pb-4 pt-6 flex flex-row items-start justify-between">
+            <DialogHeader className="shrink-0 bg-surface px-6 pb-4 pt-6 flex flex-row items-start justify-between">
               <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Streamer Profile</DialogTitle>
-                <DialogDescription className="text-sm text-gray-500 mt-1">
+                <DialogTitle className="text-xl font-semibold text-ink">Streamer Profile</DialogTitle>
+                <DialogDescription className="text-sm text-ink-soft mt-1">
                   View detailed information about this streamer
                 </DialogDescription>
               </div>
-              <DialogClose className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                <X className="h-5 w-5 text-gray-500" />
+              <DialogClose className="p-2 rounded-full hover:bg-surface-tint transition-colors">
+                <X className="h-5 w-5 text-ink-soft" />
               </DialogClose>
             </DialogHeader>
 
@@ -903,9 +903,9 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-6 pb-6">
             {isLoadingProfile ? (
               <div className="space-y-4">
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
+                <div className="h-4 bg-surface-deep rounded animate-pulse" />
+                <div className="h-4 bg-surface-deep rounded animate-pulse w-3/4" />
+                <div className="h-4 bg-surface-deep rounded animate-pulse w-1/2" />
               </div>
             ) : extendedProfile ? (
               <>
@@ -919,13 +919,13 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                           src={streamerImage(streamer.image_url)}
                           alt={formatName(streamer.first_name, streamer.last_name)}
                           fill
-                          className="rounded-lg object-cover border-2 border-white shadow-md"
+                          className="rounded-lg object-cover border-2 border-white"
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Star className={cn(
                           "w-4 h-4",
-                          extendedProfile.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                          extendedProfile.rating ? "text-yellow-400 fill-yellow-400" : "text-ink-ghost"
                         )} />
                         <span className="text-sm font-medium">
                           {extendedProfile.rating ? `${Number(extendedProfile.rating).toFixed(1)} / 5.0` : NO_RATING_LABEL}
@@ -1024,9 +1024,9 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 </div>
 
                 {/* Bio Section */}
-                <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm mb-6">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">About Me</h3>
-                  <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                <div className="bg-surface rounded-panel p-6 border border-hairline mb-6">
+                  <h3 className="text-sm font-semibold text-ink mb-3">About Me</h3>
+                  <p className="text-sm text-ink-muted whitespace-pre-wrap">
                     {extendedProfile.fullBio || extendedProfile.bio || 'Belum ada deskripsi tersedia'}
                   </p>
                 </div>
@@ -1034,12 +1034,12 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 {/* Featured Content */}
                 {extendedProfile.video_url && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900">Featured Content</h3>
+                    <h3 className="text-lg font-semibold text-ink">Featured Content</h3>
                     <div className="relative w-full max-w-[360px] mx-auto">
                       <div className="relative pb-[177.78%]">  {/* 9:16 aspect ratio */}
                         <iframe
                           src={`https://www.youtube.com/embed/${getYouTubeVideoId(extendedProfile.video_url) || ''}`}
-                          className="absolute inset-0 w-full h-full rounded-xl"
+                          className="absolute inset-0 w-full h-full rounded-panel"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                         />
@@ -1050,11 +1050,11 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
 
                 {/* Gallery Section */}
                 <div className="mb-8">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Gallery</h3>
+                  <h3 className="text-sm font-semibold text-ink mb-3">Gallery</h3>
                   {isLoadingGallery ? (
                     <div className="grid grid-cols-4 gap-2">
                       {[1, 2, 3, 4].map((n) => (
-                        <div key={n} className="aspect-square bg-gray-200 rounded animate-pulse" />
+                        <div key={n} className="aspect-square bg-surface-deep rounded animate-pulse" />
                       ))}
                     </div>
                   ) : extendedProfile?.gallery?.photos && extendedProfile.gallery.photos.length > 0 ? (
@@ -1062,7 +1062,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                       {extendedProfile.gallery.photos.map((photo) => (
                         <div
                           key={photo.id}
-                          className="aspect-square relative overflow-hidden rounded-lg shadow-sm"
+                          className="aspect-square relative overflow-hidden rounded-lg"
                         >
                           <Image
                             src={photo.photo_url}
@@ -1075,23 +1075,23 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center">No gallery photos available</p>
+                    <p className="text-sm text-ink-soft text-center">No gallery photos available</p>
                   )}
                 </div>
 
                 {/* Testimonials Section */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Client Testimonials</h3>
+                  <h3 className="text-sm font-semibold text-ink mb-3">Client Testimonials</h3>
                   {isLoadingTestimonials ? (
                     <div className="space-y-4">
                       {[1, 2].map((n) => (
-                        <div key={n} className="h-20 bg-gray-200 rounded animate-pulse" />
+                        <div key={n} className="h-20 bg-surface-deep rounded animate-pulse" />
                       ))}
                     </div>
                   ) : extendedProfile.testimonials?.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3">
                       {extendedProfile.testimonials.map((testimonial, index) => (
-                        <div key={index} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                        <div key={index} className="bg-surface p-3 rounded-lg border border-hairline">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex">
                               {[1, 2, 3, 4, 5].map((star) => (
@@ -1101,7 +1101,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                                     "w-3 h-3",
                                     testimonial.rating >= star 
                                       ? "text-yellow-400 fill-yellow-400" 
-                                      : "text-gray-300"
+                                      : "text-ink-ghost"
                                   )}
                                 />
                               ))}
@@ -1110,12 +1110,12 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                               {testimonial.client_name}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 italic">"{testimonial.comment}"</p>
+                          <p className="text-sm text-ink-muted italic">"{testimonial.comment}"</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center">No testimonials yet</p>
+                    <p className="text-sm text-ink-soft text-center">No testimonials yet</p>
                   )}
                 </div>
               </>
@@ -1149,7 +1149,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                     toast.error(UNVERIFIED_BOOKING_MESSAGE, {
                       duration: 4000,
                       position: 'top-center',
-                      className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+                      className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
                     });
                     return;
                   }

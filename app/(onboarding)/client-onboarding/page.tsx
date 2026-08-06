@@ -268,8 +268,8 @@ export default function ClientOnboarding() {
 
   if (authState === "checking") {
     return (
-      <div className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
-        <div className="flex flex-col items-center gap-3 text-gray-500">
+      <div className="flex min-h-screen w-full items-center justify-center bg-canvas">
+        <div className="flex flex-col items-center gap-3 text-ink-soft">
           <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
           <p className="text-sm">Menyiapkan akun kamu...</p>
         </div>
@@ -281,14 +281,14 @@ export default function ClientOnboarding() {
     if (step.kind === "brand-profile") {
       return (
         <div className="space-y-6 lg:space-y-8">
-          <h1 className="text-2xl lg:text-4xl font-bold text-gray-900">{step.title}</h1>
-          <p className="text-base lg:text-lg text-gray-600">{step.description}</p>
+          <h1 className="text-2xl lg:text-4xl font-bold text-ink">{step.title}</h1>
+          <p className="text-base lg:text-lg text-ink-muted">{step.description}</p>
 
           <Textarea
             value={brandDescription}
             onChange={(e) => setBrandDescription(e.target.value)}
             placeholder="Cerita, misi, dan target audiens brand kamu"
-            className="min-h-[140px] resize-none rounded-xl border-gray-200 bg-white text-base
+            className="min-h-[140px] resize-none rounded-panel border-hairline-input bg-surface text-base
               focus:border-blue-500 focus:ring-blue-500"
           />
 
@@ -312,7 +312,7 @@ export default function ClientOnboarding() {
             <Button
               onClick={saveBrandProfile}
               disabled={savingBrand}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
+              className="flex-1 bg-brand hover:bg-brand-hover flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
             >
               {savingBrand ? (
                 <>
@@ -351,10 +351,10 @@ export default function ClientOnboarding() {
               />
             </svg>
           )}
-          <h1 className="text-2xl lg:text-4xl font-bold text-gray-900">{step.title}</h1>
+          <h1 className="text-2xl lg:text-4xl font-bold text-ink">{step.title}</h1>
         </div>
 
-        <p className="text-base lg:text-lg text-gray-600">{step.description}</p>
+        <p className="text-base lg:text-lg text-ink-muted">{step.description}</p>
 
         <div className="space-y-3 lg:space-y-4 mt-6 lg:mt-8">
           {step.points.map((point, index) => (
@@ -368,8 +368,8 @@ export default function ClientOnboarding() {
               }}
               className={
                 isSafety
-                  ? "flex items-center gap-3 text-gray-700 bg-blue-50 p-3 lg:p-4 rounded-lg border border-blue-200"
-                  : "flex items-center gap-3 text-gray-700"
+                  ? "flex items-center gap-3 text-ink-body bg-blue-50 p-3 lg:p-4 rounded-lg border border-blue-200"
+                  : "flex items-center gap-3 text-ink-body"
               }
             >
               <div className="w-5 h-5 lg:w-6 lg:h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
@@ -403,7 +403,7 @@ export default function ClientOnboarding() {
             </Button>
             <Button
               onClick={handleNext}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
+              className="flex-1 bg-brand hover:bg-brand-hover flex items-center justify-center gap-2 h-12 lg:h-11 text-sm lg:text-base"
             >
               {isLastStep ? "Mulai" : "Lanjut"}
               <ArrowRight className="w-4 h-4" />
@@ -422,7 +422,7 @@ export default function ClientOnboarding() {
                 height={40}
                 className="opacity-50 group-hover:opacity-100 transition-opacity lg:w-[60px] lg:h-[60px]"
               />
-              <span className="text-xs lg:text-sm text-gray-500 underline group-hover:text-gray-700">
+              <span className="text-xs lg:text-sm text-ink-soft underline group-hover:text-ink-body">
                 Lewati semua pengenalan
               </span>
             </button>
@@ -437,14 +437,13 @@ export default function ClientOnboarding() {
       {/* Always-visible escape hatch — nobody should feel trapped in a tour. */}
       <button
         onClick={goToApp}
-        className="absolute right-4 top-4 z-20 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-gray-600
-          shadow-sm backdrop-blur transition-colors hover:text-gray-900"
+        className="absolute right-4 top-4 z-20 rounded-full bg-white/90 px-4 py-2 text-sm font-medium text-ink-muted backdrop-blur transition-colors hover:text-ink"
       >
         Lewati
       </button>
 
       {/* Left Content */}
-      <div className="w-full lg:w-[45%] bg-gradient-to-br from-blue-50 via-white to-blue-50 p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
+      <div className="w-full lg:w-[45%] bg-canvas p-6 lg:p-12 flex items-center justify-center order-2 lg:order-1">
         <div className="w-full max-w-2xl">
           <AnimatePresence mode="wait">
             <motion.div
@@ -460,7 +459,7 @@ export default function ClientOnboarding() {
                   <div key={index} className="flex-1 relative">
                     <div
                       className={`h-1.5 lg:h-2 rounded-full transition-all duration-500 ${
-                        index <= currentStep ? "bg-blue-500" : "bg-gray-200"
+                        index <= currentStep ? "bg-blue-500" : "bg-surface-deep"
                       }`}
                     />
                     {index <= currentStep && (
@@ -486,7 +485,7 @@ export default function ClientOnboarding() {
       </div>
 
       {/* Right Content - Video Section */}
-      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-white order-1 lg:order-2">
+      <div className="w-full lg:flex-1 h-[40vh] lg:h-auto relative bg-surface order-1 lg:order-2">
         <AnimatePresence mode="wait">
           <motion.div
             key={currentStep}
@@ -508,7 +507,7 @@ export default function ClientOnboarding() {
             ) : (
               // The closing steps have no video; an empty <video src=""> renders
               // as a broken player, so show the brand mark instead.
-              <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-50 via-white to-blue-50">
+              <div className="flex h-full w-full items-center justify-center bg-canvas">
                 <Image
                   src="/images/salda-logoB.png"
                   alt="Salda"

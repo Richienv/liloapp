@@ -105,7 +105,7 @@ export function PaymentModal({
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-        <div className="bg-white p-4 rounded-lg">
+        <div className="bg-surface p-4 rounded-lg">
           Loading payment...
         </div>
       </div>

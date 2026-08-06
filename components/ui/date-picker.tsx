@@ -26,7 +26,7 @@ export function DatePicker({
       minDate={minDate}
       maxDate={maxDate}
       placeholderText={placeholderText}
-      className={`w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      className={`w-full p-2 border border-hairline-strong rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
       dateFormat="MMMM d, yyyy"
     />
   );

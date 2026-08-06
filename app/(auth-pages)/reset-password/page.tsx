@@ -88,17 +88,17 @@ export default function ResetPassword({
   const message: MessageLike = localError ? { error: localError } : searchParams;
 
   const cardClass =
-    "overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100";
+    "overflow-hidden rounded-frame bg-surface border border-hairline";
 
   if (sessionState === "checking") {
     return (
       <div className="relative w-full max-w-[420px]">
         <div className={cardClass}>
           <div
-            className="flex items-center justify-center gap-3 p-8 text-gray-600"
+            className="flex items-center justify-center gap-3 p-8 text-ink-muted"
             role="status"
           >
-            <div className="w-5 h-5 border-2 border-gray-200 border-t-blue-600 rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-hairline-input border-t-blue-600 rounded-full animate-spin" />
             <span className="text-sm">Memeriksa link reset…</span>
           </div>
         </div>
@@ -111,10 +111,10 @@ export default function ResetPassword({
       <div className="relative w-full max-w-[420px]">
         <div className={cardClass}>
           <div className="p-8 space-y-4">
-            <h1 className="text-2xl font-semibold text-gray-900">
+            <h1 className="text-2xl font-semibold text-ink">
               Link tidak valid
             </h1>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-ink-muted">
               Link reset kata sandi ini tidak valid atau sudah kedaluwarsa.
               Silakan minta link baru.
             </p>
@@ -138,7 +138,7 @@ export default function ResetPassword({
             <h1 className="font-serif text-section font-medium text-ink">
               Buat kata sandi baru
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-ink-muted">
               Masukkan kata sandi barumu, minimal {MIN_PASSWORD_LENGTH}{" "}
               karakter.
             </p>
@@ -148,7 +148,7 @@ export default function ResetPassword({
             <div className="space-y-2">
               <Label
                 htmlFor="password"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-ink-body"
               >
                 Kata sandi baru
               </Label>
@@ -161,7 +161,7 @@ export default function ResetPassword({
                   placeholder="Masukkan kata sandi baru"
                   required
                   minLength={MIN_PASSWORD_LENGTH}
-                  className="h-11 pl-4 pr-11 bg-gray-50/50 border-gray-200 focus:bg-white text-base rounded-xl
+                  className="h-11 pl-4 pr-11 bg-surface-tint/50 border-hairline-input focus:bg-surface text-base rounded-panel
                     focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
                   style={{ fontSize: "16px" }}
                 />
@@ -174,7 +174,7 @@ export default function ResetPassword({
                       : "Tampilkan kata sandi"
                   }
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink-body transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5" />
@@ -188,7 +188,7 @@ export default function ResetPassword({
             <div className="space-y-2">
               <Label
                 htmlFor="confirmPassword"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-ink-body"
               >
                 Konfirmasi kata sandi
               </Label>
@@ -200,7 +200,7 @@ export default function ResetPassword({
                 placeholder="Ulangi kata sandi baru"
                 required
                 minLength={MIN_PASSWORD_LENGTH}
-                className="h-11 pl-4 bg-gray-50/50 border-gray-200 focus:bg-white text-base rounded-xl
+                className="h-11 pl-4 bg-surface-tint/50 border-hairline-input focus:bg-surface text-base rounded-panel
                   focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
                 style={{ fontSize: "16px" }}
               />
@@ -212,8 +212,7 @@ export default function ResetPassword({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-xl font-medium transition-all duration-200
-                shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.15)]
+              className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-panel font-medium transition-all duration-200 hover:
                 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (

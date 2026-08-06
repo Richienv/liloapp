@@ -31,13 +31,13 @@ export function AvailabilityFilter({ selectedDate, setSelectedDate, className }:
       <PopoverContent className="w-auto p-3" align="start" sideOffset={8}>
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <button onClick={prevWeek} className="p-1 hover:bg-gray-100 rounded-md">
+            <button onClick={prevWeek} className="p-1 hover:bg-surface-tint rounded-md">
               <ChevronLeft className="h-4 w-4" />
             </button>
             <span className="text-sm font-medium">
               {format(weekStart, 'MMM d')} - {format(endOfWeek(currentDate), 'MMM d')}
             </span>
-            <button onClick={nextWeek} className="p-1 hover:bg-gray-100 rounded-md">
+            <button onClick={nextWeek} className="p-1 hover:bg-surface-tint rounded-md">
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
@@ -54,7 +54,7 @@ export function AvailabilityFilter({ selectedDate, setSelectedDate, className }:
                   className={`
                     aspect-square p-1 text-center flex flex-col items-center justify-center
                     rounded-md text-sm
-                    ${isDisabled ? 'text-gray-300 cursor-not-allowed' : 'hover:bg-gray-100'}
+                    ${isDisabled ? 'text-ink-ghost cursor-not-allowed' : 'hover:bg-surface-tint'}
                     ${isSelected ? 'bg-red-500 text-white hover:bg-red-600' : ''}
                     ${isToday(day) ? 'font-bold' : ''}
                   `}

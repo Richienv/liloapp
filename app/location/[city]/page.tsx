@@ -230,7 +230,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
         {/* Visible breadcrumb, mirroring the JSON-LD above. This is also the only
             way a crawler can walk back up to the city index. */}
         <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+          <ol className="flex flex-wrap items-center gap-1 text-sm text-ink-soft">
             <li>
               <Link href="/" className="hover:text-blue-600">
                 Beranda
@@ -243,20 +243,20 @@ export default async function LocationPage({ params }: LocationPageProps) {
               </Link>
             </li>
             <ChevronRight className="h-3 w-3" aria-hidden="true" />
-            <li aria-current="page" className="text-gray-900">
+            <li aria-current="page" className="text-ink">
               {city.name}
             </li>
           </ol>
         </nav>
 
         <header className="mb-8">
-          <p className="inline-flex items-center gap-1 text-sm text-gray-500">
+          <p className="inline-flex items-center gap-1 text-sm text-ink-soft">
             <MapPin className="h-4 w-4" /> {city.name}, {city.province}
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
+          <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">
             Live Streamer Profesional di {city.name}
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-ink-muted">
             {streamers.length > 0
               ? `${streamers.length} host live streaming siap membantu meningkatkan penjualan kamu.`
               : `Belum ada host live streaming terverifikasi di ${city.name} saat ini.`}
@@ -272,25 +272,25 @@ export default async function LocationPage({ params }: LocationPageProps) {
                 <li key={s.id}>
                   <Link
                     href={`/${s.username}`}
-                    className="group flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    className="group flex h-full flex-col rounded-frame border border-hairline bg-surface p-4 transition-shadow"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={s.profile_picture_url || '/images/default-avatar.png'}
                       alt={fullName || 'Host live streaming'}
-                      className="mb-3 h-40 w-full rounded-xl object-cover"
+                      className="mb-3 h-40 w-full rounded-panel object-cover"
                     />
-                    <h2 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                    <h2 className="font-semibold text-ink group-hover:text-blue-600">
                       {fullName || s.username}
                     </h2>
                     {s.category && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500">
+                      <p className="mt-1 inline-flex items-center gap-1 text-xs text-ink-soft">
                         <Tag className="h-3 w-3" /> {s.category}
                       </p>
                     )}
-                    <p className="mt-auto pt-3 text-sm font-medium text-gray-900">
+                    <p className="mt-auto pt-3 text-sm font-medium text-ink">
                       Rp {displayPrice.toLocaleString('id-ID')}
-                      <span className="font-normal text-gray-500">/jam</span>
+                      <span className="font-normal text-ink-soft">/jam</span>
                     </p>
                   </Link>
                 </li>
@@ -298,8 +298,8 @@ export default async function LocationPage({ params }: LocationPageProps) {
             })}
           </ul>
         ) : (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
-            <p className="text-gray-600">
+          <div className="rounded-frame border border-dashed border-hairline-input bg-surface p-8 text-center">
+            <p className="text-ink-muted">
               Live streaming berjalan sepenuhnya online, jadi host dari kota lain tetap bisa
               membantu penjualan kamu.
             </p>
@@ -312,7 +312,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
           </div>
         )}
 
-        <p className="mt-10 text-sm text-gray-500">
+        <p className="mt-10 text-sm text-ink-soft">
           Cari di kota lain?{' '}
           <Link href="/locations" className="font-medium text-blue-600 hover:text-blue-700">
             Lihat semua kota

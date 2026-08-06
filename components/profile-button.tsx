@@ -79,7 +79,7 @@ export function ProfileButton({ user, showNameOnMobile = true, className }: Prof
         <Button 
           variant="ghost" 
           className={cn(
-            "relative h-9 w-9 rounded-full overflow-hidden p-0 border border-gray-200 hover:shadow-md transition-shadow",
+            "relative h-9 w-9 rounded-full overflow-hidden p-0 border border-hairline-input transition-shadow",
             className
           )}
         >
@@ -99,12 +99,12 @@ export function ProfileButton({ user, showNameOnMobile = true, className }: Prof
                   e.currentTarget.parentElement?.querySelector('.fallback')?.classList.remove('hidden');
                 }}
               />
-              <span className="fallback hidden h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+              <span className="fallback hidden h-9 w-9 rounded-full bg-surface-tint flex items-center justify-center text-ink-muted">
                 {user.first_name.charAt(0) || 'U'}
               </span>
             </>
           ) : (
-            <span className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+            <span className="h-9 w-9 rounded-full bg-surface-tint flex items-center justify-center text-ink-muted">
               {user.first_name.charAt(0) || 'U'}
             </span>
           )}

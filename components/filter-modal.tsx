@@ -128,9 +128,9 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
             <h3 className="text-lg font-semibold mb-4">Price Range</h3>
             <div className="flex gap-4">
               <div className="flex-1">
-                <label className="block text-sm text-gray-600 mb-2">minimum price</label>
+                <label className="block text-sm text-ink-muted mb-2">minimum price</label>
                 <div className="flex items-center h-10 px-3 border rounded-lg">
-                  <span className="text-gray-500">Rp</span>
+                  <span className="text-ink-soft">Rp</span>
                   <input
                     type="number"
                     value={filters.priceRange[0] || ''}
@@ -141,12 +141,12 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
                 </div>
               </div>
               <div className="flex items-center pt-8">
-                <div className="w-4 h-[1px] bg-gray-300" />
+                <div className="w-4 h-[1px] bg-surface-deep" />
               </div>
               <div className="flex-1">
-                <label className="block text-sm text-gray-600 mb-2">maximum price</label>
+                <label className="block text-sm text-ink-muted mb-2">maximum price</label>
                 <div className="flex items-center h-10 px-3 border rounded-lg">
-                  <span className="text-gray-500">Rp</span>
+                  <span className="text-ink-soft">Rp</span>
                   <input
                     type="number"
                     value={filters.priceRange[1] || ''}
@@ -182,7 +182,7 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
                     "h-10 px-6 rounded-lg border text-sm font-medium transition-all duration-200",
                     isPlatformSelected(platform.id)
                       ? "border-blue-600 bg-blue-50 text-blue-600"
-                      : "border-gray-200 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
+                      : "border-hairline-input hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
                   )}
                 >
                   {platform.label}
@@ -203,7 +203,7 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
                     "flex items-center gap-1.5 h-10 px-4 rounded-lg border text-sm font-medium transition-all duration-200",
                     filters.minRating === rating
                       ? "border-blue-600 bg-blue-50 text-blue-600"
-                      : "border-gray-200 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
+                      : "border-hairline-input hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
                   )}
                 >
                   {rating} <Star className={cn("w-4 h-4", filters.minRating === rating ? "fill-blue-600" : "fill-none stroke-blue-600")} />
@@ -214,7 +214,7 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t bg-white">
+        <div className="flex items-center justify-between p-4 border-t bg-surface">
           <Button
             variant="link"
             onClick={handleClear}

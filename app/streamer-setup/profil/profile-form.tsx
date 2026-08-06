@@ -294,7 +294,7 @@ export function ProfileForm({
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Profile photo */}
       <div className="space-y-2">
-        <Label htmlFor="image" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="image" className="text-sm font-medium text-ink-body">
           Foto profil
         </Label>
 
@@ -302,7 +302,7 @@ export function ProfileForm({
           <label
             htmlFor="image"
             className="flex h-20 w-20 flex-shrink-0 cursor-pointer items-center justify-center
-              overflow-hidden rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50
+              overflow-hidden rounded-frame border-2 border-dashed border-hairline-input bg-surface-tint/50
               transition-colors hover:border-blue-200 hover:bg-blue-50/40"
           >
             {effectiveImageUrl ? (
@@ -313,16 +313,16 @@ export function ProfileForm({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <Camera className="h-6 w-6 text-gray-400" />
+              <Camera className="h-6 w-6 text-ink-faint" />
             )}
           </label>
 
           <div className="min-w-0 flex-1">
             <label
               htmlFor="image"
-              className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl
-                border-2 border-gray-200 px-4 text-sm font-medium text-gray-700 transition-colors
-                hover:bg-gray-50"
+              className="inline-flex h-10 cursor-pointer items-center justify-center rounded-panel
+                border-2 border-hairline-input px-4 text-sm font-medium text-ink-body transition-colors
+                hover:bg-surface-tint"
             >
               {effectiveImageUrl ? "Ganti foto" : "Pilih foto"}
             </label>
@@ -331,14 +331,14 @@ export function ProfileForm({
                 type="button"
                 onClick={clearPhoto}
                 aria-label="Batalkan foto yang dipilih"
-                className="ml-2 inline-flex h-10 items-center gap-1 rounded-xl px-2 text-sm
-                  text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
+                className="ml-2 inline-flex h-10 items-center gap-1 rounded-panel px-2 text-sm
+                  text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink-body"
               >
                 <X className="h-4 w-4" />
                 Batal
               </button>
             )}
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-ink-soft">
               Wajah kamu terlihat jelas, JPG/PNG/WEBP, maksimal 5 MB.
             </p>
           </div>
@@ -357,16 +357,16 @@ export function ProfileForm({
 
       {/* Username — pre-filled from their name, shown as the live public URL. */}
       <div className="space-y-2">
-        <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="username" className="text-sm font-medium text-ink-body">
           Username
         </Label>
         <div
-          className="flex h-12 w-full items-center rounded-xl border border-gray-200 bg-gray-50
+          className="flex h-12 w-full items-center rounded-panel border border-hairline-input bg-surface-tint
             transition-all duration-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
         >
           <span
             aria-hidden="true"
-            className="flex h-full select-none items-center border-r border-gray-200 px-4 text-base text-gray-500"
+            className="flex h-full select-none items-center border-r border-hairline-input px-4 text-base text-ink-soft"
           >
             salda.id/
           </span>
@@ -384,21 +384,21 @@ export function ProfileForm({
             spellCheck={false}
             aria-describedby="username-help"
             className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none
-              placeholder:text-gray-400"
+              placeholder:text-ink-faint"
             placeholder="rizky-pratama"
             style={{ fontSize: "16px" }}
           />
         </div>
-        <p id="username-help" className="text-xs text-gray-500">
+        <p id="username-help" className="text-xs text-ink-soft">
           Alamat profil publik kamu:{" "}
-          <span className="font-medium text-gray-800">salda.id/{username || "…"}</span>. Sudah
+          <span className="font-medium text-ink">salda.id/{username || "…"}</span>. Sudah
           kami isi dari namamu — ubah kalau mau.
         </p>
       </div>
 
       {/* City — canonical slug only, and the time zone is derived, never asked. */}
       <div className="space-y-2">
-        <Label htmlFor="city" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="city" className="text-sm font-medium text-ink-body">
           Kota
         </Label>
         <CityCombobox
@@ -407,10 +407,10 @@ export function ProfileForm({
           onChange={setCitySlug}
           aria-describedby="city-help"
         />
-        <p id="city-help" className="text-xs text-gray-500">
+        <p id="city-help" className="text-xs text-ink-soft">
           {city ? (
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-gray-400" />
+              <Clock className="h-3.5 w-3.5 text-ink-faint" />
               Zona waktu kamu {TIMEZONE_LABEL[city.timezone]} — otomatis dipakai untuk jadwal live.
             </span>
           ) : (
@@ -423,7 +423,7 @@ export function ProfileForm({
           product to this address, and a booking without one is a booking the
           brand has already paid for and cannot fulfil. */}
       <div className="space-y-2">
-        <Label htmlFor="full_address" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="full_address" className="text-sm font-medium text-ink-body">
           Alamat lengkap
         </Label>
         <Textarea
@@ -435,13 +435,13 @@ export function ProfileForm({
           rows={3}
           placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan, kode pos"
           aria-describedby="full_address-help"
-          className="min-h-[96px] resize-none rounded-xl border-gray-200 bg-gray-50/50 text-base
-            focus:bg-white"
+          className="min-h-[96px] resize-none rounded-panel border-hairline-input bg-surface-tint/50 text-base
+            focus:bg-surface"
           style={{ fontSize: "16px" }}
         />
         <p
           id="full_address-help"
-          className="flex items-start gap-1.5 text-xs text-gray-500"
+          className="flex items-start gap-1.5 text-xs text-ink-soft"
         >
           <Package className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
           <span>
@@ -453,7 +453,7 @@ export function ProfileForm({
 
       {/* Category — the input the price suggestion is derived from. */}
       <div className="space-y-2">
-        <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="category" className="text-sm font-medium text-ink-body">
           Kategori produk
         </Label>
         <select
@@ -461,7 +461,7 @@ export function ProfileForm({
           name="category"
           value={category}
           onChange={(event) => handleCategoryChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base
+          className="h-12 w-full rounded-panel border border-hairline-input bg-surface-tint px-4 text-base
             transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           style={{ fontSize: "16px" }}
         >
@@ -472,7 +472,7 @@ export function ProfileForm({
             </option>
           ))}
         </select>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-ink-soft">
           Kategori yang paling sering kamu bawakan. Ini juga yang kami pakai untuk menyarankan
           harga.
         </p>
@@ -480,7 +480,7 @@ export function ProfileForm({
 
       {/* Platform */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-gray-700">Platform live</legend>
+        <legend className="text-sm font-medium text-ink-body">Platform live</legend>
         <div className="grid grid-cols-2 gap-3">
           {PLATFORM_OPTIONS.map((option) => {
             const selected = platforms.includes(option.value);
@@ -488,11 +488,11 @@ export function ProfileForm({
               <label
                 key={option.value}
                 htmlFor={`platform-${option.value}`}
-                className={`flex h-12 cursor-pointer items-center justify-center rounded-xl border-2
+                className={`flex h-12 cursor-pointer items-center justify-center rounded-panel border-2
                   px-4 text-sm font-medium transition-colors ${
                     selected
                       ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-gray-50 text-gray-700 hover:border-blue-200"
+                      : "border-hairline-input bg-surface-tint text-ink-body hover:border-blue-200"
                   }`}
               >
                 <input
@@ -507,16 +507,16 @@ export function ProfileForm({
             );
           })}
         </div>
-        <p className="text-xs text-gray-500">Boleh pilih dua-duanya.</p>
+        <p className="text-xs text-ink-soft">Boleh pilih dua-duanya.</p>
       </fieldset>
 
       {/* Price — arrives pre-filled from the category band. */}
       <div className="space-y-2">
-        <Label htmlFor="price" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="price" className="text-sm font-medium text-ink-body">
           Harga per jam
         </Label>
         <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-medium text-gray-500">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-medium text-ink-soft">
             Rp
           </span>
           <input
@@ -529,13 +529,13 @@ export function ProfileForm({
             onChange={(event) => handlePriceChange(event.target.value)}
             placeholder={formatPriceInput(String(band.suggested))}
             aria-describedby="price-help"
-            className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-12 pr-4 text-base
+            className="h-12 w-full rounded-panel border border-hairline-input bg-surface-tint pl-12 pr-4 text-base
               font-medium transition-all duration-200 focus:border-blue-500 focus:outline-none
               focus:ring-1 focus:ring-blue-500"
             style={{ fontSize: "16px" }}
           />
         </div>
-        <p id="price-help" className="flex items-start gap-1.5 text-xs text-gray-500">
+        <p id="price-help" className="flex items-start gap-1.5 text-xs text-ink-soft">
           <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
           <span>
             {priceHint(category)}{" "}
@@ -548,7 +548,7 @@ export function ProfileForm({
 
       {/* Bio */}
       <div className="space-y-2">
-        <Label htmlFor="bio" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="bio" className="text-sm font-medium text-ink-body">
           Deskripsi singkat
         </Label>
         <Textarea
@@ -560,13 +560,13 @@ export function ProfileForm({
           rows={4}
           placeholder="Contoh: Host fashion dengan 2 tahun pengalaman TikTok Live. Terbiasa bawa produk hijab dan outfit harian, rata-rata 3 jam per sesi."
           aria-describedby="bio-help"
-          className="min-h-[120px] resize-none rounded-xl border-gray-200 bg-gray-50/50 text-base
-            focus:bg-white"
+          className="min-h-[120px] resize-none rounded-panel border-hairline-input bg-surface-tint/50 text-base
+            focus:bg-surface"
           style={{ fontSize: "16px" }}
         />
-        <p id="bio-help" className="flex items-center justify-between gap-2 text-xs text-gray-500">
+        <p id="bio-help" className="flex items-center justify-between gap-2 text-xs text-ink-soft">
           <span>Satu sampai dua kalimat sudah cukup. Jangan tulis nomor HP atau akun pribadi.</span>
-          <span className={bio.length < BIO_MIN ? "text-gray-400" : "text-gray-500"}>
+          <span className={bio.length < BIO_MIN ? "text-ink-faint" : "text-ink-soft"}>
             {bio.length}/{BIO_MAX}
           </span>
         </p>
@@ -574,7 +574,7 @@ export function ProfileForm({
 
       {/* Live readiness, using the same rule the hub and the server apply. */}
       <div
-        className={`rounded-xl border px-4 py-3 text-sm ${
+        className={`rounded-panel border px-4 py-3 text-sm ${
           ready
             ? "border-green-100 bg-green-50/60 text-green-800"
             : "border-blue-100 bg-blue-50/60 text-blue-900"
@@ -598,7 +598,7 @@ export function ProfileForm({
         <p
           role="alert"
           aria-live="assertive"
-          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
+          className="rounded-panel border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
         >
           {error}
         </p>
@@ -607,8 +607,8 @@ export function ProfileForm({
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-medium
-          text-white transition-all hover:from-blue-700 hover:to-indigo-700"
+        className="h-11 w-full rounded-panel bg-brand font-medium
+          text-white transition-all"
       >
         {isSubmitting ? (
           <span className="flex items-center justify-center gap-2">
@@ -620,7 +620,7 @@ export function ProfileForm({
         )}
       </Button>
 
-      <p className="text-center text-xs text-gray-500">
+      <p className="text-center text-xs text-ink-soft">
         Progres tersimpan setiap kali kamu menyimpan. Kamu boleh berhenti dan lanjut lagi nanti.
       </p>
     </form>

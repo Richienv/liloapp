@@ -162,7 +162,7 @@ interface FieldRenderProps {
 }
 
 // Add transition styles for hover effects and animations
-const cardHoverStyle = 'transition-all duration-200 hover:shadow-lg hover:border-gray-300'
+const cardHoverStyle = 'transition-all duration-200 hover:border-hairline-strong'
 const progressBarStyle = 'transition-all duration-300 ease-in-out'
 const badgeStyle = 'transition-colors duration-200'
 
@@ -193,12 +193,12 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
         ].map((stat, index) => (
           <div 
             key={stat.title}
-            className={`bg-white rounded-xl border border-gray-200 p-6 ${cardHoverStyle}`}
+            className={`bg-surface rounded-panel border border-hairline-input p-6 ${cardHoverStyle}`}
           >
             <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-gray-900">{stat.title}</h3>
+              <h3 className="text-lg font-semibold text-ink">{stat.title}</h3>
               <div className={`text-3xl font-bold text-${stat.color}-600`}>{stat.value}</div>
-              <p className="text-sm text-gray-500">{stat.label}</p>
+              <p className="text-sm text-ink-soft">{stat.label}</p>
             </div>
           </div>
         ))}
@@ -207,19 +207,19 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
       {/* Usage Stats and Top Streamers */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column - Usage Stats */}
-        <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${cardHoverStyle}`}>
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Usage Statistics</h3>
+        <div className={`bg-surface rounded-panel border border-hairline-input overflow-hidden ${cardHoverStyle}`}>
+          <div className="p-6 border-b border-hairline">
+            <h3 className="text-lg font-semibold text-ink">Usage Statistics</h3>
           </div>
           <div className="p-6">
             <div className="space-y-6">
               {/* Usage Ratio */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Usage Ratio</span>
-                  <span className="text-sm text-gray-500">{Math.round(analytics.usage_ratio)}%</span>
+                  <span className="text-sm font-medium text-ink-body">Usage Ratio</span>
+                  <span className="text-sm text-ink-soft">{Math.round(analytics.usage_ratio)}%</span>
                 </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-2 bg-surface-tint rounded-full overflow-hidden">
                   <div 
                     className={`h-full bg-blue-600 rounded-full ${progressBarStyle}`}
                     style={{ width: `${analytics.usage_ratio}%` }}
@@ -229,19 +229,19 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
 
               {/* Status Distribution */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-4">Status Distribution</h4>
+                <h4 className="text-sm font-medium text-ink-body mb-4">Status Distribution</h4>
                 <div className="space-y-3">
                   {analytics.usage_by_status.map((status) => (
                     <div key={status.status} className="group">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-600 capitalize group-hover:text-gray-900 transition-colors">
+                        <span className="text-sm text-ink-muted capitalize group-hover:text-ink transition-colors">
                           {status.status}
                         </span>
-                        <span className="text-sm text-gray-500 group-hover:text-gray-900 transition-colors">
+                        <span className="text-sm text-ink-soft group-hover:text-ink transition-colors">
                           {Math.round(status.percentage)}%
                         </span>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                      <div className="h-2 bg-surface-tint rounded-full overflow-hidden">
                         <div 
                           className={`h-full bg-blue-600 rounded-full group-hover:bg-blue-700 ${progressBarStyle}`}
                           style={{ width: `${status.percentage}%` }}
@@ -254,15 +254,15 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
 
               {/* Monthly Usage Chart */}
               <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-4">Monthly Usage Trend</h4>
+                <h4 className="text-sm font-medium text-ink-body mb-4">Monthly Usage Trend</h4>
                 <div className="space-y-2">
                   {analytics.monthly_usage.slice(0, 6).map((month) => (
                     <div key={month.month} className="group">
                       <div className="flex items-center gap-3">
-                        <div className="w-24 text-xs text-gray-500 group-hover:text-gray-900 transition-colors">
+                        <div className="w-24 text-xs text-ink-soft group-hover:text-ink transition-colors">
                           {month.month}
                         </div>
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-surface-tint rounded-full overflow-hidden">
                           <div 
                             className={`h-full bg-blue-600 rounded-full group-hover:bg-blue-700 ${progressBarStyle}`}
                             style={{ 
@@ -270,7 +270,7 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
                             }}
                           />
                         </div>
-                        <div className="w-20 text-xs text-gray-500 text-right group-hover:text-gray-900 transition-colors">
+                        <div className="w-20 text-xs text-ink-soft text-right group-hover:text-ink transition-colors">
                           {month.vouchers_used} used
                         </div>
                       </div>
@@ -283,16 +283,16 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
         </div>
 
         {/* Right Column - Top Streamers */}
-        <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${cardHoverStyle}`}>
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Top Streamers by Usage</h3>
+        <div className={`bg-surface rounded-panel border border-hairline-input overflow-hidden ${cardHoverStyle}`}>
+          <div className="p-6 border-b border-hairline">
+            <h3 className="text-lg font-semibold text-ink">Top Streamers by Usage</h3>
           </div>
           <div className="p-6">
             <div className="space-y-6">
               {analytics.top_streamers.slice(0, 5).map((streamer, index) => (
                 <div 
                   key={streamer.streamer_id} 
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
+                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-surface-tint transition-colors group"
                 >
                   <div className="w-10 h-10 flex-shrink-0 relative">
                     {streamer.image_url ? (
@@ -302,8 +302,8 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
                         className="w-full h-full rounded-full object-cover ring-2 ring-white"
                       />
                     ) : (
-                      <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center ring-2 ring-white">
-                        <span className="text-gray-500 text-sm font-medium">
+                      <div className="w-full h-full rounded-full bg-surface-tint flex items-center justify-center ring-2 ring-white">
+                        <span className="text-ink-soft text-sm font-medium">
                           {streamer.first_name[0]}
                         </span>
                       </div>
@@ -312,7 +312,7 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
                       <div 
                         className={`absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold border-2 border-white ${
                           index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                          index === 1 ? 'bg-gray-300 text-gray-900' :
+                          index === 1 ? 'bg-surface-deep text-ink' :
                           'bg-orange-400 text-orange-900'
                         }`}
                       >
@@ -322,12 +322,12 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                      <span className="font-medium text-ink truncate group-hover:text-blue-600 transition-colors">
                         {streamer.first_name} {streamer.last_name}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
+                      <span className="text-sm text-ink-soft group-hover:text-ink-body transition-colors">
                         {streamer.usage_count} vouchers used
                       </span>
                       <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700 transition-colors">
@@ -336,10 +336,10 @@ function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
                     </div>
                   </div>
                   <div className="w-24 text-right">
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-ink">
                       {Math.round((streamer.usage_count / analytics.total_vouchers_used) * 100)}%
                     </div>
-                    <div className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">
+                    <div className="text-xs text-ink-soft group-hover:text-ink-body transition-colors">
                       of total
                     </div>
                   </div>
@@ -652,23 +652,23 @@ export default function VouchersPage() {
         onClick={onClose}
       >
         <div 
-          className="bg-white rounded-xl w-full max-w-4xl overflow-hidden shadow-xl"
+          className="bg-surface rounded-panel w-full max-w-4xl overflow-hidden"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-100">
+          <div className="px-6 py-4 border-b border-hairline">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-ink">
                   Voucher Analytics: {voucher.code}
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-ink-soft mt-1">
                   Detailed usage statistics and performance metrics
                 </p>
               </div>
               <button 
                 onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
+                className="text-ink-faint hover:text-ink-muted transition-colors"
               >
                 <X className="h-6 w-6" />
               </button>
@@ -679,26 +679,26 @@ export default function VouchersPage() {
           <div className="p-6">
             {/* Summary Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-blue-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Total Usage</p>
+              <div className="bg-blue-50 rounded-panel p-4">
+                <p className="text-sm text-ink-muted mb-1">Total Usage</p>
                 <p className="text-2xl font-semibold text-blue-600">
                   {getUsageCount()}/{getTotalQuantity()}
                 </p>
               </div>
-              <div className="bg-green-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Total Discount Given</p>
+              <div className="bg-green-50 rounded-panel p-4">
+                <p className="text-sm text-ink-muted mb-1">Total Discount Given</p>
                 <p className="text-2xl font-semibold text-green-600">
                   {formatCurrency(getTotalDiscount())}
                 </p>
               </div>
-              <div className="bg-purple-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Average Discount</p>
+              <div className="bg-purple-50 rounded-panel p-4">
+                <p className="text-sm text-ink-muted mb-1">Average Discount</p>
                 <p className="text-2xl font-semibold text-purple-600">
                   {formatCurrency(getUsageCount() ? Math.round(getTotalDiscount() / getUsageCount()) : 0)}
                 </p>
               </div>
-              <div className="bg-orange-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Usage Rate</p>
+              <div className="bg-orange-50 rounded-panel p-4">
+                <p className="text-sm text-ink-muted mb-1">Usage Rate</p>
                 <p className="text-2xl font-semibold text-orange-600">
                   {getUsageRatio()}%
                 </p>
@@ -706,45 +706,45 @@ export default function VouchersPage() {
             </div>
 
             {/* Usage History */}
-            <div className="bg-white rounded-xl border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900">Usage History</h3>
+            <div className="bg-surface rounded-panel border border-hairline-input">
+              <div className="px-6 py-4 border-b border-hairline">
+                <h3 className="text-lg font-semibold text-ink">Usage History</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Price</th>
+                    <tr className="bg-surface-tint">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-ink-soft uppercase tracking-wider">User</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-ink-soft uppercase tracking-wider">Date</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-ink-soft uppercase tracking-wider">Original Price</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-ink-soft uppercase tracking-wider">Discount</th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-ink-soft uppercase tracking-wider">Final Price</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
+                  <tbody className="bg-surface divide-y divide-gray-200">
                     {voucher.usage_details && voucher.usage_details.length > 0 ? (
                       voucher.usage_details.map((usage) => (
-                        <tr key={usage.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <tr key={usage.id} className="hover:bg-surface-tint">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-ink">
                             {usage.client ? `${usage.client.first_name} ${usage.client.last_name}` : 'Unknown User'}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-ink-soft">
                             {format(new Date(usage.used_at), 'dd MMM yyyy HH:mm')}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-ink">
                             {formatCurrency(usage.original_price)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
                             {formatCurrency(usage.discount_applied)}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-ink">
                             {formatCurrency(usage.final_price)}
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-ink-soft">
                           No usage history available
                         </td>
                       </tr>
@@ -818,13 +818,13 @@ export default function VouchersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
+    <div className="min-h-screen bg-surface-tint/30">
       <div className="p-8">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Vouchers</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <h1 className="text-2xl font-semibold text-ink">Vouchers</h1>
+            <p className="mt-1 text-sm text-ink-soft">
               Manage your vouchers and view their usage performance
             </p>
           </div>
@@ -840,7 +840,7 @@ export default function VouchersPage() {
               <div className="px-6 py-6">
                 <DialogHeader className="mb-8">
                   <DialogTitle className="text-xl font-semibold">Create New Voucher</DialogTitle>
-                  <p className="text-sm text-gray-500 mt-1.5">
+                  <p className="text-sm text-ink-soft mt-1.5">
                     Add a new voucher code for your customers
                   </p>
                 </DialogHeader>
@@ -858,15 +858,15 @@ export default function VouchersPage() {
                               <Input
                                 {...field}
                                 maxLength={6}
-                                className="uppercase bg-gray-50 font-mono text-lg tracking-wider pl-3 pr-10 h-12"
+                                className="uppercase bg-surface-tint font-mono text-lg tracking-wider pl-3 pr-10 h-12"
                                 placeholder="SUMMER"
                               />
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-ink-faint">
                                 {field.value.length}/6
                               </div>
                             </div>
                           </FormControl>
-                          <FormDescription className="text-xs text-gray-500">
+                          <FormDescription className="text-xs text-ink-soft">
                             6 characters, uppercase letters and numbers only
                           </FormDescription>
                           <FormMessage />
@@ -884,10 +884,10 @@ export default function VouchersPage() {
                             <Input
                               {...field}
                               placeholder="Summer sale discount"
-                              className="bg-gray-50 h-12"
+                              className="bg-surface-tint h-12"
                             />
                           </FormControl>
-                          <FormDescription className="text-xs text-gray-500">
+                          <FormDescription className="text-xs text-ink-soft">
                             Brief description of the voucher's purpose
                           </FormDescription>
                           <FormMessage />
@@ -904,7 +904,7 @@ export default function VouchersPage() {
                             <FormLabel className="text-sm font-medium">Discount Amount</FormLabel>
                             <FormControl>
                               <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">Rp</span>
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft">Rp</span>
                                 <Input
                                   type="number"
                                   {...field}
@@ -912,7 +912,7 @@ export default function VouchersPage() {
                                     const value = e.target.value.replace(/^0+/, '');
                                     field.onChange(value ? parseInt(value) : '');
                                   }}
-                                  className="pl-9 bg-gray-50 h-12"
+                                  className="pl-9 bg-surface-tint h-12"
                                   placeholder="50000"
                                 />
                               </div>
@@ -933,7 +933,7 @@ export default function VouchersPage() {
                                 type="number"
                                 {...field}
                                 onChange={e => field.onChange(Number(e.target.value))}
-                                className="bg-gray-50 h-12"
+                                className="bg-surface-tint h-12"
                                 placeholder="100"
                               />
                             </FormControl>
@@ -954,10 +954,10 @@ export default function VouchersPage() {
                               type="date"
                               {...field}
                               min={new Date().toISOString().split('T')[0]}
-                              className="bg-gray-50 h-12"
+                              className="bg-surface-tint h-12"
                             />
                           </FormControl>
-                          <FormDescription className="text-xs text-gray-500">
+                          <FormDescription className="text-xs text-ink-soft">
                             When this voucher will expire
                           </FormDescription>
                           <FormMessage />
@@ -966,8 +966,8 @@ export default function VouchersPage() {
                     />
 
                     {/* Preview Card */}
-                    <div className="p-5 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="text-sm font-medium text-gray-600 mb-4">Preview</div>
+                    <div className="p-5 border border-hairline-input rounded-lg bg-surface-tint">
+                      <div className="text-sm font-medium text-ink-muted mb-4">Preview</div>
                       <div className="flex items-start gap-4">
                         <div className="w-14 h-14 rounded-lg bg-[#0066FF] flex items-center justify-center">
                           <span className="text-white text-xl font-bold">%</span>
@@ -976,14 +976,14 @@ export default function VouchersPage() {
                           <div className="font-mono text-lg font-semibold tracking-wider">
                             {form.watch("code") || "SUMMER"}
                           </div>
-                          <div className="text-sm text-gray-600 mt-1">
+                          <div className="text-sm text-ink-muted mt-1">
                             {form.watch("description") || "Summer sale discount"}
                           </div>
                           <div className="flex items-center gap-3 mt-2">
                             <span className="text-sm font-medium">
                               Rp {form.watch("discount_amount")?.toLocaleString() || "0"}
                             </span>
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-ink-soft">
                               {form.watch("total_quantity") || "0"} vouchers
                             </span>
                           </div>
@@ -1022,7 +1022,7 @@ export default function VouchersPage() {
         {/* Filters */}
         <div className="mb-6 flex gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-ink-faint" />
             <Input
               placeholder="Search vouchers..."
               value={searchQuery}
@@ -1046,11 +1046,11 @@ export default function VouchersPage() {
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400 mb-4" />
-              <p className="text-sm text-gray-500">Loading vouchers...</p>
+              <Loader2 className="h-8 w-8 animate-spin text-ink-faint mb-4" />
+              <p className="text-sm text-ink-soft">Loading vouchers...</p>
             </div>
           ) : error ? (
             <div className="flex flex-col items-center justify-center py-12">
@@ -1058,7 +1058,7 @@ export default function VouchersPage() {
                 <AlertCircle className="h-5 w-5" />
                 <span className="font-medium">Error loading vouchers</span>
               </div>
-              <p className="text-sm text-gray-500 mb-4">{error}</p>
+              <p className="text-sm text-ink-soft mb-4">{error}</p>
               <Button
                 variant="outline"
                 onClick={handleRetry}
@@ -1069,7 +1069,7 @@ export default function VouchersPage() {
             </div>
           ) : filteredVouchers.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-sm text-gray-500 mb-4">No vouchers found</p>
+              <p className="text-sm text-ink-soft mb-4">No vouchers found</p>
               {searchQuery || statusFilter !== 'all' ? (
                 <Button
                   variant="outline"
@@ -1087,7 +1087,7 @@ export default function VouchersPage() {
           ) : (
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50/50">
+                <TableRow className="bg-surface-tint/50">
                   <TableHead className="font-medium">Code</TableHead>
                   <TableHead className="font-medium">Description</TableHead>
                   <TableHead className="font-medium">Discount</TableHead>
@@ -1100,11 +1100,11 @@ export default function VouchersPage() {
               </TableHeader>
               <TableBody>
                 {filteredVouchers.map((voucher: Voucher | VoucherWithAnalytics) => (
-                  <TableRow key={voucher.id} className="hover:bg-gray-50/50">
+                  <TableRow key={voucher.id} className="hover:bg-surface-tint/50">
                     <TableCell className="font-medium">{voucher.code}</TableCell>
-                    <TableCell className="text-gray-600">{voucher.description}</TableCell>
+                    <TableCell className="text-ink-muted">{voucher.description}</TableCell>
                     <TableCell>{formatCurrency(voucher.discount_amount)}</TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="text-ink-muted">
                       {isVoucherWithAnalytics(voucher) ? `${voucher.usage_count}/${voucher.total_quantity}` : `0/${voucher.total_quantity}`}
                     </TableCell>
                     <TableCell className="text-green-600">
@@ -1114,12 +1114,12 @@ export default function VouchersPage() {
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                         voucher.is_active 
                           ? 'bg-green-50 text-green-700' 
-                          : 'bg-gray-100 text-gray-700'
+                          : 'bg-surface-tint text-ink-body'
                       }`}>
                         {voucher.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </TableCell>
-                    <TableCell className="text-gray-600">
+                    <TableCell className="text-ink-muted">
                       {format(new Date(voucher.expires_at), 'dd MMM yyyy')}
                     </TableCell>
                     <TableCell>

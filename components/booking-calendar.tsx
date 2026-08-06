@@ -59,13 +59,13 @@ export function BookingCalendar({
   return (
     <div className="space-y-4 sm:space-y-6 text-sm sm:text-base">
       <div className="flex justify-between items-center">
-        <button onClick={prevWeek} className="p-1 hover:bg-gray-100 rounded-md">
+        <button onClick={prevWeek} className="p-1 hover:bg-surface-tint rounded-md">
           <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
         <span className="text-sm sm:text-base font-medium">
           {format(weekStart, 'MMM d')} - {format(endOfWeek(currentDate), 'MMM d')}
         </span>
-        <button onClick={nextWeek} className="p-1 hover:bg-gray-100 rounded-md">
+        <button onClick={nextWeek} className="p-1 hover:bg-surface-tint rounded-md">
           <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
         </button>
       </div>
@@ -91,9 +91,9 @@ export function BookingCalendar({
                     variant={isSelected ? "default" : "ghost"}
                     className={cn(
                       "relative p-1 sm:p-2 h-auto flex flex-col transition-all duration-200",
-                      isSelected && "bg-gradient-to-r from-[#1e40af] to-[#6b21a8] text-white hover:from-[#1e3a8a] hover:to-[#581c87]",
+                      isSelected && "bg-brand text-white hover:bg-brand-hover",
                       !isSelected && isSelectable && hasSchedule && "hover:bg-blue-50 hover:text-blue-600",
-                      (!isSelectable || !hasSchedule) && "bg-gray-50 text-gray-400 cursor-not-allowed",
+                      (!isSelectable || !hasSchedule) && "bg-surface-tint text-ink-faint cursor-not-allowed",
                       !isRequirementsValid && "cursor-not-allowed opacity-50",
                       isToday && !isSelected && "ring-1 ring-blue-200",
                       !hasSchedule && "bg-red-50/50 hover:bg-red-50/70"
@@ -119,7 +119,7 @@ export function BookingCalendar({
                 </TooltipTrigger>
                 <TooltipContent 
                   side="bottom" 
-                  className="bg-white p-2 text-xs border shadow-lg rounded-lg"
+                  className="bg-surface p-2 text-xs border rounded-lg"
                 >
                   {!isSelectable 
                     ? "This date is not available for booking"

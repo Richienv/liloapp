@@ -135,7 +135,7 @@ function Stars({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((i) => (
         <Star
           key={i}
-          className={`h-4 w-4 ${i <= rounded ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+          className={`h-4 w-4 ${i <= rounded ? 'fill-yellow-400 text-yellow-400' : 'text-ink-ghost'}`}
         />
       ))}
     </span>
@@ -158,14 +158,14 @@ export default async function StreamerPage({ params }: { params: { username: str
       <StreamerRichStructuredData streamer={streamer} />
 
       <main className="mx-auto max-w-4xl px-4 py-10">
-        <nav className="mb-6 text-sm text-gray-500">
-          <Link href="/streamers" className="hover:text-gray-900">
+        <nav className="mb-6 text-sm text-ink-soft">
+          <Link href="/streamers" className="hover:text-ink">
             &larr; Semua Streamer
           </Link>
         </nav>
 
         {/* Profile header */}
-        <section className="flex flex-col gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+        <section className="flex flex-col gap-6 rounded-frame border border-hairline bg-surface p-6 sm:flex-row sm:items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={streamer.profile_picture_url || '/images/default-avatar.png'}
@@ -174,13 +174,13 @@ export default async function StreamerPage({ params }: { params: { username: str
           />
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
+              <h1 className="text-2xl font-bold text-ink">{fullName}</h1>
               {/* getStreamer only returns approved streamers, so this always
                   renders here — it is the trust signal brands are looking for
                   before they ship a product to a stranger. */}
               <VerificationBadge status="approved" />
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
+            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-ink-muted">
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-4 w-4" /> {streamer.location}
               </span>
@@ -192,43 +192,43 @@ export default async function StreamerPage({ params }: { params: { username: str
               {streamer.rating !== undefined && (
                 <span className="inline-flex items-center gap-1">
                   <Stars rating={streamer.rating} />
-                  <span className="text-gray-500">{streamer.rating.toFixed(1)}</span>
+                  <span className="text-ink-soft">{streamer.rating.toFixed(1)}</span>
                 </span>
               )}
             </div>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500">Mulai dari</p>
-            <p className="text-2xl font-bold text-gray-900">
+            <p className="text-xs text-ink-soft">Mulai dari</p>
+            <p className="text-2xl font-bold text-ink">
               Rp {displayPrice.toLocaleString('id-ID')}
-              <span className="text-sm font-normal text-gray-500">/jam</span>
+              <span className="text-sm font-normal text-ink-soft">/jam</span>
             </p>
-            <p className="text-[11px] text-gray-400">*belum termasuk pajak</p>
+            <p className="text-[11px] text-ink-faint">*belum termasuk pajak</p>
           </div>
         </section>
 
         {/* Bio */}
         {streamer.bio && (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-gray-900">Tentang {streamer.first_name}</h2>
-            <p className="mt-2 whitespace-pre-line leading-relaxed text-gray-700">{streamer.bio}</p>
+            <h2 className="text-lg font-semibold text-ink">Tentang {streamer.first_name}</h2>
+            <p className="mt-2 whitespace-pre-line leading-relaxed text-ink-body">{streamer.bio}</p>
           </section>
         )}
 
         {/* Testimonials */}
         {testimonials.length > 0 && (
           <section className="mt-8">
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-ink">
               Ulasan Klien ({testimonials.length})
             </h2>
             <ul className="mt-4 space-y-4">
               {testimonials.map((t, i) => (
-                <li key={i} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
+                <li key={i} className="rounded-panel border border-hairline bg-surface p-4">
                   <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{t.client_name}</span>
+                    <span className="font-medium text-ink">{t.client_name}</span>
                     <Stars rating={t.rating} />
                   </div>
-                  <p className="mt-2 text-sm text-gray-700">{t.comment}</p>
+                  <p className="mt-2 text-sm text-ink-body">{t.comment}</p>
                 </li>
               ))}
             </ul>
@@ -236,14 +236,14 @@ export default async function StreamerPage({ params }: { params: { username: str
         )}
 
         {/* CTA */}
-        <section className="mt-10 rounded-2xl bg-blue-600 p-6 text-center text-white">
+        <section className="mt-10 rounded-frame bg-blue-600 p-6 text-center text-white">
           <h2 className="text-xl font-semibold">Siap booking {streamer.first_name}?</h2>
           <p className="mt-1 text-sm text-blue-100">
             Tingkatkan penjualan live streaming kamu bersama host profesional.
           </p>
           <Link
             href="/streamers"
-            className="mt-4 inline-block rounded-lg bg-white px-6 py-2.5 font-medium text-blue-600 transition-colors hover:bg-blue-50"
+            className="mt-4 inline-block rounded-lg bg-surface px-6 py-2.5 font-medium text-blue-600 transition-colors hover:bg-blue-50"
           >
             Mulai Booking
           </Link>

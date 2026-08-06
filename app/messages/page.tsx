@@ -181,7 +181,7 @@ export default function MessagesPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
         
         {/* Modal content - Added min-w-[500px] for desktop */}
-        <div className="relative w-[95%] sm:w-[20%] min-w-[300px] md:min-w-[600px] bg-white rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 mx-auto">
+        <div className="relative w-[95%] sm:w-[20%] min-w-[300px] md:min-w-[600px] bg-surface rounded-panel animate-in slide-in-from-bottom-4 duration-300 mx-auto">
           <div className="p-4 sm:p-8">
             {/* Warning Icon Header - Made smaller */}
             <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
@@ -190,11 +190,11 @@ export default function MessagesPage() {
 
             {/* Content - Adjusted text sizes */}
             <div className="text-center space-y-4 sm:space-y-6">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+              <h3 className="text-lg sm:text-xl font-bold text-ink">
                 Peringatan Keamanan
               </h3>
               <div className="space-y-3 sm:space-y-4 max-w-[95%] mx-auto">
-                <p className="text-sm sm:text-base text-gray-600">
+                <p className="text-sm sm:text-base text-ink-muted">
                   Untuk melindungi pengguna dan streamer dari penipuan, kamu tidak dapat membagikan informasi pribadi di platform Salda.
                 </p>
                 <div className="bg-red-50 p-3 sm:p-4 rounded-lg border border-red-100">
@@ -202,7 +202,7 @@ export default function MessagesPage() {
                     ⚠️ Pelanggaran berulang terhadap kebijakan ini dapat mengakibatkan pemblokiran akun secara permanen.
                   </p>
                 </div>
-                <p className="text-sm sm:text-base text-gray-600">
+                <p className="text-sm sm:text-base text-ink-muted">
                   Silakan hubungi{" "}
                   <a href="mailto:admin@trollife.id" className="text-blue-600 hover:text-blue-700 font-medium">
                     admin@trollife.id
@@ -232,13 +232,13 @@ export default function MessagesPage() {
       <div className="fixed inset-90 z-[10] flex items-center justify-center">
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
         
-        <div className="relative w-[95%] sm:w-[20%] min-w-[300px] md:min-w-[600px] bg-white rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 mx-auto">
+        <div className="relative w-[95%] sm:w-[20%] min-w-[300px] md:min-w-[600px] bg-surface rounded-panel animate-in slide-in-from-bottom-4 duration-300 mx-auto">
           <div className="p-4 sm:p-8">
             <div className="text-center space-y-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
+              <h3 className="text-lg sm:text-xl font-semibold text-ink">
                 Pengiriman Barang
               </h3>
-              <p className="text-sm sm:text-base text-gray-600">
+              <p className="text-sm sm:text-base text-ink-muted">
                 Kamu ingin mengirim barang ke livestreamer? Silakan hubungi admin Salda untuk membantu mengatur pengiriman product yang ingin di review oleh streamer kami.
               </p>
               <div className="mt-4">
@@ -270,8 +270,8 @@ export default function MessagesPage() {
   const InlineNotification = () => {
     return (
       <div className="flex justify-center mb-3">
-        <div className="bg-gray-50/90 rounded-lg p-4 max-w-[90%] border border-gray-200 shadow-sm">
-          <p className="text-sm text-gray-700 mb-1">
+        <div className="bg-surface-tint/90 rounded-lg p-4 max-w-[90%] border border-hairline-input">
+          <p className="text-sm text-ink-body mb-1">
             Kamu ingin mengirim barang ke livestreamer? Silakan hubungi admin kami.{" "}
             <a
               href="https://wa.me/62895700120901"
@@ -383,7 +383,7 @@ export default function MessagesPage() {
         <div key={message.id}>
           {showDateSeparator && (
             <div className="flex justify-center my-4">
-              <div className="bg-gray-100 rounded-full px-4 py-1 text-sm text-gray-600">
+              <div className="bg-surface-tint rounded-full px-4 py-1 text-sm text-ink-muted">
                 {messageDate}
               </div>
             </div>
@@ -395,13 +395,13 @@ export default function MessagesPage() {
               className={`rounded-lg p-3 max-w-[70%] relative ${
                 isCurrentUser 
                   ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-800'
+                  : 'bg-surface text-ink'
               }`}
             >
               <p className="text-sm">{message.content}</p>
               <div className="flex items-center justify-end gap-1">
                 <p className={`text-xs ${
-                  isCurrentUser ? 'text-blue-100' : 'text-gray-500'
+                  isCurrentUser ? 'text-blue-100' : 'text-ink-soft'
                 }`}>
                   {formatMessageTime(message.created_at)}
                 </p>
@@ -470,12 +470,12 @@ export default function MessagesPage() {
     conversations.map((conversation) => (
       <div 
         key={conversation.id} 
-        className={`flex items-center p-4 cursor-pointer hover:bg-gray-50 ${
-          selectedConversation?.id === conversation.id ? 'bg-gray-100' : ''
+        className={`flex items-center p-4 cursor-pointer hover:bg-surface-tint ${
+          selectedConversation?.id === conversation.id ? 'bg-surface-tint' : ''
         }`}
         onClick={() => handleConversationSelect(conversation)}
       >
-        <div className="relative w-12 h-12 rounded-full overflow-hidden border border-gray-200">
+        <div className="relative w-12 h-12 rounded-full overflow-hidden border border-hairline-input">
           <Image
             src={userType === 'client' 
               ? (conversation.streamer?.image_url || '/default-avatar.png')
@@ -498,12 +498,12 @@ export default function MessagesPage() {
               }
             </h3>
             {conversation.lastMessage && (
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-ink-soft">
                 {formatLastMessageTime(conversation.lastMessage.created_at)}
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 truncate">
+          <p className="text-sm text-ink-soft truncate">
             {conversation.lastMessage?.content || 'No messages yet'}
           </p>
         </div>
@@ -549,7 +549,7 @@ export default function MessagesPage() {
         
         {/* Centered card */}
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="bg-surface rounded-panel w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="p-4">
               {/* Header with close button */}
               <div className="flex items-center justify-between mb-4">
@@ -563,19 +563,19 @@ export default function MessagesPage() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-ink">
                       {selectedConversation?.streamer?.first_name} {selectedConversation?.streamer?.last_name?.charAt(0)}.
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-ink-soft">
                       Rp {selectedConversation?.streamer?.price?.toLocaleString('id-ID')}/jam
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowDeliveryInfo(false)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full hover:bg-surface-tint transition-colors"
                 >
-                  <XCircle className="h-5 w-5 text-gray-400" />
+                  <XCircle className="h-5 w-5 text-ink-faint" />
                 </button>
               </div>
 
@@ -585,8 +585,8 @@ export default function MessagesPage() {
                   <FileText className="h-3.5 w-3.5 text-blue-600" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Streamer ID:</span>
-                  <span className="text-sm font-medium text-gray-900">#{selectedConversation?.streamer?.id}</span>
+                  <span className="text-sm text-ink-muted">Streamer ID:</span>
+                  <span className="text-sm font-medium text-ink">#{selectedConversation?.streamer?.id}</span>
                 </div>
               </div>
 
@@ -596,13 +596,13 @@ export default function MessagesPage() {
                   <MapPin className="h-4 w-4" />
                   <h4 className="font-medium">Alamat Pengiriman</h4>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                <div className="bg-surface-tint p-3 rounded-lg space-y-2">
                   {selectedConversation?.streamer?.full_address ? (
-                    <div className="text-gray-600 text-sm whitespace-pre-line">
+                    <div className="text-ink-muted text-sm whitespace-pre-line">
                       {selectedConversation.streamer.full_address}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-sm italic">Alamat tidak tersedia</p>
+                    <p className="text-ink-soft text-sm italic">Alamat tidak tersedia</p>
                   )}
                 </div>
                 <button
@@ -639,7 +639,7 @@ export default function MessagesPage() {
       <Toaster richColors position="top-center" />
 
       {/* Header */}
-      <div className="w-full bg-[#faf9f6] border-b border-gray-200 flex-shrink-0">
+      <div className="w-full bg-[#faf9f6] border-b border-hairline-input flex-shrink-0">
         <div className="w-full px-4">
           <div className="flex items-center h-16">
             <Button 
@@ -661,10 +661,10 @@ export default function MessagesPage() {
       {/* Chat Container */}
       <div className="flex-1 flex overflow-hidden">
         {/* Chat List */}
-        <div className={`w-full md:w-[350px] lg:w-[400px] bg-[#faf9f6] border-r border-gray-200 
+        <div className={`w-full md:w-[350px] lg:w-[400px] bg-[#faf9f6] border-r border-hairline-input 
           overflow-y-auto flex-shrink-0 ${isMobileChat ? 'hidden md:block' : 'block'}`}>
           {conversations.length > 0 ? renderConversationList() : (
-            <div className="p-4 text-center text-gray-500">
+            <div className="p-4 text-center text-ink-soft">
               <p>No conversations yet</p>
               <p className="text-sm mt-2">Your chat history will appear here</p>
             </div>
@@ -677,10 +677,10 @@ export default function MessagesPage() {
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="bg-[#faf9f6] p-4 border-b border-gray-200">
+              <div className="bg-[#faf9f6] p-4 border-b border-hairline-input">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200">
+                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-hairline-input">
                       <Image
                         src={userType === 'client'
                           ? (selectedConversation.streamer?.image_url || '/default-avatar.png')
@@ -725,7 +725,7 @@ export default function MessagesPage() {
               </div>
 
               {/* Input */}
-              <div className="bg-white p-4 border-t border-gray-200 relative">
+              <div className="bg-surface p-4 border-t border-hairline-input relative">
                 {showDeliveryInfo && <DeliveryInfoCard />}
                 
                 <div className="flex items-center gap-3">
@@ -740,7 +740,7 @@ export default function MessagesPage() {
                   <Button 
                     onClick={handleSendMessage} 
                     size="default" 
-                    className="bg-gradient-to-r from-[#1e40af] to-[#6b21a8] hover:from-[#1e3a8a] hover:to-[#581c87] flex-shrink-0"
+                    className="bg-brand hover:bg-brand-hover flex-shrink-0"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
@@ -755,7 +755,7 @@ export default function MessagesPage() {
                   Hati-hati penipuan! Mohon tidak bertransaksi di luar Salda dan tidak memberikan data pribadi kepada streamer, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi Salda, ya.
                 </p>
               </div>
-              <div className="flex-1 flex items-center justify-center p-4 text-center text-gray-500">
+              <div className="flex-1 flex items-center justify-center p-4 text-center text-ink-soft">
                 <p>Select a conversation to start chatting</p>
               </div>
             </div>

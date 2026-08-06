@@ -85,11 +85,11 @@ const StreamerCardSkeleton = () => (
     
     
     {/* Image Container with Floating Effect */}
-    <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl transition-all duration-500 group-hover:-translate-y-2 bg-gray-200 animate-pulse" />
+    <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-panel sm:rounded-frame overflow-hidden sm: transition-all duration-500 group-hover:-translate-y-2 bg-surface-deep animate-pulse" />
 
     {/* Floating Content Container */}
     <div className="relative -mt-32 sm:-mt-40 md:-mt-48 mx-2 sm:mx-4 z-10">
-      <div className="backdrop-blur-md bg-white/10 rounded-lg sm:rounded-xl p-2.5 sm:p-4 border border-white/20 shadow-lg">
+      <div className="backdrop-blur-md bg-white/10 rounded-lg sm:rounded-panel p-2.5 sm:p-4 border border-white/20">
         {/* Header */}
         <div className="flex items-center justify-between mb-1.5 sm:mb-2">
           <div className="h-5 bg-white/20 rounded w-2/3 animate-pulse"></div>
@@ -304,7 +304,7 @@ export default function Hero() {
                 className="text-center w-full max-w-5xl mx-auto mb-4 sm:mb-6 md:mb-8 px-2 relative z-20"
               >
                 <div className="flex items-center justify-center gap-2 mb-3 sm:mb-4 md:mb-6">
-                  <div className="px-2 md:px-3 py-1 md:py-1.5 bg-black/5 rounded-full border border-black/10 shadow-sm">
+                  <div className="px-2 md:px-3 py-1 md:py-1.5 bg-black/5 rounded-full border border-black/10">
                     <span className="text-[10px] md:text-xs font-medium text-black/80">
                       Shopee & TikTok Live-Seller Supported.
                     </span>
@@ -318,7 +318,7 @@ export default function Hero() {
                   <span className="block mt-1 sm:mt-2 text-black">Produk kamu</span>
                 </h1>
                 
-                <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-3 sm:px-4">
+                <p className="text-xs sm:text-sm md:text-base text-ink-muted mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-3 sm:px-4">
                   Platform host live streaming dari TROLIVE untuk boost penjualan produk kamu di TIKTOK & SHOPEE LIVE dengan harga terjangkau.
                 </p>
 
@@ -331,17 +331,17 @@ export default function Hero() {
 
                 {/* Trust Badges */}
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap mt-6 sm:mt-8 md:mt-10">
-                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-hairline">
                     <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
-                    <span className="text-[10px] sm:text-xs font-medium text-gray-600">Pembayaran Aman</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-ink-muted">Pembayaran Aman</span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-hairline">
                     <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
-                    <span className="text-[10px] sm:text-xs font-medium text-gray-600">Rating 4.9/5</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-ink-muted">Rating 4.9/5</span>
                   </div>
-                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-hairline">
                     <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
-                    <span className="text-[10px] sm:text-xs font-medium text-gray-600">250+ Host Aktif</span>
+                    <span className="text-[10px] sm:text-xs font-medium text-ink-muted">250+ Host Aktif</span>
                   </div>
                 </div>
               </motion.div>
@@ -372,7 +372,7 @@ export default function Hero() {
                         {/* Card spotlight effect */}
                         
                         {/* Image Container with Floating Effect */}
-                        <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl transition-all duration-500 group-hover:-translate-y-2">
+                        <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-panel sm:rounded-frame overflow-hidden sm: transition-all duration-500 group-hover:-translate-y-2">
                           <Image
                             src={streamer.image_url || PLACEHOLDER_AVATAR}
                             alt={formatName(streamer.first_name, streamer.last_name)}
@@ -384,7 +384,7 @@ export default function Hero() {
 
                         {/* Floating Content Container */}
                         <div className="relative -mt-32 sm:-mt-40 md:-mt-48 mx-2 sm:mx-4 z-10">
-                          <div className="backdrop-blur-md bg-white/10 rounded-lg sm:rounded-xl p-2.5 sm:p-4 border border-white/20 shadow-lg">
+                          <div className="backdrop-blur-md bg-white/10 rounded-lg sm:rounded-panel p-2.5 sm:p-4 border border-white/20">
                             {/* Header */}
                             <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                               <h3 className="text-sm sm:text-lg font-medium text-white">
@@ -440,15 +440,15 @@ export default function Hero() {
               <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 mb-8 sm:mb-12 md:mb-16 relative z-20">
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-3 md:gap-4">
                   {allCards.map((card, index) => (
-                    <div key={index} className="bg-white p-3 sm:p-4 rounded-lg sm:rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300">
+                    <div key={index} className="bg-surface p-3 sm:p-4 rounded-lg sm:rounded-panel border border-hairline transition-all duration-300">
                       <div className="flex flex-col items-center text-center">
                         <card.icon className={`w-4 h-4 sm:w-5 sm:h-5 ${card.iconColor} mb-1.5 sm:mb-2`} />
                         {card.value && (
-                          <p className="text-xs sm:text-sm font-semibold text-gray-900">{card.value}</p>
+                          <p className="text-xs sm:text-sm font-semibold text-ink">{card.value}</p>
                         )}
-                        <p className="text-[10px] sm:text-xs text-gray-500">{card.label}</p>
+                        <p className="text-[10px] sm:text-xs text-ink-soft">{card.label}</p>
                         {card.description && (
-                          <p className="text-[8px] sm:text-[10px] text-gray-400 mt-0.5">{card.description}</p>
+                          <p className="text-[8px] sm:text-[10px] text-ink-faint mt-0.5">{card.description}</p>
                         )}
                       </div>
                     </div>

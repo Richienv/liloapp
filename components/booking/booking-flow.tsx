@@ -394,7 +394,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(requiredFieldsValidation.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
         icon: '⚠️',
       });
       return;
@@ -412,7 +412,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(dateValidation.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
       });
       return;
     }
@@ -497,7 +497,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(UNVERIFIED_BOOKING_MESSAGE, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
       });
       return;
     }
@@ -662,7 +662,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(isRequirementsValid.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
         icon: '⚠️',
       });
       return;
@@ -683,7 +683,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error("Tidak ada tanggal yang tersedia untuk pemilihan", {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
         icon: '⚠️',
       });
       setActiveBulkMode(null);
@@ -695,7 +695,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(`${invalidDates.length} tanggal dilewati karena pembatasan waktu`, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-yellow-600 border-2 border-yellow-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-yellow-600 border-2 border-yellow-100 px-4 py-3 rounded-panel',
         icon: '⚠️',
       });
     }
@@ -744,7 +744,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
         `Berhasil memilih ${newSelectedDates.size} hari dengan total ${Array.from(newSelectedDates.values()).reduce((total, date) => total + date.totalHours, 0)} jam`, {
           duration: 4000,
           position: 'top-center',
-          className: 'bg-white text-green-600 border-2 border-green-100 shadow-lg px-4 py-3 rounded-xl',
+          className: 'bg-surface text-green-600 border-2 border-green-100 px-4 py-3 rounded-panel',
           icon: '✓',
         }
       );
@@ -752,7 +752,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error("Tidak ada slot waktu yang tersedia untuk periode yang dipilih", {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: 'bg-surface text-red-600 border-2 border-red-100 px-4 py-3 rounded-panel',
         icon: '⚠️',
       });
       setActiveBulkMode(null);
@@ -777,7 +777,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
           toast.error(validation.error, {
             duration: 3000,
             position: 'top-center',
-            className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg',
+            className: 'bg-surface text-red-600 border-2 border-red-100',
           });
           return prev;
         }
@@ -802,7 +802,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             toast.error("Tidak dapat memilih jam ini karena durasi 2 jam berikutnya tidak tersedia (total 3 slot)", {
               duration: 3000,
               position: 'top-center',
-              className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg',
+              className: 'bg-surface text-red-600 border-2 border-red-100',
             });
             return prev;
           }
@@ -815,7 +815,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             toast.error(validation.error, {
               duration: 3000,
               position: 'top-center',
-              className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg',
+              className: 'bg-surface text-red-600 border-2 border-red-100',
             });
             return prev;
           }

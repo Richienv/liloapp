@@ -116,8 +116,8 @@ function formatPrice(price: number): string {
 
 function SubAccountLink({ link }: { link: string }) {
   return (
-    <div className="mt-2 p-2 bg-gray-100 rounded-md text-xs">
-      <p className="font-medium text-gray-700 flex items-center">
+    <div className="mt-2 p-2 bg-surface-tint rounded-md text-xs">
+      <p className="font-medium text-ink-body flex items-center">
         <LinkIcon className="h-3 w-3 mr-1" />
         Sub Account Link:
       </p>
@@ -174,18 +174,18 @@ function ItemAcceptanceModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl w-full max-w-lg mx-4 overflow-hidden shadow-xl"
+        className="bg-surface rounded-panel w-full max-w-lg mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-ink">
               Konfirmasi Penerimaan Barang
             </h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-ink-faint hover:text-ink-muted transition-colors"
               disabled={isConfirming}
             >
               <XCircle className="h-6 w-6" />
@@ -201,35 +201,35 @@ function ItemAcceptanceModal({
               <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Info className="h-4 w-4 text-blue-600" />
               </div>
-              <h4 className="text-base font-medium text-gray-900">
+              <h4 className="text-base font-medium text-ink">
                 Panduan Penerimaan Barang
               </h4>
             </div>
             <ul className="space-y-3 pl-11">
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Pastikan barang dalam kondisi baik dan sesuai dengan deskripsi</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Periksa kelengkapan dan kualitas setiap item</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Simpan foto kemasan dan isi paket sebagai dokumentasi</span>
               </li>
             </ul>
           </div>
 
           {/* Important Notice */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-surface-tint rounded-lg p-4">
             <div className="flex items-start gap-3">
-              <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-gray-600" />
+              <div className="h-6 w-6 rounded-full bg-surface-tint flex items-center justify-center flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-ink-muted" />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-900 mb-1">Penting:</p>
-                <p className="text-sm text-gray-600 leading-relaxed">
+                <p className="text-sm font-medium text-ink mb-1">Penting:</p>
+                <p className="text-sm text-ink-muted leading-relaxed">
                   Pastikan kamu telah menyimpan foto bukti penerimaan barang sebelum melanjutkan. 
                   Foto ini diperlukan untuk dokumentasi dan perlindungan kamu sebagai streamer.
                 </p>
@@ -239,12 +239,12 @@ function ItemAcceptanceModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+        <div className="px-6 py-4 bg-surface-tint border-t border-hairline">
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}
               disabled={isConfirming}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-ink-body hover:text-ink transition-colors"
             >
               Batal
             </button>
@@ -308,18 +308,18 @@ function RescheduleModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl w-full max-w-lg mx-4 overflow-hidden shadow-xl"
+        className="bg-surface rounded-panel w-full max-w-lg mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-ink">
               Pengajuan Reschedule
             </h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-ink-faint hover:text-ink-muted transition-colors"
               disabled={isSubmitting}
             >
               <XCircle className="h-6 w-6" />
@@ -335,25 +335,25 @@ function RescheduleModal({
               <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Info className="h-4 w-4 text-blue-600" />
               </div>
-              <h4 className="text-base font-medium text-gray-900">
+              <h4 className="text-base font-medium text-ink">
                 Kebijakan Reschedule
               </h4>
             </div>
             <ul className="space-y-3 pl-11">
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Pengajuan reschedule akan mempengaruhi performa dan reputasi kamu sebagai streamer</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Reschedule mendadak dapat mengurangi tingkat kepercayaan client</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Pastikan kamu memiliki alasan yang kuat sebelum mengajukan reschedule</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Pengajuan reschedule yang terlalu sering dapat mempengaruhi visibilitas profil kamu</span>
               </li>
             </ul>
@@ -362,11 +362,11 @@ function RescheduleModal({
           {/* Reason Input */}
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <div className="h-6 w-6 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                <AlertTriangle className="h-3.5 w-3.5 text-gray-600" />
+              <div className="h-6 w-6 rounded-full bg-surface-tint flex items-center justify-center flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-ink-muted" />
               </div>
               <div>
-                <label htmlFor="reschedule-reason" className="block text-sm font-medium text-gray-900">
+                <label htmlFor="reschedule-reason" className="block text-sm font-medium text-ink">
                   Alasan Reschedule<span className="text-blue-600">*</span>
                 </label>
                 <textarea
@@ -377,9 +377,9 @@ function RescheduleModal({
                     if (error) setError('');
                   }}
                   placeholder="Mohon jelaskan alasan kamu mengajukan reschedule..."
-                  className={`mt-2 w-full min-h-[100px] p-3 text-sm text-gray-900 rounded-lg border ${
-                    error ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'
-                  } focus:border-transparent focus:ring-2 bg-white resize-none`}
+                  className={`mt-2 w-full min-h-[100px] p-3 text-sm text-ink rounded-lg border ${
+                    error ? 'border-red-300 focus:ring-red-500' : 'border-hairline-input focus:ring-blue-500'
+                  } focus:border-transparent focus:ring-2 bg-surface resize-none`}
                 />
                 {error && (
                   <p className="mt-1 text-xs text-red-600">{error}</p>
@@ -390,12 +390,12 @@ function RescheduleModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+        <div className="px-6 py-4 bg-surface-tint border-t border-hairline">
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-ink-body hover:text-ink transition-colors"
             >
               Batal
             </button>
@@ -458,12 +458,12 @@ function StatusFlow({ status, itemsReceived }: { status: string; itemsReceived: 
           <div className={`w-2 h-2 rounded-full ${
             step.completed ? 'bg-blue-600' : 
             step.current ? 'bg-blue-600 animate-pulse' : 
-            'bg-gray-300'
+            'bg-surface-deep'
           }`} />
           <span className={`text-sm ${
             step.completed ? 'text-blue-600 font-medium' : 
             step.current ? 'text-blue-600' :
-            'text-gray-400'
+            'text-ink-faint'
           }`}>
             {step.label}
           </span>
@@ -473,7 +473,7 @@ function StatusFlow({ status, itemsReceived }: { status: string; itemsReceived: 
                 ? 'bg-blue-600' 
                 : steps[index].completed 
                 ? 'bg-brand'
-                : 'bg-gray-200'
+                : 'bg-surface-deep'
             }`} />
           )}
         </div>
@@ -505,18 +505,18 @@ function PaymentGroupModal({ isOpen, onClose, booking, relatedBookings }: Paymen
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl w-full max-w-lg mx-4 overflow-hidden shadow-xl"
+        className="bg-surface rounded-panel w-full max-w-lg mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-ink">
               Grup Booking
             </h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-ink-faint hover:text-ink-muted transition-colors"
             >
               <XCircle className="h-6 w-6" />
             </button>
@@ -530,7 +530,7 @@ function PaymentGroupModal({ isOpen, onClose, booking, relatedBookings }: Paymen
               <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Users className="h-4 w-4 text-blue-600" />
               </div>
-              <h4 className="text-base font-medium text-gray-900">
+              <h4 className="text-base font-medium text-ink">
                 Booking dari {booking.client_first_name} {booking.client_last_name}
               </h4>
             </div>
@@ -539,9 +539,9 @@ function PaymentGroupModal({ isOpen, onClose, booking, relatedBookings }: Paymen
               {[booking, ...relatedBookings]
                 .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
                 .map((b, index) => (
-                <div key={b.id} className="bg-gray-50 rounded-lg p-4">
+                <div key={b.id} className="bg-surface-tint rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-900">
+                    <span className="text-sm font-medium text-ink">
                       Sesi {index + 1}
                     </span>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(b.status)}`}>
@@ -549,11 +549,11 @@ function PaymentGroupModal({ isOpen, onClose, booking, relatedBookings }: Paymen
                     </span>
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-ink-muted">
                       <Calendar className="h-4 w-4" />
                       <span>{formatBookingDate(b.start_time)}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <div className="flex items-center gap-2 text-sm text-ink-muted">
                       <Clock className="h-4 w-4" />
                       <span>
                         {formatBookingTime(b.start_time, b.timezone)} - {formatBookingTime(b.end_time, b.timezone)}
@@ -747,10 +747,10 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6">
+    <div className="bg-surface rounded-panel border border-hairline-input p-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gray-100 overflow-hidden">
+          <div className="w-12 h-12 rounded-full bg-surface-tint overflow-hidden">
             {booking.client?.image_url ? (
               <Image
                 src={booking.client.image_url}
@@ -766,20 +766,20 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
             )}
           </div>
           <div>
-            <h3 className="font-medium text-gray-900">
+            <h3 className="font-medium text-ink">
               <span className="sm:hidden">{booking.client_first_name}</span>
               <span className="hidden sm:inline">{booking.client_first_name} {booking.client_last_name}</span>
             </h3>
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
-                <p className="text-sm text-gray-500 hidden sm:block">
+                <p className="text-sm text-ink-soft hidden sm:block">
                   {booking.platform} Livestreaming
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 <div className="flex items-center gap-2">
-                  <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                  <span className="text-xs sm:text-sm text-gray-500">{booking.platform}</span>
+                  <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-ink-faint" />
+                  <span className="text-xs sm:text-sm text-ink-soft">{booking.platform}</span>
                 </div>
               </div>
               <div className="flex items-center gap-2 mt-1">
@@ -809,28 +809,28 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
       <div className="flex items-center justify-between mb-6">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <Clock className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500">
+            <Clock className="h-4 w-4 text-ink-faint" />
+            <span className="text-sm text-ink-soft">
               <span className="sm:hidden">{format(new Date(booking.start_time), 'HH:mm')}-{format(new Date(booking.end_time), 'HH:mm')}</span>
               <span className="hidden sm:inline">{format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}</span>
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-500">
+            <Calendar className="h-4 w-4 text-ink-faint" />
+            <span className="text-sm text-ink-soft">
               <span className="sm:hidden">{format(new Date(booking.start_time), 'd MMM yyyy')}</span>
               <span className="hidden sm:inline">{format(new Date(booking.start_time), 'EEEE, d MMMM yyyy')}</span>
             </span>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-base font-medium text-gray-900 flex flex-col items-end">
-            <span className="text-gray-900">
+          <div className="text-base font-medium text-ink flex flex-col items-end">
+            <span className="text-ink">
               <span className="sm:hidden">Rp {booking.price >= 1000 ? (booking.price / 1000).toFixed(0) + 'K' : booking.price}</span>
               <span className="hidden sm:inline">Rp {booking.price.toLocaleString()}</span>
             </span>
           </div>
-          <span className="text-xs text-gray-500">
+          <span className="text-xs text-ink-soft">
             <span className="sm:hidden">{differenceInHours(new Date(booking.end_time), new Date(booking.start_time))}h</span>
             <span className="hidden sm:inline">{differenceInHours(new Date(booking.end_time), new Date(booking.start_time))} jam</span>
           </span>
@@ -856,15 +856,15 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
 
       {/* Special Request Section */}
       {booking.special_request && (
-        <div className="mb-6 p-4 bg-gray-50 rounded-lg">
+        <div className="mb-6 p-4 bg-surface-tint rounded-lg">
           <div className="flex items-center gap-2 mb-2">
             <MessageSquare className="h-4 w-4 text-blue-500" />
-            <span className="text-sm font-medium text-gray-700">
+            <span className="text-sm font-medium text-ink-body">
               <span className="sm:hidden">Request</span>
               <span className="hidden sm:inline">Special Request</span>
             </span>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-ink-muted">
             <span className="sm:hidden">
               {booking.special_request.length > 30 
                 ? booking.special_request.substring(0, 30) + '...' 
@@ -876,13 +876,13 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2 pt-4 border-t border-dashed border-gray-200">
+      <div className="flex items-center justify-end gap-2 pt-4 border-t border-dashed border-hairline-input">
         {booking.status === 'live' ? (
           <button
             onClick={() => setIsLiveStreamModalOpen(true)}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg flex items-center gap-2 hover:bg-indigo-700 transition-colors text-sm"
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+            <span className="h-1.5 w-1.5 rounded-full bg-surface animate-pulse" />
             Akhiri Live Stream
           </button>
         ) : booking.status === 'accepted' && (
@@ -897,7 +897,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsRescheduleModalOpen(true)}
-                className="px-3 py-1.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm"
+                className="px-3 py-1.5 border border-hairline-strong text-ink-body rounded-lg hover:bg-surface-tint transition-colors text-sm"
               >
                 <Calendar className="h-3.5 w-3.5 mr-1.5 inline-block" />
                 Reschedule
@@ -935,7 +935,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
             </div>
             <button
               onClick={() => setIsPaymentGroupModalOpen(true)}
-              className="px-3 py-1.5 bg-gray-50 text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-sm"
+              className="px-3 py-1.5 bg-surface-tint text-ink-body border border-hairline-input rounded-lg hover:bg-surface-tint transition-colors text-sm"
             >
               <span className="sm:hidden">Detail</span>
               <span className="hidden sm:inline">Lihat Detail</span>
@@ -1011,7 +1011,7 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd, setBookings }:
       case 'selesai':
         return 'bg-purple-500';
       default:
-        return 'bg-gray-500';
+        return 'bg-surface-tint0';
     }
   };
 
@@ -1119,7 +1119,7 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd, setBookings }:
   return (
     <div className="w-full">
       {/* Status-based filter tabs - Enhanced UI */}
-      <div className="bg-white shadow-sm border border-gray-200 rounded-lg overflow-hidden mb-6">
+      <div className="bg-surface border border-hairline-input rounded-lg overflow-hidden mb-6">
         <div className="grid grid-cols-4 gap-1">
           {displayStatuses.map((status) => {
             // Determine icon for each status
@@ -1148,25 +1148,25 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd, setBookings }:
                 className={`relative flex flex-col items-center justify-center py-3 sm:py-4 transition-all ${
                   statusFilter === status
                     ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600'
-                    : 'text-gray-700 hover:bg-gray-50 border-b-2 border-transparent'
+                    : 'text-ink-body hover:bg-surface-tint border-b-2 border-transparent'
                 }`}
               >
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 mb-1 relative group">
                   <StatusIcon className={`h-6 w-6 sm:h-5 sm:w-5 ${
-                    statusFilter === status ? 'text-blue-600' : 'text-gray-500'
+                    statusFilter === status ? 'text-blue-600' : 'text-ink-soft'
                   }`} />
                   <span className="font-medium text-xs sm:text-sm hidden sm:inline whitespace-nowrap">{status}</span>
                   <div className="absolute bottom-full mb-2 hidden group-hover:block pointer-events-none z-10 sm:hidden">
-                    <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg whitespace-nowrap">
+                    <div className="bg-ink text-white text-xs px-2 py-1 rounded whitespace-nowrap">
                       {status}
                     </div>
-                    <div className="w-2 h-2 bg-gray-900 transform rotate-45 mx-auto mt-[-4px]"></div>
+                    <div className="w-2 h-2 bg-ink transform rotate-45 mx-auto mt-[-4px]"></div>
                   </div>
                 </div>
                 <span className={`text-xs px-1.5 sm:px-2 py-0.5 rounded-full ${
                   statusFilter === status 
                     ? 'bg-blue-100 text-blue-700' 
-                    : 'bg-gray-100 text-gray-600'
+                    : 'bg-surface-tint text-ink-muted'
                 }`}>
                   {statusCounts[status] || 0}
                 </span>
@@ -1181,13 +1181,13 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd, setBookings }:
         {filteredBookings.length > 0 ? (
           renderScheduleCards(filteredBookings)
         ) : (
-          <div className="text-center py-10 px-6 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+          <div className="text-center py-10 px-6 bg-surface-tint rounded-lg border border-hairline-input">
             <div className="flex flex-col items-center justify-center">
-              <Calendar className="h-10 w-10 text-gray-300 mb-3" />
-              <p className="text-gray-500 text-sm mb-1">
+              <Calendar className="h-10 w-10 text-ink-ghost mb-3" />
+              <p className="text-ink-soft text-sm mb-1">
                 Tidak ada jadwal dengan status <span className="font-medium">{statusFilter}</span>
               </p>
-              <p className="text-gray-400 text-xs">
+              <p className="text-ink-faint text-xs">
                 Jadwal akan muncul di sini ketika ada perubahan status
               </p>
             </div>
@@ -1223,9 +1223,9 @@ function RejectionModal({
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-      <div className="bg-white rounded-xl w-full max-w-lg mx-4 overflow-hidden">
-        <div className="p-6 border-b border-gray-100">
-          <h3 className="text-xl font-bold text-gray-900">Konfirmasi Penolakan</h3>
+      <div className="bg-surface rounded-panel w-full max-w-lg mx-4 overflow-hidden">
+        <div className="p-6 border-b border-hairline">
+          <h3 className="text-xl font-bold text-ink">Konfirmasi Penolakan</h3>
         </div>
         
         <div className="p-6 space-y-4">
@@ -1238,7 +1238,7 @@ function RejectionModal({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="reason" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="reason" className="text-sm font-medium text-ink-body">
               Alasan Penolakan<span className="text-red-500">*</span>
             </Label>
             <Textarea
@@ -1251,11 +1251,11 @@ function RejectionModal({
           </div>
         </div>
 
-        <div className="p-6 bg-gray-50 flex justify-end gap-3">
+        <div className="p-6 bg-surface-tint flex justify-end gap-3">
           <Button
             onClick={onClose}
             variant="outline"
-            className="border-gray-300"
+            className="border-hairline-strong"
             disabled={isSubmitting}
           >
             Batal
@@ -1325,22 +1325,22 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 hover:shadow-md transition-all duration-200 overflow-hidden">
+    <div className="bg-surface rounded-panel border border-hairline transition-all duration-200 overflow-hidden">
       <div className="relative">
         {/* Top dotted border */}
-        <div className="absolute top-0 left-4 right-4 h-px border-t-2 border-dashed border-gray-200"></div>
+        <div className="absolute top-0 left-4 right-4 h-px border-t-2 border-dashed border-hairline-input"></div>
         
         {/* Left circle cutout */}
-        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#faf9f6] rounded-full border border-gray-100"></div>
+        <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#faf9f6] rounded-full border border-hairline"></div>
         
         {/* Right circle cutout */}
-        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#faf9f6] rounded-full border border-gray-100"></div>
+        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-[#faf9f6] rounded-full border border-hairline"></div>
 
         <div className="p-4 sm:p-6">
           {/* Header - Client Name, Route, and Group Indicator */}
           <div className="mb-4 sm:mb-6">
             <div className="flex items-start justify-between mb-2">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+              <h3 className="text-lg sm:text-xl font-bold text-ink">
                 {booking.client_first_name} {booking.client_last_name}
               </h3>
               {booking.payment_group_id && (
@@ -1355,8 +1355,8 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
             </div>
             <div className="flex items-center gap-2 flex-wrap">
               <div className="flex items-center gap-2">
-                <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                <span className="text-xs sm:text-sm text-gray-500">{booking.platform}</span>
+                <Monitor className="h-3 w-3 sm:h-4 sm:w-4 text-ink-faint" />
+                <span className="text-xs sm:text-sm text-ink-soft">{booking.platform}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 mt-1">
@@ -1372,26 +1372,26 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                <span className="text-xs sm:text-sm text-gray-500">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-ink-faint" />
+                <span className="text-xs sm:text-sm text-ink-soft">
                   {format(new Date(booking.start_time), 'HH:mm')} - {format(new Date(booking.end_time), 'HH:mm')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-400" />
-                <span className="text-sm text-gray-500">
+                <Calendar className="h-4 w-4 text-ink-faint" />
+                <span className="text-sm text-ink-soft">
                   <span className="sm:hidden">{format(new Date(booking.start_time), 'd MMM yyyy')}</span>
                   <span className="hidden sm:inline">{format(new Date(booking.start_time), 'EEEE, d MMMM yyyy')}</span>
                 </span>
               </div>
             </div>
             <div className="text-right flex flex-col items-end">
-              <div className="text-sm sm:text-base font-medium text-gray-900 flex flex-col items-end">
-                <span className="text-gray-900">
+              <div className="text-sm sm:text-base font-medium text-ink flex flex-col items-end">
+                <span className="text-ink">
                   Rp {booking.price.toLocaleString()}
                 </span>
               </div>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-ink-soft">
                 {differenceInHours(new Date(booking.end_time), new Date(booking.start_time))} jam
               </span>
             </div>
@@ -1399,7 +1399,7 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
 
           {/* Action Buttons */}
           {booking.status === 'pending' && (
-            <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-dashed border-gray-200">
+            <div className="flex items-center justify-between pt-4 sm:pt-6 border-t border-dashed border-hairline-input">
               <button
                 onClick={() => setIsRejectionModalOpen(true)}
                 className="text-xs sm:text-sm text-red-600 hover:text-red-700 transition-colors font-medium"
@@ -1408,7 +1408,7 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
               </button>
               <button
                 onClick={() => onAccept(booking.id)}
-                className="px-4 sm:px-8 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-xl transition-colors"
+                className="px-4 sm:px-8 py-2 sm:py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs sm:text-sm font-medium rounded-panel transition-colors"
               >
                 Terima
               </button>
@@ -1444,11 +1444,11 @@ const AnalyticsCard = ({ title, value, trend }: {
   value: string; 
   trend?: number;
 }) => (
-  <div className="bg-white rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 hover:shadow-sm transition-all duration-300">
+  <div className="bg-surface rounded-lg sm:rounded-panel p-3 sm:p-4 md:p-6 transition-all duration-300">
     <div className="space-y-1 sm:space-y-2">
-      <p className="text-[10px] sm:text-xs md:text-sm text-gray-500">{title}</p>
+      <p className="text-[10px] sm:text-xs md:text-sm text-ink-soft">{title}</p>
       <div className="space-y-1">
-        <h3 className="text-base sm:text-lg md:text-[28px] font-bold text-gray-900">{value}</h3>
+        <h3 className="text-base sm:text-lg md:text-[28px] font-bold text-ink">{value}</h3>
         {trend !== undefined && (
           <p className={`text-[10px] sm:text-xs md:text-sm ${trend >= 0 ? 'text-[#4CAF50]' : 'text-red-500'}`}>
             • {trend > 0 ? '+' : ''}{trend}% dari bulan lalu
@@ -1487,7 +1487,7 @@ const getStatusColor = (status: string) => {
     case 'completed': return 'bg-blue-100 text-blue-800';
     case 'live': return 'bg-green-100 text-green-800';
     case 'rejected': return 'bg-red-100 text-red-800';
-    default: return 'bg-gray-100 text-gray-800';
+    default: return 'bg-surface-tint text-ink';
   }
 };
 
@@ -1514,7 +1514,7 @@ function BookingEntry({ booking, onStatusUpdate }: BookingEntryProps) {
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
 
   return (
-    <div className="border rounded-lg shadow-sm p-4 pb-4 mb-4 text-sm hover:shadow-md transition-shadow relative">
+    <div className="border rounded-lg p-4 pb-4 mb-4 text-sm transition-shadow relative">
       <div className="flex justify-between items-center mb-3 pb-3 border-b">
         <div className="flex items-center gap-1">
           <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)} flex items-center`}>
@@ -1529,7 +1529,7 @@ function BookingEntry({ booking, onStatusUpdate }: BookingEntryProps) {
             </div>
           </span>
         </div>
-        <span className="text-gray-500 text-sm">
+        <span className="text-ink-soft text-sm">
           {format(adjustToIndonesiaTime(booking.created_at), 'MMM d, yyyy HH:mm')}
         </span>
       </div>
@@ -1546,9 +1546,9 @@ function BookingEntry({ booking, onStatusUpdate }: BookingEntryProps) {
           <h3 className="font-medium text-base mb-2">
             {`${booking.client?.first_name || 'Client'} ${booking.client?.last_name || ''}`}
           </h3>
-          <p className="text-gray-600 mb-2">Livestreaming services on {booking.platform}</p>
+          <p className="text-ink-muted mb-2">Livestreaming services on {booking.platform}</p>
           <div className="flex items-center mb-2">
-            <Clock className="w-4 h-4 mr-2 text-gray-400" />
+            <Clock className="w-4 h-4 mr-2 text-ink-faint" />
             <span className="text-base">
               {`${format(adjustToIndonesiaTime(booking.start_time), 'HH:mm')} - ${format(adjustToIndonesiaTime(booking.end_time), 'HH:mm')}`}
             </span>
@@ -1606,20 +1606,20 @@ function LiveStreamModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-2xl w-full max-w-md mx-4 overflow-hidden shadow-2xl"
+        className="bg-surface rounded-frame w-full max-w-md mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header - Simple and elegant */}
-        <div className="px-6 py-5 flex items-center justify-between border-b border-gray-100">
+        <div className="px-6 py-5 flex items-center justify-between border-b border-hairline">
           <div className="flex items-center gap-2.5">
             <div className="h-2.5 w-2.5 rounded-full bg-red-500 animate-pulse" />
-            <h2 className="text-lg font-semibold text-gray-900">
+            <h2 className="text-lg font-semibold text-ink">
               Live Session Active
             </h2>
           </div>
           <button 
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-ink-faint hover:text-ink-muted transition-colors"
           >
             <X className="h-5 w-5" />
           </button>
@@ -1628,42 +1628,42 @@ function LiveStreamModal({
         {/* Content - Clean and focused */}
         <div className="px-6 py-6">
           {/* Stream Details Card */}
-          <div className="bg-gray-50 rounded-xl p-5 space-y-4">
+          <div className="bg-surface-tint rounded-panel p-5 space-y-4">
             {/* Client Info */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">Client</span>
-              <span className="text-sm font-medium text-gray-900">
+              <span className="text-sm font-medium text-ink-soft">Client</span>
+              <span className="text-sm font-medium text-ink">
                 {booking.client_first_name} {booking.client_last_name}
               </span>
             </div>
             
             {/* Platform */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">Platform</span>
+              <span className="text-sm font-medium text-ink-soft">Platform</span>
               <div className="flex items-center gap-1.5">
-                <span className="text-sm font-medium text-gray-900">{booking.platform}</span>
+                <span className="text-sm font-medium text-ink">{booking.platform}</span>
               </div>
             </div>
 
             {/* End Time */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">End Time</span>
+              <span className="text-sm font-medium text-ink-soft">End Time</span>
               <div className="flex flex-col items-end">
-                <span className="text-sm font-medium text-gray-900">{formattedEndTime}</span>
-                <span className="text-xs text-gray-500">{formattedDate}</span>
+                <span className="text-sm font-medium text-ink">{formattedEndTime}</span>
+                <span className="text-xs text-ink-soft">{formattedDate}</span>
               </div>
             </div>
 
             {/* Price */}
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-500">Price</span>
+              <span className="text-sm font-medium text-ink-soft">Price</span>
               <span className="text-sm font-medium text-green-600">{formattedPrice}</span>
             </div>
             
             {/* Stream Link */}
-            <div className="pt-3 border-t border-gray-200">
+            <div className="pt-3 border-t border-hairline-input">
               <div className="flex items-center justify-between mb-1.5">
-                <span className="text-sm font-medium text-gray-500">Stream URL</span>
+                <span className="text-sm font-medium text-ink-soft">Stream URL</span>
                 <a 
                   href={streamLink}
                   target="_blank"
@@ -1674,8 +1674,8 @@ function LiveStreamModal({
                   <ExternalLink className="h-3 w-3" />
                 </a>
               </div>
-              <div className="bg-white border border-gray-200 rounded-lg py-2 px-3 break-all">
-                <code className="text-xs text-gray-800 font-mono">{streamLink}</code>
+              <div className="bg-surface border border-hairline-input rounded-lg py-2 px-3 break-all">
+                <code className="text-xs text-ink font-mono">{streamLink}</code>
               </div>
             </div>
           </div>
@@ -1688,10 +1688,10 @@ function LiveStreamModal({
                   type="checkbox" 
                   checked={isConfirmed} 
                   onChange={(e) => setIsConfirmed(e.target.checked)}
-                  className="h-5 w-5 rounded border-gray-300 text-red-600 focus:ring-red-500 transition-colors cursor-pointer"
+                  className="h-5 w-5 rounded border-hairline-strong text-red-600 focus:ring-red-500 transition-colors cursor-pointer"
                 />
               </div>
-              <span className="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">
+              <span className="text-sm text-ink-muted group-hover:text-ink transition-colors">
                 Saya konfirmasi bahwa saya telah menyelesaikan seluruh sesi live streaming sesuai dengan durasi dan layanan yang diminta oleh client
               </span>
             </label>
@@ -1703,7 +1703,7 @@ function LiveStreamModal({
           <button
             onClick={onEndStream}
             disabled={!isConfirmed}
-            className={`w-full py-3 ${isConfirmed ? 'bg-red-600 hover:bg-red-700' : 'bg-gray-300 cursor-not-allowed'} text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm ${isConfirmed ? 'hover:shadow' : ''}`}
+            className={`w-full py-3 ${isConfirmed ? 'bg-red-600 hover:bg-red-700' : 'bg-surface-deep cursor-not-allowed'} text-white font-medium rounded-panel transition-all flex items-center justify-center gap-2 ${isConfirmed ? 'hover:shadow' : ''}`}
           >
             Akhiri Live
           </button>
@@ -1754,25 +1754,25 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
 
   return (
     <>
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300">
+      <div className="bg-surface rounded-panel border border-hairline-input transition-all duration-300">
         <div className="p-4 sm:p-6">
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-8">
             {/* Left Column - Info */}
-            <div className="flex-1 space-y-4 lg:space-y-6 lg:border-r lg:border-gray-100 lg:pr-12">
+            <div className="flex-1 space-y-4 lg:space-y-6 lg:border-r lg:border-hairline lg:pr-12">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start">
                 <div className="space-y-4">
                   <div>
-                    <h3 className="text-lg sm:text-xl font-bold text-gray-900">{firstName}</h3>
-                    <p className="text-xs sm:text-sm text-gray-500 mt-1">Joined {format(new Date(joinDate), 'MMMM d, yyyy')}</p>
+                    <h3 className="text-lg sm:text-xl font-bold text-ink">{firstName}</h3>
+                    <p className="text-xs sm:text-sm text-ink-soft mt-1">Joined {format(new Date(joinDate), 'MMMM d, yyyy')}</p>
                   </div>
                   
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm text-gray-600">User ID:</span>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm font-mono truncate max-w-[150px] sm:max-w-none">{userId}</code>
+                      <span className="text-xs sm:text-sm text-ink-muted">User ID:</span>
+                      <code className="bg-surface-tint px-2 py-1 rounded text-xs sm:text-sm font-mono truncate max-w-[150px] sm:max-w-none">{userId}</code>
                       <button
                         onClick={() => copyToClipboard(userId, 'user')}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-ink-faint hover:text-ink-muted"
                       >
                         {copiedId === 'user' ? (
                           <span className="text-green-500 text-xs">Copied!</span>
@@ -1785,11 +1785,11 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-xs sm:text-sm text-gray-600">Streamer ID:</span>
-                      <code className="bg-gray-100 px-2 py-1 rounded text-xs sm:text-sm font-mono">{streamerId}</code>
+                      <span className="text-xs sm:text-sm text-ink-muted">Streamer ID:</span>
+                      <code className="bg-surface-tint px-2 py-1 rounded text-xs sm:text-sm font-mono">{streamerId}</code>
                       <button
                         onClick={() => copyToClipboard(streamerId.toString(), 'streamer')}
-                        className="text-gray-400 hover:text-gray-600"
+                        className="text-ink-faint hover:text-ink-muted"
                       >
                         {copiedId === 'streamer' ? (
                           <span className="text-green-500 text-xs">Copied!</span>
@@ -1806,12 +1806,12 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
 
               {/* Basic Stats */}
               <div className="grid grid-cols-2 gap-2 sm:gap-4">
-                <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-                  <p className="text-xs sm:text-sm text-gray-500">Rating</p>
+                <div className="bg-surface-tint rounded-panel p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-ink-soft">Rating</p>
                   <p className="text-base sm:text-lg font-semibold mt-1">{rating.toFixed(1)}/5.0</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-                  <p className="text-xs sm:text-sm text-gray-500">Total Durasi</p>
+                <div className="bg-surface-tint rounded-panel p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-ink-soft">Total Durasi</p>
                   <p className="text-base sm:text-lg font-semibold mt-1">{Math.round(stats.totalLiveHours)} jam</p>
                 </div>
               </div>
@@ -1821,7 +1821,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
             <div className="w-full lg:w-[400px] lg:pl-12">
               {/* Gallery Section */}
               <div className="space-y-4">
-                <h3 className="text-sm sm:text-base font-semibold text-gray-900">Galeri Photo Kamu</h3>
+                <h3 className="text-sm sm:text-base font-semibold text-ink">Galeri Photo Kamu</h3>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3 relative">
                   {galleryPhotos.slice(0, 3).map((photo, index) => (
                     <div 
@@ -1832,14 +1832,14 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                       <img 
                         src={photo.photo_url}
                         alt={`Gallery image ${index + 1}`}
-                        className="rounded-xl w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                        className="rounded-panel w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
+                      <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-panel" />
                     </div>
                   ))}
                   {galleryPhotos.length > 3 && (
                     <div 
-                      className="absolute right-0 bottom-0 w-[calc(33.33%-4px)] aspect-square rounded-xl overflow-hidden cursor-pointer transform transition-transform duration-200 hover:scale-105"
+                      className="absolute right-0 bottom-0 w-[calc(33.33%-4px)] aspect-square rounded-panel overflow-hidden cursor-pointer transform transition-transform duration-200 hover:scale-105"
                       onClick={() => openGalleryModal(3)}
                     >
                       <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/80 flex items-center justify-center z-10">
@@ -1853,7 +1853,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                     </div>
                   )}
                   {(!galleryPhotos || galleryPhotos.length === 0) && (
-                    <div className="col-span-full text-center py-6 sm:py-8 text-xs sm:text-sm text-gray-500">
+                    <div className="col-span-full text-center py-6 sm:py-8 text-xs sm:text-sm text-ink-soft">
                       Belum ada foto
                     </div>
                   )}
@@ -1861,26 +1861,26 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
               </div>
 
               {/* Action Buttons - Centered with visual separation */}
-              <div className="my-4 sm:my-6 py-4 sm:py-6 border-y border-gray-100">
+              <div className="my-4 sm:my-6 py-4 sm:py-6 border-y border-hairline">
                 <div className="flex justify-center gap-2 sm:gap-3">
                   <Button
                     onClick={() => router.push('/streamer-schedule')}
-                    className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-xl bg-[#E23744] hover:bg-[#E23744]/90 text-white shadow-sm hover:shadow-md transition-all duration-200"
+                    className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-[#E23744] hover:bg-[#E23744]/90 text-white transition-all duration-200"
                     title="Atur Jadwal"
                   >
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                   <Button
                     onClick={() => router.push('/settings?type=streamer')}
-                    className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 shadow-sm hover:shadow-md transition-all duration-200"
+                    className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-surface-tint hover:bg-surface-deep text-ink-body transition-all duration-200"
                     title="Pengaturan"
                   >
                     <Settings className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
                   <Button
                     onClick={() => setIsExpanded(!isExpanded)}
-                    className={`w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 shadow-sm hover:shadow-md transition-all duration-200 ${
-                      isExpanded ? 'bg-gray-200' : ''
+                    className={`w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-surface-tint hover:bg-surface-deep text-ink-body transition-all duration-200 ${
+                      isExpanded ? 'bg-surface-deep' : ''
                     }`}
                     title="Lihat Analytics"
                   >
@@ -1906,7 +1906,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
             isExpanded ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="p-4 sm:p-6 pt-0 border-t border-gray-100">
+          <div className="p-4 sm:p-6 pt-0 border-t border-hairline">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
               <AnalyticsCard
                 title="Total Pendapatan"
@@ -1940,14 +1940,14 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
           onClick={() => setIsGalleryModalOpen(false)}
         >
           <div 
-            className="relative max-w-4xl w-full bg-white rounded-2xl overflow-hidden"
+            className="relative max-w-4xl w-full bg-surface rounded-frame overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-gray-900">Gallery Photos</h3>
+            <div className="p-4 border-b border-hairline-input flex justify-between items-center">
+              <h3 className="text-lg font-semibold text-ink">Gallery Photos</h3>
               <button 
                 onClick={() => setIsGalleryModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-ink-soft hover:text-ink-body"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1983,7 +1983,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
             </div>
 
             {/* Thumbnails */}
-            <div className="p-4 border-t border-gray-200">
+            <div className="p-4 border-t border-hairline-input">
               <div className="flex gap-2 overflow-x-auto pb-2">
                 {galleryPhotos.map((photo, index) => (
                   <div
@@ -2118,18 +2118,18 @@ function StartLiveModal({
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl w-full max-w-lg mx-4 overflow-hidden shadow-xl"
+        className="bg-surface rounded-panel w-full max-w-lg mx-4 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-100">
+        <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900">
+            <h2 className="text-xl font-semibold text-ink">
               Mulai Live Stream
             </h2>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-ink-faint hover:text-ink-muted transition-colors"
               disabled={isStarting}
             >
               <XCircle className="h-6 w-6" />
@@ -2145,21 +2145,21 @@ function StartLiveModal({
               <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Info className="h-4 w-4 text-blue-600" />
               </div>
-              <h4 className="text-base font-medium text-gray-900">
+              <h4 className="text-base font-medium text-ink">
                 Stream Setup Guide
               </h4>
             </div>
             <ul className="space-y-3 pl-11">
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Pastikan sudah menyiapkan platform streaming</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Salin dan tempel link stream dari platform kamu</span>
               </li>
-              <li className="flex items-center gap-2 text-gray-600">
-                <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
+              <li className="flex items-center gap-2 text-ink-muted">
+                <div className="h-1.5 w-1.5 rounded-full bg-hairline-strong flex-shrink-0" />
                 <span className="text-sm">Periksa kembali link sebelum memulai stream</span>
               </li>
             </ul>
@@ -2167,7 +2167,7 @@ function StartLiveModal({
 
           {/* Stream Link Input */}
           <div className="space-y-3">
-            <Label htmlFor="stream-link" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="stream-link" className="text-sm font-medium text-ink-body">
               Stream Link<span className="text-red-500">*</span>
             </Label>
             <Input
@@ -2181,7 +2181,7 @@ function StartLiveModal({
               }}
               className={cn(
                 "w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-offset-0",
-                error ? "border-red-300 focus:ring-red-500" : "border-gray-300 focus:ring-blue-500"
+                error ? "border-red-300 focus:ring-red-500" : "border-hairline-strong focus:ring-blue-500"
               )}
               disabled={isStarting}
             />
@@ -2192,12 +2192,12 @@ function StartLiveModal({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100">
+        <div className="px-6 py-4 bg-surface-tint border-t border-hairline">
           <div className="flex items-center justify-end gap-3">
             <button
               onClick={onClose}
               disabled={isStarting}
-              className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium text-ink-body hover:text-ink transition-colors"
             >
               Batal
             </button>
@@ -2246,23 +2246,23 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
       onClick={onClose}
     >
       <div 
-        className="bg-white rounded-xl w-full max-w-2xl overflow-hidden shadow-xl"
+        className="bg-surface rounded-panel w-full max-w-2xl overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100">
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base sm:text-xl font-semibold text-gray-900">
+              <h2 className="text-base sm:text-xl font-semibold text-ink">
                 Grup Booking
               </h2>
-              <p className="text-xs sm:text-sm text-gray-500 mt-1">
+              <p className="text-xs sm:text-sm text-ink-soft mt-1">
                 {booking.client_first_name} {booking.client_last_name}
               </p>
             </div>
             <button 
               onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
+              className="text-ink-faint hover:text-ink-muted transition-colors"
             >
               <XCircle className="h-5 w-5 sm:h-6 sm:w-6" />
             </button>
@@ -2277,7 +2277,7 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                  <span className="text-xs sm:text-sm font-medium text-gray-900">Total Pembayaran</span>
+                  <span className="text-xs sm:text-sm font-medium text-ink">Total Pembayaran</span>
                 </div>
                 <span className="text-base sm:text-lg font-bold text-blue-600">
                   Rp {totalPrice.toLocaleString('id-ID')}
@@ -2289,13 +2289,13 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
             <div className="space-y-3 sm:space-y-4 max-h-[60vh] overflow-y-auto">
               {allBookings.map((b, index) => (
                 <div key={b.id} className="border rounded-lg overflow-hidden">
-                  <div className="p-3 sm:p-4 bg-gray-50 border-b">
+                  <div className="p-3 sm:p-4 bg-surface-tint border-b">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-100 text-blue-600 text-xs font-medium">
                           {index + 1}
                         </span>
-                        <span className="text-xs sm:text-sm font-medium text-gray-900">
+                        <span className="text-xs sm:text-sm font-medium text-ink">
                           {formatBookingDate(b.start_time)}
                         </span>
                       </div>
@@ -2307,12 +2307,12 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
                   <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 sm:gap-2">
-                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400" />
-                        <span className="text-xs sm:text-sm text-gray-600">
+                        <Clock className="h-3 w-3 sm:h-4 sm:w-4 text-ink-faint" />
+                        <span className="text-xs sm:text-sm text-ink-muted">
                           {formatBookingTime(b.start_time, b.timezone)} - {formatBookingTime(b.end_time, b.timezone)}
                         </span>
                       </div>
-                      <span className="text-xs sm:text-sm font-medium text-gray-900">
+                      <span className="text-xs sm:text-sm font-medium text-ink">
                         Rp {calculateBasePrice(b.price).toLocaleString('id-ID')}
                       </span>
                     </div>
@@ -2348,26 +2348,26 @@ function LoadingScreen() {
   return (
     <div className="min-h-screen bg-canvas">
       {/* Navbar Skeleton */}
-      <div className="w-full h-16 bg-white border-b border-gray-100 px-4 flex items-center justify-between">
-        <div className="w-32 h-8 bg-gray-200 animate-pulse rounded"></div>
+      <div className="w-full h-16 bg-surface border-b border-hairline px-4 flex items-center justify-between">
+        <div className="w-32 h-8 bg-surface-deep animate-pulse rounded"></div>
         <div className="flex space-x-4">
-          <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
-          <div className="w-8 h-8 bg-gray-200 animate-pulse rounded-full"></div>
+          <div className="w-8 h-8 bg-surface-deep animate-pulse rounded-full"></div>
+          <div className="w-8 h-8 bg-surface-deep animate-pulse rounded-full"></div>
         </div>
       </div>
       
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
         {/* ID Card Skeleton */}
-        <div className="w-full bg-white rounded-xl border border-gray-100 shadow-sm p-6 animate-pulse">
+        <div className="w-full bg-surface rounded-panel border border-hairline p-6 animate-pulse">
           <div className="flex flex-col md:flex-row gap-6">
-            <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-200 rounded-xl"></div>
+            <div className="w-32 h-32 md:w-40 md:h-40 bg-surface-deep rounded-panel"></div>
             <div className="flex-1 space-y-4">
-              <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-8 bg-surface-deep rounded w-1/3"></div>
+              <div className="h-4 bg-surface-deep rounded w-1/4"></div>
               <div className="flex flex-wrap gap-4 pt-2">
-                <div className="h-16 w-32 bg-gray-200 rounded-lg"></div>
-                <div className="h-16 w-32 bg-gray-200 rounded-lg"></div>
-                <div className="h-16 w-32 bg-gray-200 rounded-lg"></div>
+                <div className="h-16 w-32 bg-surface-deep rounded-lg"></div>
+                <div className="h-16 w-32 bg-surface-deep rounded-lg"></div>
+                <div className="h-16 w-32 bg-surface-deep rounded-lg"></div>
               </div>
             </div>
           </div>
@@ -2375,40 +2375,40 @@ function LoadingScreen() {
         
         {/* Schedule Section Skeleton */}
         <div className="mt-8 space-y-8">
-          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-100 overflow-hidden">
-            <div className="p-3 sm:p-4 md:p-6 border-b border-gray-100">
-              <div className="h-7 bg-gray-200 animate-pulse rounded w-1/3"></div>
-              <div className="h-4 bg-gray-200 animate-pulse rounded w-1/2 mt-3"></div>
+          <div className="bg-surface rounded-lg sm:rounded-panel border border-hairline overflow-hidden">
+            <div className="p-3 sm:p-4 md:p-6 border-b border-hairline">
+              <div className="h-7 bg-surface-deep animate-pulse rounded w-1/3"></div>
+              <div className="h-4 bg-surface-deep animate-pulse rounded w-1/2 mt-3"></div>
             </div>
             <div className="p-3 sm:p-4 md:p-6">
               {/* Tab Buttons Skeleton */}
               <div className="flex space-x-3 mb-5">
-                <div className="h-10 bg-gray-200 animate-pulse rounded-lg w-24"></div>
-                <div className="h-10 bg-gray-200 animate-pulse rounded-lg w-24"></div>
-                <div className="h-10 bg-gray-200 animate-pulse rounded-lg w-24"></div>
+                <div className="h-10 bg-surface-deep animate-pulse rounded-lg w-24"></div>
+                <div className="h-10 bg-surface-deep animate-pulse rounded-lg w-24"></div>
+                <div className="h-10 bg-surface-deep animate-pulse rounded-lg w-24"></div>
               </div>
               
               {/* Schedule Cards Skeleton */}
               <div className="space-y-4 mt-6">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="border border-gray-100 rounded-xl p-4 shadow-sm bg-white animate-pulse">
+                  <div key={i} className="border border-hairline rounded-panel p-4 bg-surface animate-pulse">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                       <div className="flex-1">
-                        <div className="h-5 bg-gray-200 rounded w-1/4 mb-3"></div>
+                        <div className="h-5 bg-surface-deep rounded w-1/4 mb-3"></div>
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
-                          <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                          <div className="h-10 w-10 bg-surface-deep rounded-full"></div>
+                          <div className="h-4 bg-surface-deep rounded w-1/3"></div>
                         </div>
                         <div className="grid grid-cols-2 gap-2 mt-4">
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
                         </div>
                       </div>
                       <div className="flex flex-col md:flex-row gap-3 md:items-center">
-                        <div className="h-10 bg-gray-200 rounded-lg w-32"></div>
-                        <div className="h-10 bg-gray-200 rounded-lg w-32"></div>
+                        <div className="h-10 bg-surface-deep rounded-lg w-32"></div>
+                        <div className="h-10 bg-surface-deep rounded-lg w-32"></div>
                       </div>
                     </div>
                   </div>
@@ -2418,40 +2418,40 @@ function LoadingScreen() {
           </div>
           
           {/* Booking Management Section Skeleton */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-            <div className="p-6 border-b border-gray-100">
-              <div className="h-7 bg-gray-200 animate-pulse rounded w-1/3"></div>
+          <div className="bg-surface rounded-panel border border-hairline">
+            <div className="p-6 border-b border-hairline">
+              <div className="h-7 bg-surface-deep animate-pulse rounded w-1/3"></div>
             </div>
             <div className="p-6">
               {/* Tab Buttons Skeleton */}
-              <div className="flex p-1 bg-gray-50 rounded-xl mb-6">
-                <div className="flex-1 h-10 bg-gray-200 animate-pulse rounded-lg mr-2"></div>
-                <div className="flex-1 h-10 bg-gray-200 animate-pulse rounded-lg"></div>
+              <div className="flex p-1 bg-surface-tint rounded-panel mb-6">
+                <div className="flex-1 h-10 bg-surface-deep animate-pulse rounded-lg mr-2"></div>
+                <div className="flex-1 h-10 bg-surface-deep animate-pulse rounded-lg"></div>
               </div>
               
               {/* Booking Cards Skeleton */}
               <div className="space-y-4">
                 {[...Array(2)].map((_, i) => (
-                  <div key={i} className="border border-gray-100 rounded-lg p-4 animate-pulse">
+                  <div key={i} className="border border-hairline rounded-lg p-4 animate-pulse">
                     <div className="flex flex-col md:flex-row justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 mb-3">
-                          <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+                          <div className="h-10 w-10 bg-surface-deep rounded-full"></div>
                           <div>
-                            <div className="h-4 bg-gray-200 rounded w-32 mb-1"></div>
-                            <div className="h-3 bg-gray-200 rounded w-24"></div>
+                            <div className="h-4 bg-surface-deep rounded w-32 mb-1"></div>
+                            <div className="h-3 bg-surface-deep rounded w-24"></div>
                           </div>
                         </div>
                         <div className="grid grid-cols-2 gap-3 mt-3">
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
-                          <div className="h-4 bg-gray-200 rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
+                          <div className="h-4 bg-surface-deep rounded"></div>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <div className="h-10 bg-gray-200 rounded-lg w-24"></div>
-                        <div className="h-10 bg-gray-200 rounded-lg w-24"></div>
+                        <div className="h-10 bg-surface-deep rounded-lg w-24"></div>
+                        <div className="h-10 bg-surface-deep rounded-lg w-24"></div>
                       </div>
                     </div>
                   </div>
@@ -2504,12 +2504,12 @@ function SetupTracker({
   // "continue".
   if (verificationStatus === 'suspended') {
     return (
-      <div className="mb-6 rounded-xl border border-orange-200 bg-orange-50 p-4">
-        <p className="flex items-center gap-2 font-semibold text-gray-900">
+      <div className="mb-6 rounded-panel border border-orange-200 bg-orange-50 p-4">
+        <p className="flex items-center gap-2 font-semibold text-ink">
           <AlertTriangle className="h-4 w-4 text-orange-600" />
           Akun kamu sedang ditangguhkan
         </p>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-ink-muted">
           Hubungi dukungan Salda untuk mengetahui langkah selanjutnya.
         </p>
       </div>
@@ -2532,9 +2532,9 @@ function SetupTracker({
   const Icon = MILESTONE_ICONS[current.id];
 
   return (
-    <div className="mb-6 rounded-xl border border-blue-100 bg-white p-4 sm:p-5">
+    <div className="mb-6 rounded-panel border border-blue-100 bg-surface p-4 sm:p-5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-gray-700">
+        <p className="text-sm font-medium text-ink-body">
           Setup host: {finished} dari {milestones.length} langkah selesai
         </p>
         <Link
@@ -2547,7 +2547,7 @@ function SetupTracker({
       </div>
 
       <div
-        className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-gray-100"
+        className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-surface-tint"
         role="progressbar"
         aria-valuenow={progress}
         aria-valuemin={0}
@@ -2571,7 +2571,7 @@ function SetupTracker({
                 ? 'text-green-700'
                 : milestone.current
                   ? 'font-medium text-blue-700'
-                  : 'text-gray-400'
+                  : 'text-ink-faint'
             }`}
           >
             {milestone.done ? (
@@ -2588,16 +2588,16 @@ function SetupTracker({
         <div className="flex items-start gap-3">
           <span
             aria-hidden="true"
-            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600"
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-panel bg-blue-50 text-blue-600"
           >
             <Icon className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="font-semibold text-gray-900">{current.title}</p>
-            <p className="mt-0.5 text-sm text-gray-600">{current.description}</p>
-            <p className="mt-1 flex items-center gap-1.5 text-sm text-gray-500">
-              <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
-              Membuka: <span className="font-medium text-gray-700">{current.unlocks}</span>
+            <p className="font-semibold text-ink">{current.title}</p>
+            <p className="mt-0.5 text-sm text-ink-muted">{current.description}</p>
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-ink-soft">
+              <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-ink-faint" />
+              Membuka: <span className="font-medium text-ink-body">{current.unlocks}</span>
             </p>
           </div>
         </div>
@@ -2648,9 +2648,9 @@ function DashboardNotice({
     <div className="min-h-screen bg-[#faf9f6]">
       <Navbar />
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] sm:p-8">
-          <h1 className="text-xl font-semibold text-gray-900">{title}</h1>
-          <p className="mt-2 text-gray-600">{description}</p>
+        <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
+          <h1 className="text-xl font-semibold text-ink">{title}</h1>
+          <p className="mt-2 text-ink-muted">{description}</p>
           {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
         </div>
       </main>
@@ -3208,7 +3208,7 @@ export default function StreamerDashboard() {
       case 'completed':
         return 'bg-blue-500';
       default:
-        return 'bg-gray-500';
+        return 'bg-surface-tint0';
     }
   };
 
@@ -3219,7 +3219,7 @@ export default function StreamerDashboard() {
       case 'completed': return 'bg-blue-100 text-blue-800';
       case 'live': return 'bg-green-100 text-green-800';
       case 'rejected': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      default: return 'bg-surface-tint text-ink';
     }
   };
 

@@ -90,17 +90,16 @@ export default async function StreamerSetupHubPage() {
   if (!streamer && userType === "client") {
     return (
       <Shell>
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] sm:p-8">
-          <h1 className="text-xl font-semibold text-gray-900">Halaman khusus host</h1>
-          <p className="mt-2 text-gray-600">
+        <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
+          <h1 className="text-xl font-semibold text-ink">Halaman khusus host</h1>
+          <p className="mt-2 text-ink-muted">
             Akun ini terdaftar sebagai brand, bukan host. Kamu bisa langsung mencari dan
             memesan host live streaming dari beranda.
           </p>
           <Link
             href="/protected"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r
-              from-blue-600 to-indigo-600 px-5 font-medium text-white transition-all
-              hover:from-blue-700 hover:to-indigo-700"
+            className="mt-6 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
+              bg-brand px-4 text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
           >
             Kembali ke beranda
           </Link>
@@ -156,10 +155,10 @@ export default async function StreamerSetupHubPage() {
         <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
           <Sparkles className="h-4 w-4" /> Setup host
         </span>
-        <h1 className="mt-4 text-2xl font-semibold text-gray-900">
+        <h1 className="mt-4 text-2xl font-semibold text-ink">
           {allDone ? "Semua langkah selesai" : "Tiga langkah, bisa dicicil"}
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-ink-muted">
           {allDone
             ? "Profil kamu tayang, identitas terverifikasi, dan penghasilan siap dicairkan."
             : "Setiap langkah cuma butuh beberapa menit dan progresnya tersimpan. Kamu boleh berhenti kapan saja lalu lanjut lagi dari sini."}
@@ -168,15 +167,15 @@ export default async function StreamerSetupHubPage() {
 
       {/* Progress meter. The number is the point: "1 dari 3" is a finishable
           amount of work in a way that a list of empty checkboxes is not. */}
-      <div className="mb-6 rounded-2xl border border-gray-100 bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+      <div className="mb-6 rounded-frame border border-hairline bg-surface p-5">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm font-medium text-gray-700">
+          <p className="text-sm font-medium text-ink-body">
             {finished} dari {milestones.length} langkah selesai
           </p>
           <p className="text-sm font-semibold text-blue-700">{progress}%</p>
         </div>
         <div
-          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-gray-100"
+          className="mt-3 h-2 w-full overflow-hidden rounded-full bg-surface-tint"
           role="progressbar"
           aria-valuenow={progress}
           aria-valuemin={0}
@@ -184,7 +183,7 @@ export default async function StreamerSetupHubPage() {
           aria-label="Progres setup host"
         >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500"
+            className="h-full rounded-full bg-brand transition-all duration-500"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -198,21 +197,21 @@ export default async function StreamerSetupHubPage() {
           return (
             <li key={milestone.id}>
               <div
-                className={`rounded-2xl border bg-white p-5 transition-colors ${
+                className={`rounded-frame border bg-surface p-5 transition-colors ${
                   milestone.current
-                    ? "border-blue-200 shadow-[0_8px_30px_rgb(37,99,235,0.10)]"
-                    : "border-gray-100"
+                    ? "border-blue-200"
+                    : "border-hairline"
                 }`}
               >
                 <div className="flex items-start gap-4">
                   <span
                     aria-hidden="true"
-                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${
+                    className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-panel ${
                       milestone.done
                         ? "bg-green-50 text-green-600"
                         : milestone.current
                           ? "bg-blue-50 text-blue-600"
-                          : "bg-gray-50 text-gray-400"
+                          : "bg-surface-tint text-ink-faint"
                     }`}
                   >
                     {milestone.done ? (
@@ -224,7 +223,7 @@ export default async function StreamerSetupHubPage() {
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold text-gray-900">
+                      <h2 className="font-semibold text-ink">
                         {index + 1}. {milestone.title}
                       </h2>
                       {milestone.done && (
@@ -239,13 +238,13 @@ export default async function StreamerSetupHubPage() {
                       )}
                     </div>
 
-                    <p className="mt-1 text-sm text-gray-600">{milestone.description}</p>
+                    <p className="mt-1 text-sm text-ink-muted">{milestone.description}</p>
 
-                    <p className="mt-2 flex items-center gap-1.5 text-sm text-gray-500">
-                      <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-gray-400" />
+                    <p className="mt-2 flex items-center gap-1.5 text-sm text-ink-soft">
+                      <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-ink-faint" />
                       <span>
                         {milestone.done ? "Sudah terbuka: " : "Membuka: "}
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-ink-body">
                           {milestone.unlocks}
                         </span>
                       </span>
@@ -254,9 +253,9 @@ export default async function StreamerSetupHubPage() {
                     {/* Only the publish step can say precisely what is missing —
                         verification and payout are all-or-nothing. */}
                     {milestone.id === "publish" && !milestone.done && missing.length > 0 && (
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-sm text-ink-soft">
                         Masih kosong:{" "}
-                        <span className="font-medium text-gray-700">
+                        <span className="font-medium text-ink-body">
                           {missing.join(", ")}
                         </span>
                       </p>
@@ -266,9 +265,9 @@ export default async function StreamerSetupHubPage() {
                       {milestone.done ? (
                         <Link
                           href={href}
-                          className="inline-flex h-10 items-center justify-center rounded-xl border-2
-                            border-gray-200 px-4 text-sm font-medium text-gray-700 transition-colors
-                            hover:bg-gray-50"
+                          className="inline-flex h-10 items-center justify-center rounded-panel border-2
+                            border-hairline-input px-4 text-sm font-medium text-ink-body transition-colors
+                            hover:bg-surface-tint"
                         >
                           Ubah
                         </Link>
@@ -277,12 +276,12 @@ export default async function StreamerSetupHubPage() {
                           href={href}
                           className={
                             milestone.current
-                              ? `inline-flex h-10 items-center justify-center gap-2 rounded-xl
-                                 bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-medium
-                                 text-white transition-all hover:from-blue-700 hover:to-indigo-700`
-                              : `inline-flex h-10 items-center justify-center gap-2 rounded-xl border-2
-                                 border-gray-200 px-4 text-sm font-medium text-gray-700 transition-colors
-                                 hover:bg-gray-50`
+                              ? `inline-flex h-10 items-center justify-center gap-2 rounded-panel
+                                 bg-brand px-4 text-sm font-medium
+                                 text-white transition-all`
+                              : `inline-flex h-10 items-center justify-center gap-2 rounded-panel border-2
+                                 border-hairline-input px-4 text-sm font-medium text-ink-body transition-colors
+                                 hover:bg-surface-tint`
                           }
                         >
                           {milestone.current ? "Lanjutkan" : "Buka"}
@@ -299,11 +298,11 @@ export default async function StreamerSetupHubPage() {
       </ol>
 
       {showScheduleWarning && (
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
+        <div className="mt-4 rounded-frame border border-amber-200 bg-amber-50/70 p-5">
           <div className="flex items-start gap-4">
             <span
               aria-hidden="true"
-              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-amber-100 text-amber-700"
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-panel bg-amber-100 text-amber-700"
             >
               <CalendarClock className="h-5 w-5" />
             </span>
@@ -315,8 +314,8 @@ export default async function StreamerSetupHubPage() {
               </p>
               <Link
                 href="/streamer-schedule"
-                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-xl
-                  border-2 border-amber-300 bg-white px-4 text-sm font-medium text-amber-900
+                className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-panel
+                  border-2 border-amber-300 bg-surface px-4 text-sm font-medium text-amber-900
                   transition-colors hover:bg-amber-50"
               >
                 Atur jadwal
@@ -327,7 +326,7 @@ export default async function StreamerSetupHubPage() {
         </div>
       )}
 
-      <p className="mt-6 text-center text-sm text-gray-500">
+      <p className="mt-6 text-center text-sm text-ink-soft">
         Sudah selesai untuk sekarang?{" "}
         <Link href="/streamer-dashboard" className="font-medium text-blue-700 hover:underline">
           Buka dashboard

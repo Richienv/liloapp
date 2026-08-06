@@ -402,7 +402,7 @@ function RescheduleTimeModal({
             />
           </div>
 
-          <div className="h-px bg-gray-200" />
+          <div className="h-px bg-surface-deep" />
 
           <div className="space-y-3">
             {['Morning', 'Afternoon', 'Evening', 'Night'].map((timeOfDay) => (
@@ -425,7 +425,7 @@ function RescheduleTimeModal({
                         variant={isHourSelected(hour) ? "default" : "outline"}
                         className={`text-[10px] sm:text-xs p-1 h-8 ${
                           isHourSelected(hour) 
-                            ? 'bg-gradient-to-r from-[#1e40af] to-[#6b21a8] text-white hover:from-[#1e3a8a] hover:to-[#581c87]' 
+                            ? 'bg-brand text-white hover:bg-brand-hover' 
                             : isHourDisabled(hour)
                               ? 'opacity-50 cursor-not-allowed'
                               : 'hover:bg-blue-50'
@@ -448,19 +448,19 @@ function RescheduleTimeModal({
           )}
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t bg-gray-50">
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t bg-surface-tint">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10 border-gray-300"
+            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10 border-hairline-strong"
           >
             Kembali
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting || selectedHours.length < 1}
-            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10 bg-gradient-to-r from-[#1e40af] to-[#6b21a8] hover:from-[#1e3a8a] hover:to-[#581c87] text-white"
+            className="w-full sm:w-auto text-xs sm:text-sm h-9 sm:h-10 bg-brand text-white hover:bg-brand-hover"
           >
             {isSubmitting ? 'Memproses...' : 'Konfirmasi'}
           </Button>
@@ -525,8 +525,8 @@ function CancelConfirmationModal({
               <textarea
                 id="cancel-reason"
                 className={`w-full min-h-[120px] p-3 rounded-lg border text-sm ${
-                  error ? 'border-red-500' : 'border-gray-300'
-                } focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
+                  error ? 'border-red-500' : 'border-hairline-strong'
+                } focus:outline-none focus:ring-2 focus:ring-blue-500 bg-surface`}
                 placeholder="Mohon jelaskan alasan pembatalan kamu..."
                 value={reason}
                 onChange={(e) => {
@@ -541,12 +541,12 @@ function CancelConfirmationModal({
           </div>
         </div>
 
-        <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t bg-gray-50">
+        <DialogFooter className="flex flex-col sm:flex-row gap-2 p-4 sm:p-6 border-t bg-surface-tint">
           <Button
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="w-full sm:w-auto text-sm h-10 border-gray-300"
+            className="w-full sm:w-auto text-sm h-10 border-hairline-strong"
           >
             Kembali
           </Button>
@@ -631,9 +631,9 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
       case 'accepted': return 'bg-green-50 text-green-700 border border-green-200';
       case 'completed': return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
       case 'live': return 'bg-red-50 text-red-700 border border-red-200';
-      case 'rejected': return 'bg-gray-50 text-gray-700 border border-gray-200';
-      case 'cancelled': return 'bg-gray-50 text-gray-700 border border-gray-200';
-      default: return 'bg-gray-50 text-gray-700 border border-gray-200';
+      case 'rejected': return 'bg-surface-tint text-ink-body border border-hairline-input';
+      case 'cancelled': return 'bg-surface-tint text-ink-body border border-hairline-input';
+      default: return 'bg-surface-tint text-ink-body border border-hairline-input';
     }
   };
 
@@ -805,7 +805,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
         
         {/* Centered card */}
         <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="bg-surface rounded-panel w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
             <div className="p-4">
               {/* Header with close button */}
               <div className="flex items-center justify-between mb-4">
@@ -819,19 +819,19 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
                     />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="font-semibold text-ink">
                       {selectedBooking?.streamer?.first_name} {selectedBooking?.streamer?.last_name?.charAt(0)}.
                     </h3>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-ink-soft">
                       Rp {selectedBooking?.price?.toLocaleString('id-ID')}/jam
                     </p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setShowDeliveryInfo(false)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  className="p-2 rounded-full hover:bg-surface-tint transition-colors"
                 >
-                  <XCircle className="h-5 w-5 text-gray-400" />
+                  <XCircle className="h-5 w-5 text-ink-faint" />
                 </button>
               </div>
 
@@ -841,8 +841,8 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
                   <FileText className="h-3.5 w-3.5 text-blue-600" />
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Booking ID:</span>
-                  <span className="text-sm font-medium text-gray-900">#{selectedBooking?.id}</span>
+                  <span className="text-sm text-ink-muted">Booking ID:</span>
+                  <span className="text-sm font-medium text-ink">#{selectedBooking?.id}</span>
                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
                     {selectedBooking?.status}
                   </span>
@@ -855,13 +855,13 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
                   <MapPin className="h-4 w-4" />
                   <h4 className="font-medium">Alamat Pengiriman</h4>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
+                <div className="bg-surface-tint p-3 rounded-lg space-y-2">
                   {selectedBooking?.streamer?.full_address ? (
-                    <div className="text-gray-600 text-sm whitespace-pre-line">
+                    <div className="text-ink-muted text-sm whitespace-pre-line">
                       {selectedBooking.streamer.full_address}
                     </div>
                   ) : (
-                    <p className="text-gray-500 text-sm italic">Alamat tidak tersedia</p>
+                    <p className="text-ink-soft text-sm italic">Alamat tidak tersedia</p>
                   )}
                 </div>
                 <button
@@ -894,7 +894,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
   };
 
   return (
-    <div className="border rounded-lg shadow-sm p-4 pb-4 mb-4 text-sm hover:shadow-md transition-shadow relative">
+    <div className="border rounded-lg p-4 pb-4 mb-4 text-sm transition-shadow relative">
       <div className="flex justify-between items-center mb-3 pb-3 border-b">
         <div className="flex items-center gap-2">
           <span className={`px-3 py-1 rounded-full text-sm ${getStatusColor(booking.status)} flex items-center`}>
@@ -911,7 +911,7 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
             </button>
           )}
         </div>
-        <span className="text-gray-500 text-sm">
+        <span className="text-ink-soft text-sm">
           {formatBookingDate(booking.created_at)}
         </span>
       </div>
@@ -926,17 +926,17 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
         />
         <div className="flex-grow">
           <h3 className="font-medium text-base mb-2">{`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}</h3>
-          <p className="text-gray-600 mb-2">Livestreaming services on {booking.platform}</p>
+          <p className="text-ink-muted mb-2">Livestreaming services on {booking.platform}</p>
           
           {/* Display time blocks grouped by date */}
           {Object.entries(bookingsByDate).map(([date, bookings]) => (
             <div key={date} className="mb-2">
-              <div className="text-sm text-gray-500 mb-1">
+              <div className="text-sm text-ink-soft mb-1">
                 {formatBookingDate(date)}
               </div>
               {bookings.map((b: Booking) => (
                 <div key={b.id} className="flex items-center mb-1">
-                  <Clock className="w-4 h-4 mr-2 text-gray-400" />
+                  <Clock className="w-4 h-4 mr-2 text-ink-faint" />
                   <span className="text-base">
                     {formatBookingTime(b.start_time, b.timezone)} - {formatBookingTime(b.end_time, b.timezone)}
                   </span>
@@ -955,9 +955,9 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
       {/* Related bookings section */}
       {showRelatedBookings && relatedBookings.length > 0 && (
         <div className="mt-4 space-y-3">
-          <h4 className="font-medium text-gray-900">Related Bookings</h4>
+          <h4 className="font-medium text-ink">Related Bookings</h4>
           {relatedBookings.map((relatedBooking) => (
-            <div key={relatedBooking.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={relatedBooking.id} className="flex items-center justify-between p-3 bg-surface-tint rounded-lg">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full overflow-hidden">
                   <Image
@@ -969,10 +969,10 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
                   />
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-ink">
                     {formatBookingDate(relatedBooking.start_time)}
                   </p>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-ink-muted">
                     {formatBookingTime(relatedBooking.start_time, relatedBooking.timezone)} - {formatBookingTime(relatedBooking.end_time, relatedBooking.timezone)}
                   </p>
                 </div>
@@ -988,9 +988,9 @@ function BookingEntry({ booking, onRatingSubmit, onStatusUpdate }: BookingEntryP
 
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3 text-sm">
-          <DollarSign className="h-4 w-4 text-gray-400" />
+          <DollarSign className="h-4 w-4 text-ink-faint" />
           <div className="flex flex-col">
-            <span className="font-medium text-gray-900">
+            <span className="font-medium text-ink">
               Rp {booking.price.toLocaleString()}
             </span>
           </div>
@@ -1120,9 +1120,9 @@ export default function ClientBookings(): JSX.Element {
       case 'accepted': return 'bg-green-50 text-green-700 border border-green-200';
       case 'completed': return 'bg-indigo-50 text-indigo-700 border border-indigo-200';
       case 'live': return 'bg-red-50 text-red-700 border border-red-200';
-      case 'rejected': return 'bg-gray-50 text-gray-700 border border-gray-200';
-      case 'cancelled': return 'bg-gray-50 text-gray-700 border border-gray-200';
-      default: return 'bg-gray-50 text-gray-700 border border-gray-200';
+      case 'rejected': return 'bg-surface-tint text-ink-body border border-hairline-input';
+      case 'cancelled': return 'bg-surface-tint text-ink-body border border-hairline-input';
+      default: return 'bg-surface-tint text-ink-body border border-hairline-input';
     }
   };
 
@@ -1337,7 +1337,7 @@ export default function ClientBookings(): JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-surface-tint flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -1345,7 +1345,7 @@ export default function ClientBookings(): JSX.Element {
 
   if (error) {
     return <div className="min-h-screen bg-[#faf96f]/10 p-8">
-      <div className="max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-6">
+      <div className="max-w-3xl mx-auto bg-surface rounded-panel p-6">
         <p className="text-red-500 text-sm">Error: {error}</p>
       </div>
     </div>;
@@ -1354,10 +1354,10 @@ export default function ClientBookings(): JSX.Element {
   const tabs = ['Upcoming', 'Pending', 'Recurring', 'Past', 'Cancelled'];
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-5xl mx-auto bg-white rounded-xl shadow-lg relative">
+    <div className="min-h-screen bg-surface-tint p-4 md:p-8">
+      <div className="max-w-5xl mx-auto bg-surface rounded-panel relative">
         {isRefreshing && (
-          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
+          <div className="absolute inset-0 bg-white/50 backdrop-blur-sm rounded-panel flex items-center justify-center z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         )}
@@ -1372,7 +1372,7 @@ export default function ClientBookings(): JSX.Element {
             
             {/* Centered card */}
             <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-              <div className="bg-white rounded-xl shadow-xl w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
+              <div className="bg-surface rounded-panel w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
                 <div className="p-4">
                   {/* Header with close button */}
                   <div className="flex items-center justify-between mb-4">
@@ -1386,19 +1386,19 @@ export default function ClientBookings(): JSX.Element {
                         />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-gray-900">
+                        <h3 className="font-semibold text-ink">
                           {selectedBooking.streamer.first_name} {selectedBooking.streamer.last_name?.charAt(0)}.
                         </h3>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-ink-soft">
                           Rp {selectedBooking.price?.toLocaleString('id-ID')}/jam
                         </p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setShowDeliveryInfo(false)}
-                      className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                      className="p-2 rounded-full hover:bg-surface-tint transition-colors"
                     >
-                      <XCircle className="h-5 w-5 text-gray-400" />
+                      <XCircle className="h-5 w-5 text-ink-faint" />
                     </button>
                   </div>
 
@@ -1408,8 +1408,8 @@ export default function ClientBookings(): JSX.Element {
                       <FileText className="h-3.5 w-3.5 text-blue-600" />
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Booking ID:</span>
-                      <span className="text-sm font-medium text-gray-900">#{selectedBooking.id}</span>
+                      <span className="text-sm text-ink-muted">Booking ID:</span>
+                      <span className="text-sm font-medium text-ink">#{selectedBooking.id}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
                         Accepted
                       </span>
@@ -1422,8 +1422,8 @@ export default function ClientBookings(): JSX.Element {
                       <MapPin className="h-4 w-4" />
                       <h4 className="font-medium">Alamat Pengiriman</h4>
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-lg space-y-2">
-                      <p className="font-medium text-gray-900">{selectedBooking.streamer.full_address}</p>
+                    <div className="bg-surface-tint p-3 rounded-lg space-y-2">
+                      <p className="font-medium text-ink">{selectedBooking.streamer.full_address}</p>
                     </div>
                     <button
                       onClick={() => {
@@ -1448,7 +1448,7 @@ export default function ClientBookings(): JSX.Element {
               onClick={() => router.push('/protected')} 
               variant="ghost" 
               size="lg"
-              className="text-gray-600 hover:text-gray-800 p-0"
+              className="text-ink-muted hover:text-ink p-0"
             >
               <ChevronLeft className="w-6 h-6" />
             </Button>
@@ -1468,7 +1468,7 @@ export default function ClientBookings(): JSX.Element {
 
         <div className="p-6">
           <div className="mb-6">
-            <p className="text-gray-600">Manage and track all your Salda streaming sessions in one place.</p>
+            <p className="text-ink-muted">Manage and track all your Salda streaming sessions in one place.</p>
           </div>
 
           <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
@@ -1495,27 +1495,27 @@ export default function ClientBookings(): JSX.Element {
                 const isCollapsed = collapsedDays[dateKey];
                 
                 return (
-                  <div key={dateKey} className="bg-white rounded-xl border shadow-sm overflow-hidden">
+                  <div key={dateKey} className="bg-surface rounded-panel border overflow-hidden">
                     {/* Day Header with expand/collapse */}
                     <button 
                       onClick={() => toggleDayCollapse(dateKey)}
-                      className="w-full text-left bg-gradient-to-r from-blue-50 to-indigo-50 p-4 flex items-center justify-between cursor-pointer border-b hover:from-blue-100 hover:to-indigo-100 transition-colors"
+                      className="w-full text-left bg-surface-tint p-4 flex items-center justify-between cursor-pointer border-b transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="bg-white rounded-full p-1.5 w-10 h-10 flex items-center justify-center shadow-sm">
+                        <div className="bg-surface rounded-full p-1.5 w-10 h-10 flex items-center justify-center">
                           <Calendar className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-ink">
                             {format(group.date, 'EEEE, MMMM d, yyyy')}
                           </h3>
-                          <p className="text-sm text-gray-600">
+                          <p className="text-sm text-ink-muted">
                             {group.bookings.length} booking{group.bookings.length !== 1 ? 's' : ''}
                           </p>
                         </div>
                       </div>
                       <div className={`transform transition-transform ${isCollapsed ? 'rotate-180' : ''}`}>
-                        <ChevronDown className="w-5 h-5 text-gray-500" />
+                        <ChevronDown className="w-5 h-5 text-ink-soft" />
                       </div>
                     </button>
                     
@@ -1523,7 +1523,7 @@ export default function ClientBookings(): JSX.Element {
                     {!isCollapsed && (
                       <div className="divide-y">
                         {group.bookings.map((booking) => (
-                          <div key={booking.id} className="p-4 hover:bg-gray-50 transition-colors">
+                          <div key={booking.id} className="p-4 hover:bg-surface-tint transition-colors">
                             <div className="flex justify-between items-start mb-4">
                               <div className="flex items-center gap-4">
                                 <Image
@@ -1535,7 +1535,7 @@ export default function ClientBookings(): JSX.Element {
                                 />
                                 <div>
                                   <h3 className="font-medium text-lg">{`${booking.streamer?.first_name ?? 'Streamer'} ${booking.streamer?.last_name ?? ''}`}</h3>
-                                  <p className="text-gray-600 text-sm">{booking.platform}</p>
+                                  <p className="text-ink-muted text-sm">{booking.platform}</p>
                                 </div>
                               </div>
                               <span className={`px-3 py-1 rounded-full text-sm flex items-center gap-1.5 ${getStatusColor(booking.status)}`}>
@@ -1548,7 +1548,7 @@ export default function ClientBookings(): JSX.Element {
                               <div className="flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-blue-600" />
                                 <div>
-                                  <p className="text-sm text-gray-600">Schedule</p>
+                                  <p className="text-sm text-ink-muted">Schedule</p>
                                   <p className="font-medium">
                                     {formatBookingTime(booking.start_time, booking.timezone)} - {formatBookingTime(booking.end_time, booking.timezone)}
                                   </p>
@@ -1557,18 +1557,18 @@ export default function ClientBookings(): JSX.Element {
                               <div className="flex items-center gap-2">
                                 <Star className="w-5 h-5 text-yellow-400" />
                                 <div>
-                                  <p className="text-sm text-gray-600">Streamer Rating</p>
+                                  <p className="text-sm text-ink-muted">Streamer Rating</p>
                                   <p className="font-medium">{isNaN(parseFloat(booking.streamer?.rating as unknown as string)) ? 'N/A' : parseFloat(booking.streamer?.rating as unknown as string).toFixed(1)}</p>
                                 </div>
                               </div>
                               <div className="flex items-center gap-2">
                                 <DollarSign className="w-5 h-5 text-blue-600" />
                                 <div>
-                                  <p className="text-sm text-gray-600">Session Price</p>
+                                  <p className="text-sm text-ink-muted">Session Price</p>
                                   <div className="flex flex-col">
                                     {booking.voucher_usage?.[0]?.discount_applied ? (
                                       <>
-                                        <span className="line-through text-gray-400 text-sm">
+                                        <span className="line-through text-ink-faint text-sm">
                                           Rp {booking.price.toLocaleString()}
                                         </span>
                                         <span className="font-medium text-green-600">
@@ -1576,7 +1576,7 @@ export default function ClientBookings(): JSX.Element {
                                         </span>
                                       </>
                                     ) : (
-                                      <span className="font-medium text-gray-900">
+                                      <span className="font-medium text-ink">
                                         Rp {booking.price.toLocaleString()}
                                       </span>
                                     )}
@@ -1640,7 +1640,7 @@ export default function ClientBookings(): JSX.Element {
               })
             ) : (
               <div className="text-center py-12">
-                <p className="text-gray-500">No streaming sessions found for this category.</p>
+                <p className="text-ink-soft">No streaming sessions found for this category.</p>
               </div>
             )}
           </div>

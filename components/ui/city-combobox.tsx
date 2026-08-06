@@ -304,24 +304,24 @@ export function CityCombobox({
             aria-invalid={invalid}
             disabled={disabled}
             className={cn(
-              "flex h-12 w-full items-center justify-between gap-2 rounded-xl border border-gray-200 bg-gray-50 px-4 text-left text-base",
+              "flex h-12 w-full items-center justify-between gap-2 rounded-panel border border-hairline-input bg-surface-tint px-4 text-left text-base",
               "transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500",
               "disabled:cursor-not-allowed disabled:opacity-50",
               className
             )}
           >
             <span className="flex min-w-0 items-center gap-2">
-              <MapPin className="h-4 w-4 flex-shrink-0 text-gray-400" />
+              <MapPin className="h-4 w-4 flex-shrink-0 text-ink-faint" />
               {selected ? (
-                <span className="truncate text-gray-900">
+                <span className="truncate text-ink">
                   {selected.name}
-                  <span className="text-gray-500"> — {selected.province}</span>
+                  <span className="text-ink-soft"> — {selected.province}</span>
                 </span>
               ) : (
-                <span className="truncate text-gray-500">{placeholder}</span>
+                <span className="truncate text-ink-soft">{placeholder}</span>
               )}
             </span>
-            <ChevronsUpDown className="h-4 w-4 flex-shrink-0 text-gray-400" />
+            <ChevronsUpDown className="h-4 w-4 flex-shrink-0 text-ink-faint" />
           </button>
         </PopoverTrigger>
 
@@ -335,8 +335,8 @@ export function CityCombobox({
             searchRef.current?.focus();
           }}
         >
-          <div className="flex items-center gap-2 border-b border-gray-100 px-3">
-            <Search className="h-4 w-4 flex-shrink-0 text-gray-400" />
+          <div className="flex items-center gap-2 border-b border-hairline px-3">
+            <Search className="h-4 w-4 flex-shrink-0 text-ink-faint" />
             <input
               ref={searchRef}
               type="text"
@@ -352,12 +352,12 @@ export function CityCombobox({
               aria-activedescendant={
                 results.length > 0 ? `${listboxId}-${activeIndex}` : undefined
               }
-              className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-gray-400"
+              className="h-11 w-full bg-transparent text-sm outline-none placeholder:text-ink-faint"
             />
           </div>
 
           {results.length === 0 ? (
-            <p className="px-4 py-6 text-center text-sm text-gray-500">
+            <p className="px-4 py-6 text-center text-sm text-ink-soft">
               {emptyMessage}
             </p>
           ) : (
@@ -381,14 +381,14 @@ export function CityCombobox({
                     onClick={() => select(city)}
                     className={cn(
                       "flex cursor-pointer items-center justify-between gap-2 px-4 py-2.5 text-sm",
-                      isActive ? "bg-blue-50 text-blue-700" : "text-gray-700"
+                      isActive ? "bg-blue-50 text-blue-700" : "text-ink-body"
                     )}
                   >
                     <span className="truncate">
                       <span className="font-medium">{city.name}</span>
                       <span
                         className={cn(
-                          isActive ? "text-blue-500" : "text-gray-500"
+                          isActive ? "text-blue-500" : "text-ink-soft"
                         )}
                       >
                         {" "}
@@ -409,7 +409,7 @@ export function CityCombobox({
       {/* A guess we made for the user is stated out loud. Pre-filling silently
           would put a city they never chose on their public profile. */}
       {usedGeoDefault && selected && (
-        <p className="mt-2 text-sm text-gray-500">
+        <p className="mt-2 text-sm text-ink-soft">
           Kami isi otomatis dari lokasimu. Ganti kalau tidak sesuai.
         </p>
       )}

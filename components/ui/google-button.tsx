@@ -179,16 +179,16 @@ export function GoogleButton({
         disabled={busy || disabled}
         aria-busy={busy}
         className={cn(
-          "flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white",
-          "text-base font-medium text-gray-700 shadow-sm transition-all duration-200",
-          "hover:border-gray-300 hover:bg-gray-50 hover:shadow",
+          "flex h-11 w-full items-center justify-center gap-3 rounded-panel border border-hairline-input bg-surface",
+          "text-base font-medium text-ink-body transition-all duration-200",
+          "hover:border-hairline-strong hover:bg-surface-tint hover:shadow",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-600",
           "disabled:cursor-not-allowed disabled:opacity-70",
           className,
         )}
       >
         {busy ? (
-          <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+          <Loader2 className="h-5 w-5 animate-spin text-ink-soft" />
         ) : (
           <GoogleMark />
         )}

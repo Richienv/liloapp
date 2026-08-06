@@ -59,10 +59,10 @@ export default function About() {
       <div className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-sm pt-16 sm:pt-24 pb-8 sm:pb-12">
         <div className="container mx-auto px-3 sm:px-4">
           <div className="text-center">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif mb-4 sm:mb-6 tracking-[-0.02em] text-gray-900">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif mb-4 sm:mb-6 tracking-[-0.02em] text-ink">
               Cara Menggunakan Salda
             </h2>
-            <p className="text-xs sm:text-sm md:text-base text-gray-600 leading-relaxed md:leading-relaxed font-light max-w-2xl mx-auto px-2">
+            <p className="text-xs sm:text-sm md:text-base text-ink-muted leading-relaxed md:leading-relaxed font-light max-w-2xl mx-auto px-2">
               Mulai perjalanan live commerce kamu dengan langkah-langkah sederhana. 
               Kami akan membantu kamu di setiap tahap untuk memastikan kesuksesan penjualan.
             </p>
@@ -89,7 +89,7 @@ export default function About() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-12 items-center">
                   {/* Image Section */}
                   <div className={`order-1 ${index % 2 === 0 ? 'md:order-1' : 'md:order-2'}`}>
-                    <div className="relative aspect-[16/10] rounded-xl sm:rounded-2xl overflow-hidden bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+                    <div className="relative aspect-[16/10] rounded-panel sm:rounded-frame overflow-hidden bg-surface">
                       <Image
                         src={slide.image}
                         alt={slide.title}
@@ -106,15 +106,15 @@ export default function About() {
                       <div className="space-y-3 sm:space-y-4">
                         <div className="flex items-center gap-3">
                           <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-black/[0.03] flex items-center justify-center">
-                            <span className="text-xs sm:text-sm font-medium text-gray-600">
+                            <span className="text-xs sm:text-sm font-medium text-ink-muted">
                               {index + 1}
                             </span>
                           </div>
-                          <h3 className="text-lg sm:text-xl md:text-2xl font-medium text-gray-900">
+                          <h3 className="text-lg sm:text-xl md:text-2xl font-medium text-ink">
                             {slide.title}
                           </h3>
                         </div>
-                        <p className="text-sm sm:text-base text-gray-600 leading-relaxed font-light">
+                        <p className="text-sm sm:text-base text-ink-muted leading-relaxed font-light">
                           {slide.description}
                         </p>
                       </div>

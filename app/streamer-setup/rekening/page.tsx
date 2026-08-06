@@ -45,16 +45,15 @@ export default async function StreamerPayoutPage() {
   if (!streamer) {
     return (
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] sm:p-8">
-          <h1 className="text-xl font-semibold text-gray-900">Halaman khusus host</h1>
-          <p className="mt-2 text-gray-600">
+        <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
+          <h1 className="text-xl font-semibold text-ink">Halaman khusus host</h1>
+          <p className="mt-2 text-ink-muted">
             Rekening payout hanya untuk akun host. Akun ini terdaftar sebagai brand.
           </p>
           <Link
             href="/protected"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r
-              from-blue-600 to-indigo-600 px-5 font-medium text-white transition-all
-              hover:from-blue-700 hover:to-indigo-700"
+            className="mt-6 inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg
+              bg-brand px-4 text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
           >
             Kembali ke beranda
           </Link>
@@ -78,21 +77,21 @@ export default async function StreamerPayoutPage() {
     <main className="mx-auto w-full max-w-2xl px-4 py-10">
       <Link
         href="/streamer-setup"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="h-4 w-4" />
         Kembali ke setup
       </Link>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
         <div className="p-6 sm:p-8">
           <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
             <Wallet className="h-4 w-4" /> Langkah 3 dari 3
           </span>
-          <h1 className="mt-4 text-xl font-semibold text-gray-900">
+          <h1 className="mt-4 text-xl font-semibold text-ink">
             {account ? "Rekening payout kamu" : "Tambah rekening payout"}
           </h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-2 text-ink-muted">
             Ke sinilah penghasilan dari setiap sesi live dikirim. Tiga isian, kurang dari satu
             menit.
           </p>

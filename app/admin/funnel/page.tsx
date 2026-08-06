@@ -199,16 +199,16 @@ export default async function FunnelPage({
       {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-ink">
             Funnel Pendaftaran
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-ink-soft">
             Berapa banyak orang yang lolos di setiap tahap, dan di tahap mana
             mereka berhenti. Dihitung dari jumlah pengguna unik, bukan jumlah
             kejadian.
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-hairline-input bg-surface p-1">
           {WINDOWS.map((option) => (
             <Link
               key={option}
@@ -216,7 +216,7 @@ export default async function FunnelPage({
               className={
                 option === days
                   ? "rounded-md bg-[#0066FF] px-3 py-1.5 text-sm font-medium text-white"
-                  : "rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                  : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-tint"
               }
             >
               {option} hari
@@ -248,38 +248,38 @@ export default async function FunnelPage({
 
       {/* Ringkasan */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3 mb-6">
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <p className="text-sm font-medium text-gray-600">Masuk funnel</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">
+        <div className="rounded-panel border border-hairline-input bg-surface p-6">
+          <p className="text-sm font-medium text-ink-muted">Masuk funnel</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">
             {stages[0].users.toLocaleString("id-ID")}
           </p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-ink-soft">
             Akun dibuat dalam {days} hari terakhir
           </p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
-          <p className="text-sm font-medium text-gray-600">Selesai sampai akhir</p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">
+        <div className="rounded-panel border border-hairline-input bg-surface p-6">
+          <p className="text-sm font-medium text-ink-muted">Selesai sampai akhir</p>
+          <p className="mt-1 text-2xl font-semibold text-ink">
             {finalStage.users.toLocaleString("id-ID")}
-            <span className="ml-2 text-sm font-normal text-gray-500">
+            <span className="ml-2 text-sm font-normal text-ink-soft">
               {finalStage.share === null
                 ? "(belum ada data)"
                 : `(${formatPercent(finalStage.share)})`}
             </span>
           </p>
-          <p className="mt-1 text-xs text-gray-500">{finalStage.label}</p>
+          <p className="mt-1 text-xs text-ink-soft">{finalStage.label}</p>
         </div>
-        <div className="rounded-xl border border-gray-200 bg-white p-6">
+        <div className="rounded-panel border border-hairline-input bg-surface p-6">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-600">Kebocoran terbesar</p>
-            <TrendingDown className="h-4 w-4 text-gray-400" />
+            <p className="text-sm font-medium text-ink-muted">Kebocoran terbesar</p>
+            <TrendingDown className="h-4 w-4 text-ink-faint" />
           </div>
-          <p className="mt-1 text-2xl font-semibold text-gray-900">
+          <p className="mt-1 text-2xl font-semibold text-ink">
             {worstDropOff && worstDropOff.dropOff > 0
               ? worstDropOff.dropOff.toLocaleString("id-ID")
               : "-"}
           </p>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-ink-soft">
             {worstDropOff && worstDropOff.dropOff > 0
               ? `Berhenti sebelum "${worstDropOff.label}"`
               : "Belum ada kebocoran yang terukur"}
@@ -288,10 +288,10 @@ export default async function FunnelPage({
       </div>
 
       {/* Tabel funnel */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50">
+            <TableRow className="bg-surface-tint/50">
               <TableHead className="font-medium w-[280px]">Tahap</TableHead>
               <TableHead className="font-medium">Pengguna</TableHead>
               <TableHead className="font-medium">Konversi dari tahap sebelumnya</TableHead>
@@ -306,7 +306,7 @@ export default async function FunnelPage({
               <TableRow>
                 <TableCell
                   colSpan={5}
-                  className="py-10 text-center text-sm text-gray-500"
+                  className="py-10 text-center text-sm text-ink-soft"
                 >
                   Belum ada kejadian onboarding pada rentang ini. Data mulai
                   terkumpul setelah pengguna berikutnya mendaftar.
@@ -315,36 +315,36 @@ export default async function FunnelPage({
             )}
             {hasData &&
               stages.map((stage, index) => (
-                <TableRow key={stage.event} className="hover:bg-gray-50/50">
+                <TableRow key={stage.event} className="hover:bg-surface-tint/50">
                   <TableCell>
-                    <div className="font-medium text-gray-900">
+                    <div className="font-medium text-ink">
                       {index + 1}. {stage.label}
                     </div>
-                    <div className="mt-0.5 text-xs text-gray-500">
+                    <div className="mt-0.5 text-xs text-ink-soft">
                       {stage.hint}
                     </div>
                   </TableCell>
-                  <TableCell className="font-semibold text-gray-900">
+                  <TableCell className="font-semibold text-ink">
                     {stage.users.toLocaleString("id-ID")}
                   </TableCell>
                   <TableCell className="text-sm">
                     {stage.conversion === null ? (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-ink-faint">-</span>
                     ) : (
                       <span
                         className={
                           stage.conversion < 0.5
                             ? "font-medium text-red-600"
-                            : "font-medium text-gray-700"
+                            : "font-medium text-ink-body"
                         }
                       >
                         {formatPercent(stage.conversion)}
                       </span>
                     )}
                   </TableCell>
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-sm text-ink-muted">
                     {index === 0 ? (
-                      <span className="text-gray-400">-</span>
+                      <span className="text-ink-faint">-</span>
                     ) : (
                       `-${stage.dropOff.toLocaleString("id-ID")}`
                     )}
@@ -353,20 +353,20 @@ export default async function FunnelPage({
                     {stage.share === null ? (
                       // No signups in this window to divide by. An empty bar
                       // labelled "0%" would read as a stage everybody skipped.
-                      <span className="text-sm text-gray-400">
+                      <span className="text-sm text-ink-faint">
                         Belum ada data
                       </span>
                     ) : (
                       <>
                         {/* Deliberately a plain div, not a chart library: one
                             bar per row, width = share of the first stage. */}
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-surface-tint">
                           <div
                             className="h-full rounded-full bg-[#0066FF]"
                             style={{ width: `${Math.round(stage.share * 100)}%` }}
                           />
                         </div>
-                        <div className="mt-1 text-xs text-gray-500">
+                        <div className="mt-1 text-xs text-ink-soft">
                           {formatPercent(stage.share)}
                         </div>
                       </>
@@ -377,7 +377,7 @@ export default async function FunnelPage({
           </TableBody>
         </Table>
 
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-gray-200 px-4 py-4 text-sm text-gray-500">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline-input px-4 py-4 text-sm text-ink-soft">
           <span>
             Rentang {days} hari terakhir · {totalEvents.toLocaleString("id-ID")}{" "}
             kejadian tercatat
@@ -388,7 +388,7 @@ export default async function FunnelPage({
         </div>
       </div>
 
-      <p className="mt-4 text-xs text-gray-500">
+      <p className="mt-4 text-xs text-ink-soft">
         Satu pengguna dihitung sekali per tahap, walaupun ia mengulang langkah
         tersebut. Tahap yang lebih jauh bisa terlihat lebih besar dari tahap
         sebelumnya jika pengguna mendaftar sebelum rentang waktu ini dimulai.

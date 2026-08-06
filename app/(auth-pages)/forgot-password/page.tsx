@@ -45,13 +45,13 @@ export default function ForgotPassword({
     // used to render its own full-height split-screen inside that container,
     // which stacked two viewports and pushed the form off-screen on mobile.
     <div className="relative w-full max-w-[420px]">
-      <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100">
+      <div className="overflow-hidden rounded-frame bg-surface border border-hairline">
         <div className="p-8">
           <div className="mb-8">
             <h1 className="font-serif text-section font-medium text-ink">
               Lupa kata sandi?
             </h1>
-            <p className="mt-2 text-gray-600">
+            <p className="mt-2 text-ink-muted">
               Masukkan email akunmu, kami kirimkan link untuk membuat kata sandi
               baru.
             </p>
@@ -61,7 +61,7 @@ export default function ForgotPassword({
             <div className="space-y-2">
               <Label
                 htmlFor="email"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-ink-body"
               >
                 Alamat email
               </Label>
@@ -75,7 +75,7 @@ export default function ForgotPassword({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 pl-4 bg-gray-50/50 border-gray-200 focus:bg-white text-base rounded-xl
+                className="h-11 pl-4 bg-surface-tint/50 border-hairline-input focus:bg-surface text-base rounded-panel
                   focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
                 style={{ fontSize: "16px" }}
               />
@@ -87,8 +87,7 @@ export default function ForgotPassword({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-xl font-medium transition-all duration-200
-                shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.15)]
+              className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-panel font-medium transition-all duration-200 hover:
                 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
@@ -101,7 +100,7 @@ export default function ForgotPassword({
               )}
             </Button>
 
-            <p className="text-center text-sm text-gray-600">
+            <p className="text-center text-sm text-ink-muted">
               Sudah ingat kata sandimu?{" "}
               <Link
                 href="/sign-in"

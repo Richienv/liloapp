@@ -243,7 +243,7 @@ function viewableUrl(
 function DocumentLink({ href, label }: { href: string | null; label: string }) {
   if (!href) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+      <span className="inline-flex items-center gap-1 text-xs text-ink-faint">
         <FileWarning className="h-3.5 w-3.5" />
         {label}
       </span>
@@ -400,10 +400,10 @@ export default async function StreamerVerificationPage({
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-2xl font-semibold text-ink">
             Verifikasi Streamer
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-ink-soft">
             Tinjau dokumen identitas dan bukti kepemilikan akun sebelum streamer
             bisa dibooking dan menerima kiriman produk.
           </p>
@@ -437,7 +437,7 @@ export default async function StreamerVerificationPage({
         <form className="relative flex-1 min-w-[240px] max-w-md" method="GET">
           {/* No `page` field: a new search always starts on page 1. */}
           <input type="hidden" name="status" value={status} />
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
           <Input
             name="q"
             defaultValue={query}
@@ -445,7 +445,7 @@ export default async function StreamerVerificationPage({
             className="pl-10"
           />
         </form>
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+        <div className="flex items-center gap-1 rounded-lg border border-hairline-input bg-surface p-1">
           {STATUS_TABS.map((tab) => (
             <Link
               key={tab.value}
@@ -453,7 +453,7 @@ export default async function StreamerVerificationPage({
               className={
                 tab.value === status
                   ? "rounded-md bg-[#0066FF] px-3 py-1.5 text-sm font-medium text-white"
-                  : "rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                  : "rounded-md px-3 py-1.5 text-sm text-ink-muted hover:bg-surface-tint"
               }
             >
               {tab.label}
@@ -463,10 +463,10 @@ export default async function StreamerVerificationPage({
       </div>
 
       {/* Verification Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="bg-surface rounded-panel border border-hairline-input overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50">
+            <TableRow className="bg-surface-tint/50">
               <TableHead className="font-medium w-[260px]">Streamer</TableHead>
               <TableHead className="font-medium">Akun Platform</TableHead>
               <TableHead className="font-medium">Dokumen</TableHead>
@@ -478,7 +478,7 @@ export default async function StreamerVerificationPage({
           <TableBody>
             {submissions.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-gray-500">
+                <TableCell colSpan={6} className="py-10 text-center text-sm text-ink-soft">
                   Tidak ada pengajuan verifikasi pada filter ini.
                 </TableCell>
               </TableRow>
@@ -488,26 +488,26 @@ export default async function StreamerVerificationPage({
               const isDecided = submission.status !== "pending";
 
               return (
-                <TableRow key={submission.id} className="align-top hover:bg-gray-50/50">
+                <TableRow key={submission.id} className="align-top hover:bg-surface-tint/50">
                   <TableCell>
                     <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100">
-                        <User className="h-5 w-5 text-gray-500" />
+                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-surface-tint">
+                        <User className="h-5 w-5 text-ink-soft" />
                       </div>
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-ink">
                           {fullName(streamer)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-ink-soft">
                           {submission.user?.email || "Email tidak tersedia"}
                         </div>
-                        <div className="mt-0.5 text-xs text-gray-400">
+                        <div className="mt-0.5 text-xs text-ink-faint">
                           {streamer?.username ? `@${streamer.username}` : "Belum punya username"}
                           {" · "}
                           {streamer?.city_slug || streamer?.location || "Kota tidak diisi"}
                         </div>
                         {submission.user?.phone && (
-                          <div className="text-xs text-gray-400">
+                          <div className="text-xs text-ink-faint">
                             {submission.user.phone}
                           </div>
                         )}
@@ -516,10 +516,10 @@ export default async function StreamerVerificationPage({
                   </TableCell>
 
                   <TableCell>
-                    <div className="text-sm font-medium text-gray-900">
+                    <div className="text-sm font-medium text-ink">
                       {submission.platform_handle || "-"}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-ink-soft">
                       {streamer?.platform || "Platform tidak diisi"}
                     </div>
                   </TableCell>
@@ -548,25 +548,25 @@ export default async function StreamerVerificationPage({
                     <div className="flex flex-col gap-1.5">
                       <VerificationStatusBadge status={submission.status} />
                       {streamer?.is_active === false && (
-                        <span className="text-[11px] text-gray-500">
+                        <span className="text-[11px] text-ink-soft">
                           Akun nonaktif
                         </span>
                       )}
                       {submission.notes && (
-                        <span className="text-[11px] text-gray-500">
+                        <span className="text-[11px] text-ink-soft">
                           Catatan: {submission.notes}
                         </span>
                       )}
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="text-sm text-ink-soft">
                     {formatDate(submission.created_at)}
                   </TableCell>
 
                   <TableCell>
                     {isDecided ? (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-xs text-ink-soft">
                         Sudah diproses. Status streamer saat ini:{" "}
                         {streamer?.verification_status || "tidak diketahui"}.
                       </p>
@@ -599,7 +599,7 @@ export default async function StreamerVerificationPage({
                             required
                             rows={2}
                             placeholder="Alasan penolakan (wajib, dikirim ke streamer)"
-                            className="w-full rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-gray-400 focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-200"
+                            className="w-full rounded-md border border-hairline-input px-2.5 py-1.5 text-xs text-ink-body placeholder:text-ink-faint focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-200"
                           />
                           <Button
                             type="submit"
@@ -621,8 +621,8 @@ export default async function StreamerVerificationPage({
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-4">
-          <div className="text-sm text-gray-500">
+        <div className="flex items-center justify-between border-t border-hairline-input px-4 py-4">
+          <div className="text-sm text-ink-soft">
             Menampilkan {rangeStart}-{rangeEnd} dari {total} pengajuan
             {totalPages > 1 && ` · halaman ${page} dari ${totalPages}`}
           </div>
@@ -630,24 +630,24 @@ export default async function StreamerVerificationPage({
             {page > 1 ? (
               <Link
                 href={queueHref({ status, q: query, page: page - 1 })}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-hairline-input px-3 py-1.5 text-sm text-ink-body hover:bg-surface-tint"
               >
                 Sebelumnya
               </Link>
             ) : (
-              <span className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+              <span className="rounded-md border border-hairline-input px-3 py-1.5 text-sm text-ink-ghost">
                 Sebelumnya
               </span>
             )}
             {page < totalPages ? (
               <Link
                 href={queueHref({ status, q: query, page: page + 1 })}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-md border border-hairline-input px-3 py-1.5 text-sm text-ink-body hover:bg-surface-tint"
               >
                 Berikutnya
               </Link>
             ) : (
-              <span className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+              <span className="rounded-md border border-hairline-input px-3 py-1.5 text-sm text-ink-ghost">
                 Berikutnya
               </span>
             )}

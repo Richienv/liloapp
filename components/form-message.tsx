@@ -85,7 +85,7 @@ export function FormMessage({
     <div
       role={role}
       aria-live={role === "alert" ? "assertive" : "polite"}
-      className={`flex w-full max-w-md items-start gap-2.5 rounded-xl border px-3.5 py-3 text-sm leading-snug ${variantClass} ${className}`}
+      className={`flex w-full max-w-md items-start gap-2.5 rounded-panel border px-3.5 py-3 text-sm leading-snug ${variantClass} ${className}`}
     >
       <Icon aria-hidden="true" className="mt-px h-[18px] w-[18px] shrink-0" />
       <span className="min-w-0 break-words font-medium">

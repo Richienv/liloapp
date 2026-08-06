@@ -108,8 +108,8 @@ type ShippingOption = 'yes' | 'no' | null;
 type ProcessingStep = 'creating' | 'completed' | 'redirecting';
 
 const platformStyles = {
-  shopee: 'bg-gradient-to-r from-orange-500 to-orange-600',
-  tiktok: 'bg-gradient-to-r from-[#00f2ea] to-[#ff0050]',
+  shopee: 'bg-surface-tint text-ink-muted border border-hairline',
+  tiktok: 'bg-surface-tint text-ink-muted border border-hairline',
 };
 
 export default function BookingDetailPage() {
@@ -680,7 +680,7 @@ function BookingDetailContent() {
           <div className="text-center max-w-md mx-auto px-4">
             {processingStep === 'creating' && (
               <div className="relative h-16 w-16 mx-auto mb-6">
-                <div className="absolute top-0 h-16 w-16 rounded-full border-4 border-gray-100"></div>
+                <div className="absolute top-0 h-16 w-16 rounded-full border-4 border-hairline"></div>
                 <div className="absolute top-0 h-16 w-16 rounded-full border-4 border-blue-500 border-t-transparent animate-spin"></div>
               </div>
             )}
@@ -693,14 +693,14 @@ function BookingDetailContent() {
               <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-6" />
             )}
             
-            <h2 className="text-xl font-medium text-gray-900 mb-2">
+            <h2 className="text-xl font-medium text-ink mb-2">
               {processingStep === 'creating' ? 'Processing Payment' : 'Payment Successful'}
             </h2>
             
-            <p className="text-gray-600 mb-6">{getProcessingMessage()}</p>
+            <p className="text-ink-muted mb-6">{getProcessingMessage()}</p>
             
             {processingStep === 'redirecting' && (
-              <div className="w-full bg-gray-100 rounded-full h-1.5 mb-1 overflow-hidden">
+              <div className="w-full bg-surface-tint rounded-full h-1.5 mb-1 overflow-hidden">
                 <div 
                   className="bg-blue-500 h-1.5 rounded-full transition-all duration-300" 
                   style={{ width: `${((3 - redirectCountdown) / 3) * 100}%` }}
@@ -715,21 +715,21 @@ function BookingDetailContent() {
       <div className="flex items-center gap-3 sm:gap-6 mb-6 sm:mb-8">
         <button 
           onClick={() => router.push('/protected')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors"
+          className="flex items-center gap-2 text-ink-muted hover:text-ink transition-colors"
         >
           <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
           <span className="text-sm sm:text-base">Kembali</span>
         </button>
-        <h1 className="text-xl sm:text-2xl font-semibold text-gray-900">Detail Pemesanan</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold text-ink">Detail Pemesanan</h1>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-6 sm:gap-8">
         {/* Left Container */}
         <div className="flex-1 space-y-6 sm:space-y-8">
           {/* Streamer Info Card with increased padding */}
-          <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 shadow-sm">
+          <div className="bg-surface rounded-panel border border-hairline-input p-6 sm:p-8">
             <div className="flex items-start gap-6">
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-panel bg-surface-tint overflow-hidden flex-shrink-0">
                 <Image
                   src={bookingDetails?.image_url || '/placeholder-avatar.png'}
                   alt={bookingDetails?.streamerName || ''}
@@ -741,12 +741,12 @@ function BookingDetailContent() {
               <div className="flex-1 space-y-4">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <h2 className="text-lg sm:text-xl font-semibold text-gray-900">
+                    <h2 className="text-lg sm:text-xl font-semibold text-ink">
                       {bookingDetails?.streamerName}
                     </h2>
                     <div className="flex items-center gap-2 mt-2">
-                      <MapPin className="h-4 w-4 text-gray-400" />
-                      <span className="text-sm text-gray-600">{bookingDetails?.location}</span>
+                      <MapPin className="h-4 w-4 text-ink-faint" />
+                      <span className="text-sm text-ink-muted">{bookingDetails?.location}</span>
                     </div>
                   </div>
                   <div className="flex items-center bg-yellow-50 px-3 py-1.5 rounded-lg">
@@ -758,16 +758,16 @@ function BookingDetailContent() {
                 <div className="flex flex-wrap gap-4 pt-2">
                   <Badge className={`${
                     bookingDetails?.platform.toLowerCase() === 'shopee'
-                      ? 'bg-gradient-to-r from-orange-500 to-orange-600'
-                      : 'bg-gradient-to-r from-[#00f2ea] to-[#ff0050]'
+                      ? 'bg-surface-tint text-ink-muted border border-hairline'
+                      : 'bg-surface-tint text-ink-muted border border-hairline'
                   } text-white border-0 px-3 py-1`}>
                     {bookingDetails?.platform}
                   </Badge>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-ink-muted">
                     <Calendar className="h-4 w-4" />
                     <span>{bookingDetails && formatBookingDates(bookingDetails.bookings)}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-gray-600">
+                  <div className="flex items-center gap-2 text-ink-muted">
                     <Clock className="h-4 w-4" />
                     <span>
                       {bookingDetails && `${calculateTotalHours(bookingDetails.bookings)} hours`}
@@ -779,26 +779,26 @@ function BookingDetailContent() {
           </div>
 
           {/* Booking Summary Section */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 space-y-4">
+          <div className="bg-surface rounded-panel border border-hairline-input p-4 sm:p-6 space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900">Booking Summary</h3>
-              <span className="text-xs text-gray-500">*harga belum termasuk pajak</span>
+              <h3 className="text-lg font-semibold text-ink">Booking Summary</h3>
+              <span className="text-xs text-ink-soft">*harga belum termasuk pajak</span>
             </div>
             
             {bookingDetails?.bookings.map((booking, index) => (
-              <div key={index} className="border-b border-gray-100 pb-4">
+              <div key={index} className="border-b border-hairline pb-4">
                 <div className="space-y-3">
-                  <div className="text-sm font-medium text-gray-900">
+                  <div className="text-sm font-medium text-ink">
                     {format(new Date(booking.date), 'dd MMMM yyyy')}
                   </div>
                   
                   {booking.timeRanges?.map((range, rangeIndex) => (
                     <div key={rangeIndex} className="bg-blue-50/50 rounded-lg p-3">
                       <div className="flex items-center justify-between">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-ink-muted">
                           {`${range.start} - ${range.end} (${calculateHoursBetween(range.start, range.end)} hours)`}
                         </div>
-                        <div className="text-sm font-medium text-gray-900">
+                        <div className="text-sm font-medium text-ink">
                           {formatPrice(getAdjustedPrice(bookingDetails.price) * calculateHoursBetween(range.start, range.end))}
                         </div>
                       </div>
@@ -811,22 +811,22 @@ function BookingDetailContent() {
             {/* Total Section */}
             <div className="pt-4 space-y-2">
               {/* Subtotal breakdown */}
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm text-ink-muted">
                 <span>Subtotal ({calculateTotalHours(bookingDetails?.bookings || [])} hours)</span>
                 <span>{formatPrice(calculatePrices().subtotal)}</span>
               </div>
 
               {/* Tax */}
-              <div className="flex items-center justify-between text-sm text-gray-600">
+              <div className="flex items-center justify-between text-sm text-ink-muted">
                 <span>Tax (11%)</span>
                 <span>{formatPrice(calculatePrices().tax)}</span>
               </div>
 
               {/* Divider */}
-              <div className="border-t border-gray-100 pt-2 mt-2">
+              <div className="border-t border-hairline pt-2 mt-2">
                 <div className="flex items-center justify-between font-medium">
-                  <span className="text-gray-900">Total Amount:</span>
-                  <span className="text-gray-900">
+                  <span className="text-ink">Total Amount:</span>
+                  <span className="text-ink">
                     {formatPrice(calculatePrices().total)}
                   </span>
                 </div>
@@ -835,13 +835,13 @@ function BookingDetailContent() {
           </div>
 
           {/* Important Information Card */}
-          <div className="bg-amber-50 rounded-xl border border-amber-200 p-4 sm:p-6">
+          <div className="bg-amber-50 rounded-panel border border-amber-200 p-4 sm:p-6">
             <div className="flex items-start gap-3">
               <AlertTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-1" />
               <div className="space-y-4">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900">Informasi Penting</h3>
-                  <p className="mt-2 text-sm text-gray-600">
+                  <h3 className="text-base font-semibold text-ink">Informasi Penting</h3>
+                  <p className="mt-2 text-sm text-ink-muted">
                     Sebelum melanjutkan pemesanan, pastikan kamu telah mempersiapkan:
                   </p>
                 </div>
@@ -864,13 +864,13 @@ function BookingDetailContent() {
                       description: 'H+1 untuk kota yang sama, H+3 untuk beda kota'
                     }
                   ].map((item, index) => (
-                    <div key={index} className="flex items-start gap-3 bg-white rounded-lg p-3 border border-amber-100">
+                    <div key={index} className="flex items-start gap-3 bg-surface rounded-lg p-3 border border-amber-100">
                       <div className="p-2 bg-amber-100 rounded-full">
                         {item.icon}
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-900">{item.title}</h4>
-                        <p className="mt-0.5 text-sm text-gray-600">{item.description}</p>
+                        <h4 className="font-medium text-ink">{item.title}</h4>
+                        <p className="mt-0.5 text-sm text-ink-muted">{item.description}</p>
                       </div>
                     </div>
                   ))}
@@ -881,15 +881,15 @@ function BookingDetailContent() {
 
           {/* Platform Account Details */}
           {bookingDetails?.platform.toLowerCase() === 'shopee' ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+            <div className="bg-surface rounded-panel border border-hairline-input p-4 sm:p-6">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Sub Account Details</h3>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <h3 className="text-lg font-semibold text-ink">Sub Account Details</h3>
+                  <p className="mt-1 text-sm text-ink-muted">
                     Informasi ini diperlukan untuk akses ke platform Shopee
                   </p>
                 </div>
-                <Badge className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0">
+                <Badge className="bg-surface-tint text-ink-muted border border-hairline">
                   Shopee
                 </Badge>
               </div>
@@ -914,7 +914,7 @@ function BookingDetailContent() {
                     onChange={(e) => setSubAccountPassword(e.target.value)}
                   />
                 </div>
-                <div className="flex items-center gap-2 mt-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2 mt-2 text-sm text-ink-muted">
                   <Info className="h-4 w-4" />
                   <a 
                     href="https://seller.shopee.co.id/edu/article/6941"
@@ -928,15 +928,15 @@ function BookingDetailContent() {
               </div>
             </div>
           ) : bookingDetails?.platform.toLowerCase() === 'tiktok' ? (
-            <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
+            <div className="bg-surface rounded-panel border border-hairline-input p-4 sm:p-6">
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
-                  <h3 className="text-lg font-semibold text-gray-900">TikTok Shop Account</h3>
-                  <p className="mt-1 text-sm text-gray-600">
+                  <h3 className="text-lg font-semibold text-ink">TikTok Shop Account</h3>
+                  <p className="mt-1 text-sm text-ink-muted">
                     Informasi ini diperlukan untuk akses ke TikTok Shop
                   </p>
                 </div>
-                <Badge className="bg-gradient-to-r from-[#00f2ea] to-[#ff0050] text-white border-0">
+                <Badge className="bg-surface-tint text-ink-muted border border-hairline">
                   TikTok
                 </Badge>
               </div>
@@ -951,7 +951,7 @@ function BookingDetailContent() {
                     onChange={(e) => setSubAccountLink(e.target.value)}
                   />
                 </div>
-                <div className="p-3 bg-blue-50 rounded-lg text-sm text-gray-600">
+                <div className="p-3 bg-blue-50 rounded-lg text-sm text-ink-muted">
                   <p>Mohon berkoordinasi dengan streamer untuk proses verifikasi OTP</p>
                 </div>
               </div>
@@ -959,8 +959,8 @@ function BookingDetailContent() {
           ) : null}
 
           {/* Special Request Section */}
-          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Permintaan Khusus</h3>
+          <div className="bg-surface rounded-panel border border-hairline-input p-4 sm:p-6">
+            <h3 className="text-lg font-semibold text-ink mb-4">Permintaan Khusus</h3>
             <Textarea
               placeholder="Ada permintaan khusus untuk streamer? (Opsional)"
               value={specialRequest}
@@ -972,13 +972,13 @@ function BookingDetailContent() {
 
         {/* Right Container - Payment Summary */}
         <div className="w-full lg:w-[380px]">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 sm:p-6 sticky top-4">
-            <h3 className="text-lg font-semibold text-gray-900 mb-6">Ringkasan Pembayaran</h3>
+          <div className="bg-surface rounded-panel border border-hairline-input p-4 sm:p-6 sticky top-4">
+            <h3 className="text-lg font-semibold text-ink mb-6">Ringkasan Pembayaran</h3>
             
             {/* Price Breakdown */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">
+                <span className="text-ink-muted">
                   {`${formatPrice(getAdjustedPrice(bookingDetails?.price || 0))} × ${
                     calculateTotalHours(bookingDetails?.bookings || [])
                   } jam`}
@@ -986,12 +986,12 @@ function BookingDetailContent() {
                 <span className="font-medium">{formatPrice(calculatePrices().subtotal)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Pajak (11%)</span>
+                <span className="text-ink-muted">Pajak (11%)</span>
                 <span className="font-medium">{formatPrice(calculatePrices().tax)}</span>
               </div>
 
               {/* Voucher Section */}
-              <div className="pt-3 mt-3 border-t border-gray-100">
+              <div className="pt-3 mt-3 border-t border-hairline">
                 {!appliedVoucher ? (
                   <div className="flex gap-2">
                     <Input
@@ -1042,10 +1042,10 @@ function BookingDetailContent() {
               </div>
 
               {/* Total */}
-              <div className="pt-3 mt-3 border-t border-gray-100">
+              <div className="pt-3 mt-3 border-t border-hairline">
                 <div className="flex justify-between items-center">
-                  <span className="font-semibold text-gray-900">Total Pembayaran</span>
-                  <span className="text-xl font-bold text-gray-900">
+                  <span className="font-semibold text-ink">Total Pembayaran</span>
+                  <span className="text-xl font-bold text-ink">
                     {formatPrice(finalPrice)}
                   </span>
                 </div>
@@ -1069,7 +1069,7 @@ function BookingDetailContent() {
             </Button>
 
             {/* Cancellation Policy */}
-            <div className="mt-4 text-xs text-gray-500">
+            <div className="mt-4 text-xs text-ink-soft">
               <p>
                 Pembatalan gratis hingga 24 jam sebelum jadwal. Setelah itu, biaya 50% akan dikenakan.
               </p>

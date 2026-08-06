@@ -144,7 +144,7 @@ export default function RatingModal({
             />
             <h3 className="font-semibold">{streamerName}</h3>
           </div>
-          <div className="text-xs text-gray-500">
+          <div className="text-xs text-ink-soft">
             {format(new Date(startDate), "MMM d yyyy")} ({format(new Date(startDate), "HH:mm")}-{format(new Date(endDate), "HH:mm")})
           </div>
           <div className="flex space-x-1">
@@ -152,7 +152,7 @@ export default function RatingModal({
               <Star
                 key={star}
                 className={`cursor-pointer w-5 h-5 ${
-                  star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+                  star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-ink-ghost'
                 }`}
                 onClick={() => setRating(star)}
               />

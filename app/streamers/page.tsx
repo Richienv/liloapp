@@ -42,7 +42,7 @@ export default function StreamersPage() {
   }
 
   if (error) {
-    return <div className="container mx-auto px-4 py-8 text-gray-700">{error}</div>;
+    return <div className="container mx-auto px-4 py-8 text-ink-body">{error}</div>;
   }
 
   return (

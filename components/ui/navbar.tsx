@@ -19,9 +19,9 @@ const NotificationsPopup = dynamic(
       <Button 
         variant="ghost" 
         size="icon" 
-        className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-gray-100 transition-colors animate-pulse"
+        className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors animate-pulse"
       >
-        <div className="h-6 sm:h-7 w-6 sm:w-7 bg-gray-200 rounded-full"></div>
+        <div className="h-6 sm:h-7 w-6 sm:w-7 bg-surface-deep rounded-full"></div>
       </Button>
     )
   }
@@ -32,7 +32,7 @@ const ProfileButton = dynamic(
   { 
     ssr: false,
     loading: () => (
-      <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+      <div className="w-10 h-10 rounded-full bg-surface-deep animate-pulse"></div>
     )
   }
 );
@@ -272,9 +272,9 @@ export function Navbar({ onFilterChange }: NavbarProps) {
     <Button 
       variant="ghost" 
       size="icon" 
-      className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-gray-100 transition-colors animate-pulse"
+      className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors animate-pulse"
     >
-      <div className="h-6 sm:h-7 w-6 sm:w-7 bg-gray-200 rounded-full"></div>
+      <div className="h-6 sm:h-7 w-6 sm:w-7 bg-surface-deep rounded-full"></div>
     </Button>
   );
 
@@ -301,23 +301,22 @@ export function Navbar({ onFilterChange }: NavbarProps) {
             {!isStreamerDashboard && onFilterChange && (
               <div className="flex-1 max-w-3xl mx-2 sm:mx-8">
                 <div className={`relative transition-all duration-200 ${
-                  isSearchFocused ? 'transform scale-[1.02] shadow-lg' : ''
+                  isSearchFocused ? 'transform scale-[1.02]' : ''
                 }`}>
                   <Input
                     type="text"
                     placeholder="Cari Host di Salda"
-                    className="w-full pl-4 sm:pl-8 pr-12 sm:pr-16 py-3 sm:py-4 text-sm sm:text-base rounded-full border border-gray-200 
-                      shadow-[0_2px_8px_-4px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_12px_-4px_rgba(0,0,0,0.15)] 
-                      focus:shadow-[0_6px_16px_-4px_rgba(0,0,0,0.2)] 
+                    className="w-full pl-4 sm:pl-8 pr-12 sm:pr-16 py-3 sm:py-4 text-sm sm:text-base rounded-full border border-hairline-input hover: 
+                      focus: 
                       transition-all duration-200
                       focus:border-blue-500
-                      bg-white"
+                      bg-surface"
                     onChange={(e) => onFilterChange(e.target.value)}
                     onFocus={() => setIsSearchFocused(true)}
                     onBlur={() => setIsSearchFocused(false)}
                   />
                   <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2">
-                    <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 sm:p-3 rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer">
+                    <div className="bg-brand p-2 sm:p-3 rounded-full transition-shadow cursor-pointer">
                       <Search className="h-4 w-4 sm:h-5 sm:w-5 text-white" />
                     </div>
                   </div>
@@ -334,13 +333,13 @@ export function Navbar({ onFilterChange }: NavbarProps) {
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-gray-100 transition-colors animate-pulse"
+                      className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors animate-pulse"
                     >
-                      <div className="h-6 sm:h-7 w-6 sm:w-7 bg-gray-200 rounded-full"></div>
+                      <div className="h-6 sm:h-7 w-6 sm:w-7 bg-surface-deep rounded-full"></div>
                     </Button>
                   </div>
-                  <div className="hidden sm:block h-10 w-px bg-gray-200 mx-3"></div>
-                  <div className="w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
+                  <div className="hidden sm:block h-10 w-px bg-surface-deep mx-3"></div>
+                  <div className="w-10 h-10 rounded-full bg-surface-deep animate-pulse"></div>
                 </>
               ) : userData ? (
                 <>
@@ -351,7 +350,7 @@ export function Navbar({ onFilterChange }: NavbarProps) {
                       <Button 
                         variant="ghost" 
                         size="icon" 
-                        className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-gray-100 transition-colors"
+                        className="relative w-12 sm:w-14 h-12 sm:h-14 hover:bg-surface-tint transition-colors"
                       >
                         <MessageCircle className="h-6 sm:h-7 w-6 sm:w-7" />
                         {unreadMessages > 0 && (
@@ -365,14 +364,14 @@ export function Navbar({ onFilterChange }: NavbarProps) {
                   <div className="block scale-90 sm:scale-100">
                     <NotificationsPopup />
                   </div>
-                  <div className="hidden sm:block h-10 w-px bg-gray-200 mx-3"></div>
+                  <div className="hidden sm:block h-10 w-px bg-surface-deep mx-3"></div>
                 </>
               ) : null}
               
               {isLoadingUser ? (
                 <>
-                  <div className="hidden sm:block w-10 h-10 rounded-full bg-gray-200 animate-pulse"></div>
-                  <div className="block sm:hidden w-9 h-9 rounded-full bg-gray-200 animate-pulse scale-90"></div>
+                  <div className="hidden sm:block w-10 h-10 rounded-full bg-surface-deep animate-pulse"></div>
+                  <div className="block sm:hidden w-9 h-9 rounded-full bg-surface-deep animate-pulse scale-90"></div>
                 </>
               ) : (
                 <>

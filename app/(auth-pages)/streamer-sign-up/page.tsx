@@ -73,7 +73,7 @@ export default async function StreamerSignUpEntry() {
           <h1 className="font-serif text-section font-medium text-ink">
             Akun ini terdaftar sebagai brand
           </h1>
-          <p className="mt-3 leading-relaxed text-gray-600">
+          <p className="mt-3 leading-relaxed text-ink-muted">
             Kamu sedang masuk dengan akun brand, jadi pendaftaran host tidak
             berlaku di sini. Satu akun hanya punya satu peran — kalau kamu ingin
             jadi host live streaming, tim Salda bisa membantu memindahkan akun
@@ -82,7 +82,7 @@ export default async function StreamerSignUpEntry() {
 
           <Link
             href={CLIENT_HOME}
-            className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl
+            className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-panel
               bg-brand font-medium text-white transition-all
               duration-200 hover:bg-brand-hover"
           >
@@ -92,8 +92,8 @@ export default async function StreamerSignUpEntry() {
 
           <Link
             href="/streamers"
-            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-xl border
-              border-gray-200 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-panel border
+              border-hairline-input font-medium text-ink-body transition-colors hover:bg-surface-tint"
           >
             Lihat daftar host
           </Link>

@@ -321,16 +321,16 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-surface">
       {/* Header */}
-      <div className="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-[var(--z-navbar)]">
+      <div className="fixed top-0 left-0 right-0 bg-surface border-b border-hairline-input z-[var(--z-navbar)]">
         <div className="h-14 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Button 
               variant="ghost" 
               size="icon"
               onClick={() => router.back()}
-              className="hover:bg-gray-100"
+              className="hover:bg-surface-tint"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -341,7 +341,7 @@ export default function NotificationsPage() {
               variant="ghost"
               size="sm"
               onClick={handleMarkAllAsRead}
-              className="text-sm text-gray-600"
+              className="text-sm text-ink-muted"
             >
               <CheckCheck className="w-4 h-4 mr-1.5" />
               Tandai Dibaca
@@ -354,19 +354,19 @@ export default function NotificationsPage() {
       <div className="pt-14 pb-safe">
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 px-4">
-            <Bell className="w-12 h-12 text-gray-300 mb-3" />
-            <p className="text-gray-500 text-center">Tidak ada notifikasi baru</p>
+            <Bell className="w-12 h-12 text-ink-ghost mb-3" />
+            <p className="text-ink-soft text-center">Tidak ada notifikasi baru</p>
           </div>
         ) : (
           groupNotifications(notifications).map((group) => (
             <div key={group.title} className="mb-2">
-              <div className="bg-gray-50 px-4 py-2 text-sm font-medium text-gray-600 sticky top-14 z-[var(--z-sticky)]">
+              <div className="bg-surface-tint px-4 py-2 text-sm font-medium text-ink-muted sticky top-14 z-[var(--z-sticky)]">
                 {group.title}
               </div>
               {group.notifications.map((notification) => (
                 <div 
                   key={notification.id} 
-                  className={`notification-item px-4 py-3 border-b border-gray-100 ${
+                  className={`notification-item px-4 py-3 border-b border-hairline ${
                     !notification.is_read ? 'bg-blue-50/60' : ''
                   } ${
                     expandedNotifications[notification.id] ? 'expanded' : ''
@@ -378,21 +378,21 @@ export default function NotificationsPage() {
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-medium text-sm text-gray-900 truncate">
+                        <h4 className="font-medium text-sm text-ink truncate">
                           {getNotificationTitle(notification.type)}
                         </h4>
                         <div className="flex items-center gap-2">
-                          <time className="text-xs text-gray-500 whitespace-nowrap">
+                          <time className="text-xs text-ink-soft whitespace-nowrap">
                             {format(new Date(notification.created_at), 'HH:mm', { locale: id })}
                           </time>
                           <button
                             onClick={(e) => toggleNotificationExpansion(notification.id, e)}
-                            className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                            className="p-1 hover:bg-surface-tint rounded-full transition-colors"
                           >
                             {expandedNotifications[notification.id] ? (
-                              <ChevronUp className="h-4 w-4 text-gray-500" />
+                              <ChevronUp className="h-4 w-4 text-ink-soft" />
                             ) : (
-                              <ChevronDown className="h-4 w-4 text-gray-500" />
+                              <ChevronDown className="h-4 w-4 text-ink-soft" />
                             )}
                           </button>
                         </div>
@@ -402,7 +402,7 @@ export default function NotificationsPage() {
                           expandedNotifications[notification.id] ? 'max-h-96' : 'max-h-12'
                         }`}
                       >
-                        <p className={`text-sm text-gray-600 mt-0.5 ${
+                        <p className={`text-sm text-ink-muted mt-0.5 ${
                           expandedNotifications[notification.id] ? '' : 'notification-preview'
                         }`}>
                           {notification.type === 'stream_started' && notification.bookings?.stream_link ? (
@@ -438,7 +438,7 @@ export default function NotificationsPage() {
                         </p>
                       </div>
                       <div className="flex items-center justify-between mt-2">
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-ink-faint">
                           {format(new Date(notification.created_at), 'dd MMM yyyy', { locale: id })}
                         </p>
                         {!notification.is_read && (

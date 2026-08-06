@@ -75,16 +75,16 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
   return (
     <div className="space-y-6">
       {existingAccount && (
-        <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
+        <div className="rounded-panel border border-hairline bg-surface-tint/70 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-sm font-semibold text-ink">
                 {existingAccount.bankName}
               </p>
-              <p className="mt-0.5 font-mono text-sm text-gray-700">
+              <p className="mt-0.5 font-mono text-sm text-ink-body">
                 {existingAccount.maskedNumber}
               </p>
-              <p className="mt-0.5 truncate text-sm text-gray-600">
+              <p className="mt-0.5 truncate text-sm text-ink-muted">
                 a.n. {existingAccount.holderName}
               </p>
             </div>
@@ -112,9 +112,9 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
                 setShowForm(true);
                 setError(null);
               }}
-              className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border-2
-                border-gray-200 bg-white px-4 text-sm font-medium text-gray-700 transition-colors
-                hover:bg-gray-50"
+              className="mt-4 inline-flex h-10 items-center justify-center rounded-panel border-2
+                border-hairline-input bg-surface px-4 text-sm font-medium text-ink-body transition-colors
+                hover:bg-surface-tint"
             >
               Ganti rekening
             </button>
@@ -124,7 +124,7 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
 
       {showForm && (
         <form onSubmit={handleSubmit} className="space-y-5" noValidate>
-          <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+          <div className="rounded-panel border border-blue-100 bg-blue-50/60 p-4">
             <p className="flex items-start gap-2 text-sm text-blue-900">
               <Lock className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
@@ -135,7 +135,7 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="bank_code" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="bank_code" className="text-sm font-medium text-ink-body">
               Bank
             </Label>
             <select
@@ -144,7 +144,7 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
               value={bankCode}
               onChange={(event) => setBankCode(event.target.value)}
               autoComplete="off"
-              className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base
+              className="h-12 w-full rounded-panel border border-hairline-input bg-surface-tint px-4 text-base
                 transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-1
                 focus:ring-blue-500"
               style={{ fontSize: "16px" }}
@@ -159,7 +159,7 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="account_number" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="account_number" className="text-sm font-medium text-ink-body">
               Nomor rekening
             </Label>
             <Input
@@ -175,16 +175,16 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
               maxLength={20}
               placeholder="1234567890"
               aria-describedby="account_number-help"
-              className="h-12 rounded-xl border-gray-200 bg-gray-50/50 font-mono text-base focus:bg-white"
+              className="h-12 rounded-panel border-hairline-input bg-surface-tint/50 font-mono text-base focus:bg-surface"
               style={{ fontSize: "16px" }}
             />
-            <p id="account_number-help" className="text-xs text-gray-500">
+            <p id="account_number-help" className="text-xs text-ink-soft">
               Angka saja, tanpa spasi atau tanda hubung.
             </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="account_holder_name" className="text-sm font-medium text-gray-700">
+            <Label htmlFor="account_holder_name" className="text-sm font-medium text-ink-body">
               Nama pemilik rekening
             </Label>
             <Input
@@ -197,10 +197,10 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
               maxLength={100}
               placeholder="RIZKY PRATAMA"
               aria-describedby="account_holder_name-help"
-              className="h-12 rounded-xl border-gray-200 bg-gray-50/50 text-base focus:bg-white"
+              className="h-12 rounded-panel border-hairline-input bg-surface-tint/50 text-base focus:bg-surface"
               style={{ fontSize: "16px" }}
             />
-            <p id="account_holder_name-help" className="text-xs text-gray-500">
+            <p id="account_holder_name-help" className="text-xs text-ink-soft">
               Tulis persis seperti di buku tabungan. Nama yang tidak cocok membuat transfer
               ditolak bank.
             </p>
@@ -210,7 +210,7 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
             <p
               role="alert"
               aria-live="assertive"
-              className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
+              className="rounded-panel border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
             >
               {error}
             </p>
@@ -219,8 +219,8 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-medium
-              text-white transition-all hover:from-blue-700 hover:to-indigo-700"
+            className="h-11 w-full rounded-panel bg-brand font-medium
+              text-white transition-all"
           >
             {isSubmitting ? (
               <span className="flex items-center justify-center gap-2">
@@ -241,13 +241,13 @@ export function PayoutForm({ banks, existingAccount }: PayoutFormProps) {
                 setShowForm(false);
                 setError(null);
               }}
-              className="w-full text-center text-sm font-medium text-gray-500 transition-colors hover:text-gray-700"
+              className="w-full text-center text-sm font-medium text-ink-soft transition-colors hover:text-ink-body"
             >
               Batal
             </button>
           )}
 
-          <p className="flex items-center justify-center gap-1.5 text-center text-xs text-gray-500">
+          <p className="flex items-center justify-center gap-1.5 text-center text-xs text-ink-soft">
             <ShieldCheck className="h-3.5 w-3.5" />
             Rekening lama tetap tersimpan sebagai riwayat, tapi pencairan berikutnya memakai
             rekening ini.

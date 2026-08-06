@@ -84,8 +84,8 @@ function DayScheduleCard({
     <Card className="w-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center space-x-2">
-          <Clock className="h-4 w-4 text-gray-500" />
-          <span className="text-sm text-gray-500">Date and Time</span>
+          <Clock className="h-4 w-4 text-ink-soft" />
+          <span className="text-sm text-ink-soft">Date and Time</span>
         </div>
         <Switch
           checked={isAvailable}
@@ -97,19 +97,19 @@ function DayScheduleCard({
       <CardContent>
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label className="text-gray-500">Day</Label>
+            <Label className="text-ink-soft">Day</Label>
             <div className="flex flex-col space-y-1">
-              <div className="h-10 px-3 py-2 rounded-md border border-gray-200 bg-white">
+              <div className="h-10 px-3 py-2 rounded-md border border-hairline-input bg-surface">
                 {day}
               </div>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-ink-soft">
                 {format(date, 'MMMM d, yyyy')}
               </span>
             </div>
           </div>
           
           <div className="space-y-2">
-            <Label className="text-gray-500">From</Label>
+            <Label className="text-ink-soft">From</Label>
             <Select
               value={startTime}
               onValueChange={(value) => onTimeChange('start', value)}
@@ -129,7 +129,7 @@ function DayScheduleCard({
           </div>
 
           <div className="space-y-2">
-            <Label className="text-gray-500">To</Label>
+            <Label className="text-ink-soft">To</Label>
             <Select
               value={endTime}
               onValueChange={(value) => onTimeChange('end', value)}
@@ -393,17 +393,17 @@ export default function StreamerSchedulePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-surface-tint flex items-center justify-center">
         <div className="flex items-center space-x-2">
-          <Loader2 className="h-6 w-6 animate-spin text-gray-500" />
-          <span className="text-gray-500">Loading schedule...</span>
+          <Loader2 className="h-6 w-6 animate-spin text-ink-soft" />
+          <span className="text-ink-soft">Loading schedule...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-tint">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header with back button */}
         <div className="mb-8 flex items-center space-x-4">
@@ -415,13 +415,13 @@ export default function StreamerSchedulePage() {
           >
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-2xl font-bold text-ink">Settings</h1>
         </div>
 
         <div className="space-y-6">
           {/* Week Navigation */}
           <div className="flex justify-between items-center">
-            <span className="text-lg font-medium text-gray-900">
+            <span className="text-lg font-medium text-ink">
               {format(currentWeek, 'MMMM d')} - {format(addDays(currentWeek, 6), 'MMMM d, yyyy')}
             </span>
             <div className="flex gap-2">
@@ -469,7 +469,7 @@ export default function StreamerSchedulePage() {
           </div>
 
           {/* Save Button */}
-          <div className="flex justify-end pt-6 border-t border-gray-200">
+          <div className="flex justify-end pt-6 border-t border-hairline-input">
             <Button
               onClick={saveSchedule}
               disabled={isSaving || !hasChanges}

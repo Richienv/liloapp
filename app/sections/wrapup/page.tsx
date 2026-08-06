@@ -57,15 +57,15 @@ export default function Wrapup() {
   }, [controls, isHovered]);
 
   return (
-    <section className="py-12 md:py-24 bg-white relative overflow-hidden">
+    <section className="py-12 md:py-24 bg-surface relative overflow-hidden">
       <div className="container mx-auto px-4 md:px-6">
         <div className="max-w-[1200px] mx-auto">
           {/* Section Header */}
           <div className="text-center mb-8 md:mb-16">
-            <h2 className="text-[1.5rem] sm:text-[2rem] md:text-[3.25rem] leading-tight font-serif mb-4 md:mb-6 text-gray-900">
+            <h2 className="text-[1.5rem] sm:text-[2rem] md:text-[3.25rem] leading-tight font-serif mb-4 md:mb-6 text-ink">
               Apa kata mereka
             </h2>
-            <p className="text-sm md:text-lg text-gray-600">
+            <p className="text-sm md:text-lg text-ink-muted">
               Kita udah ngebantu mereka. Sekarang kita ingin ngebantu kamu.
             </p>
           </div>
@@ -107,7 +107,7 @@ export default function Wrapup() {
                   {doubledTestimonials.map((testimonial, index) => (
                     <div
                       key={index}
-                      className="flex-shrink-0 w-[260px] sm:w-[320px] md:w-[400px] bg-canvas rounded-2xl md:rounded-3xl p-4 md:p-6 relative z-10"
+                      className="flex-shrink-0 w-[260px] sm:w-[320px] md:w-[400px] bg-canvas rounded-frame md:rounded-3xl p-4 md:p-6 relative z-10"
                     >
                       {/* Rating */}
                       <div className="flex gap-1 mb-3 md:mb-4">
@@ -117,12 +117,12 @@ export default function Wrapup() {
                       </div>
 
                       {/* Testimonial Text */}
-                      <p className="text-gray-800 text-sm md:text-lg mb-4 md:mb-8">"{testimonial.testimonial}"</p>
+                      <p className="text-ink text-sm md:text-lg mb-4 md:mb-8">"{testimonial.testimonial}"</p>
 
                       {/* Profile */}
                       <div>
-                        <h4 className="text-gray-900 font-medium text-xs md:text-base mb-1">{testimonial.name}</h4>
-                        <p className="text-gray-500 text-[10px] md:text-sm">{testimonial.occupation}</p>
+                        <h4 className="text-ink font-medium text-xs md:text-base mb-1">{testimonial.name}</h4>
+                        <p className="text-ink-soft text-[10px] md:text-sm">{testimonial.occupation}</p>
                       </div>
                     </div>
                   ))}
@@ -135,8 +135,8 @@ export default function Wrapup() {
 
       {/* Background Decorations */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-8 md:-left-12 w-16 md:w-24 h-16 md:h-24 bg-gray-100 rounded-full blur-xl" />
-        <div className="absolute bottom-1/4 -right-8 md:-right-12 w-16 md:w-24 h-16 md:h-24 bg-gray-100 rounded-full blur-xl" />
+        <div className="absolute top-1/4 -left-8 md:-left-12 w-16 md:w-24 h-16 md:h-24 bg-surface-tint rounded-full blur-xl" />
+        <div className="absolute bottom-1/4 -right-8 md:-right-12 w-16 md:w-24 h-16 md:h-24 bg-surface-tint rounded-full blur-xl" />
       </div>
     </section>
   );

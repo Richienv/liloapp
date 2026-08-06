@@ -45,7 +45,7 @@ const STATUS_COPY: Record<
   suspended: {
     label: "Ditangguhkan",
     description: "Akun ditangguhkan sementara",
-    className: "bg-gray-100 text-gray-600 border-gray-200",
+    className: "bg-surface-tint text-ink-muted border-hairline-input",
     Icon: ShieldOff,
   },
 };

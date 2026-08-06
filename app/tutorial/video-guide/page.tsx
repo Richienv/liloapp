@@ -18,7 +18,7 @@ export const metadata: Metadata = {
 
 export default function VideoGuide() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-surface-tint">
       <div className="container max-w-3xl mx-auto px-4 py-8">
         {/* Navigation */}
         <Link href="/streamer-sign-up">
@@ -33,19 +33,19 @@ export default function VideoGuide() {
         </Link>
 
         {/* Main Content */}
-        <div className="space-y-8 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+        <div className="space-y-8 bg-surface rounded-panel p-6 border border-hairline">
           {/* Header */}
-          <div className="text-center pb-6 border-b border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          <div className="text-center pb-6 border-b border-hairline">
+            <h1 className="text-2xl font-bold text-ink mb-2">
               Cara Membuat Video Perkenalan yang Menarik
             </h1>
-            <p className="text-gray-600">
+            <p className="text-ink-muted">
               Panduan lengkap membuat video yang profesional
             </p>
           </div>
 
           {/* Why Important Section */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
+          <div className="bg-blue-50 border border-blue-100 rounded-panel p-6">
             <h2 className="text-xl font-semibold text-blue-800 mb-3">
               Mengapa Video Perkenalan Penting?
             </h2>
@@ -59,21 +59,21 @@ export default function VideoGuide() {
           {/* Steps Section */}
           <div className="grid gap-6">
             <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-xl font-semibold text-ink">
                 Langkah-langkah Membuat Video
               </h2>
 
               {/* Step Cards */}
               <div className="grid gap-4">
                 {/* Preparation */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
+                <div className="p-4 rounded-lg border border-hairline-input bg-surface">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-purple-50 rounded-lg">
                       <Video className="h-5 w-5 text-purple-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">1. Persiapan</h3>
+                    <h3 className="font-semibold text-ink">1. Persiapan</h3>
                   </div>
-                  <ul className="space-y-2 text-gray-600">
+                  <ul className="space-y-2 text-ink-muted">
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-purple-600 rounded-full"></span>
                       Siapkan script atau poin-poin yang ingin disampaikan
@@ -94,14 +94,14 @@ export default function VideoGuide() {
                 </div>
 
                 {/* Content */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
+                <div className="p-4 rounded-lg border border-hairline-input bg-surface">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-blue-50 rounded-lg">
                       <Sun className="h-5 w-5 text-blue-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">2. Konten Video</h3>
+                    <h3 className="font-semibold text-ink">2. Konten Video</h3>
                   </div>
-                  <ul className="space-y-2 text-gray-600">
+                  <ul className="space-y-2 text-ink-muted">
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
                       Perkenalkan diri kamu dengan singkat
@@ -122,14 +122,14 @@ export default function VideoGuide() {
                 </div>
 
                 {/* Technical */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
+                <div className="p-4 rounded-lg border border-hairline-input bg-surface">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-green-50 rounded-lg">
                       <Mic className="h-5 w-5 text-green-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">3. Teknis Perekaman</h3>
+                    <h3 className="font-semibold text-ink">3. Teknis Perekaman</h3>
                   </div>
-                  <ul className="space-y-2 text-gray-600">
+                  <ul className="space-y-2 text-ink-muted">
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
                       Gunakan orientasi landscape (16:9)
@@ -150,14 +150,14 @@ export default function VideoGuide() {
                 </div>
 
                 {/* Upload */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
+                <div className="p-4 rounded-lg border border-hairline-input bg-surface">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2 bg-orange-50 rounded-lg">
                       <Upload className="h-5 w-5 text-orange-600" />
                     </div>
-                    <h3 className="font-semibold text-gray-900">4. Upload ke YouTube</h3>
+                    <h3 className="font-semibold text-ink">4. Upload ke YouTube</h3>
                   </div>
-                  <ol className="space-y-2 text-gray-600 list-decimal list-inside">
+                  <ol className="space-y-2 text-ink-muted list-decimal list-inside">
                     <li>Login ke akun YouTube kamu</li>
                     <li>Klik tombol Upload (ikon kamera dengan tanda +)</li>
                     <li>Pilih "Unlisted" pada pengaturan privasi</li>
@@ -170,7 +170,7 @@ export default function VideoGuide() {
           </div>
 
           {/* Tips Section */}
-          <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-6">
+          <div className="bg-yellow-50 border border-yellow-100 rounded-panel p-6">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
                 <Star className="h-5 w-5 text-yellow-600" />

@@ -28,12 +28,12 @@ const StreamerList = dynamic(() => import("@/components/streamer-list").then(mod
 const Slider = dynamic(() => import("react-slick"), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-lg"></div>
+    <div className="w-full h-[400px] bg-surface-tint animate-pulse rounded-lg"></div>
   )
 });
 
 const AvailabilityFilter = dynamic(() => import("@/components/availability-filter").then(mod => mod.AvailabilityFilter), {
-  loading: () => <div className="w-10 h-10 bg-gray-100 animate-pulse rounded-lg"></div>
+  loading: () => <div className="w-10 h-10 bg-surface-tint animate-pulse rounded-lg"></div>
 });
 
 // Import slick carousel styles
@@ -50,7 +50,7 @@ const categories = [
   { name: 'Music', icon: Mic, color: 'bg-yellow-500' },
   { name: 'Lifestyle', icon: Coffee, color: 'bg-red-500' },
   { name: 'Digital', icon: Monitor, color: 'bg-indigo-500' },
-  { name: 'Other', icon: Sparkles, color: 'bg-gray-500' },
+  { name: 'Other', icon: Sparkles, color: 'bg-surface-tint0' },
 ];
 
 const carouselImages = [
@@ -265,7 +265,7 @@ export default function ProtectedPage() {
   return (
     <div className="w-full bg-canvas">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-[100] bg-white border-b border-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-[100] bg-surface border-b border-hairline">
         <Navbar onFilterChange={handleFilterChange} />
       </header>
 
@@ -275,7 +275,7 @@ export default function ProtectedPage() {
           <div className="max-w-[1600px] mx-auto">
             {/* Carousel */}
             <Suspense fallback={
-              <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-xl mb-6 md:mb-10" />
+              <div className="w-full h-[400px] bg-surface-tint animate-pulse rounded-panel mb-6 md:mb-10" />
             }>
               <div className="w-full mb-6 md:mb-10">
                 <Slider {...settings}>
@@ -287,7 +287,7 @@ export default function ProtectedPage() {
                         width={1200}
                         height={400}
                         objectFit="cover"
-                        className="rounded-xl w-full"
+                        className="rounded-panel w-full"
                         priority={index === 0}
                         loading={index === 0 ? "eager" : "lazy"}
                       />
@@ -299,9 +299,9 @@ export default function ProtectedPage() {
 
             {/* Category Filter */}
             <Suspense fallback={
-              <div className="h-20 bg-white border border-gray-100 rounded-xl animate-pulse mb-8" />
+              <div className="h-20 bg-surface border border-hairline rounded-panel animate-pulse mb-8" />
             }>
-              <nav className="bg-white border border-gray-100 rounded-xl mb-8 shadow-sm">
+              <nav className="bg-surface border border-hairline rounded-panel mb-8">
                 <div className="relative px-6 sm:px-8">
                   <div className="flex items-center -mx-3 overflow-x-auto scrollbar-hide py-4">
                     <div className="flex items-center gap-8 px-3">
@@ -313,18 +313,18 @@ export default function ProtectedPage() {
                         >
                           <div className={`p-2.5 rounded-lg ${
                             categoryFilter === category.name 
-                              ? 'bg-black shadow-md' 
-                              : 'bg-gray-50 hover:bg-gray-100'
+                              ? 'bg-black' 
+                              : 'bg-surface-tint hover:bg-surface-tint'
                             } transition-optimized`}
                           >
                             <category.icon className={`w-5 h-5 ${
-                              categoryFilter === category.name ? 'text-white' : 'text-gray-700'
+                              categoryFilter === category.name ? 'text-white' : 'text-ink-body'
                             }`} />
                           </div>
                           <span className={`mt-2 text-xs font-medium whitespace-nowrap ${
                             categoryFilter === category.name 
                               ? 'text-black' 
-                              : 'text-gray-600'
+                              : 'text-ink-muted'
                           }`}>
                             {category.name}
                           </span>
@@ -336,14 +336,14 @@ export default function ProtectedPage() {
                     </div>
 
                     {/* Filter Button */}
-                    <div className="pl-6 ml-6 border-l border-gray-200">
+                    <div className="pl-6 ml-6 border-l border-hairline-input">
                       <button
                         onClick={() => setIsFilterModalOpen(true)}
                         className={cn(
                           "flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-optimized",
                           hasActiveFilters(activeFilters)
                             ? "border-blue-600 bg-blue-50 text-blue-600 hover:bg-blue-100"
-                            : "border-gray-300 hover:border-gray-400"
+                            : "border-hairline-strong hover:border-hairline-strong"
                         )}
                       >
                         <svg 
@@ -386,7 +386,7 @@ export default function ProtectedPage() {
               <Suspense fallback={
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-8 gap-y-10">
                   {[...Array(10)].map((_, i) => (
-                    <div key={i} className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />
+                    <div key={i} className="h-[400px] bg-surface-tint animate-pulse rounded-lg" />
                   ))}
                 </div>
               }>
@@ -412,10 +412,10 @@ export default function ProtectedPage() {
                       height={240}
                       className="mb-8"
                     />
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    <h3 className="text-xl font-semibold text-ink mb-2">
                       No streamers found
                     </h3>
-                    <p className="text-gray-600 text-center max-w-md mb-8">
+                    <p className="text-ink-muted text-center max-w-md mb-8">
                       Maaf, kami tidak dapat menemukan streamer yang sesuai dengan filter kamu. Coba sesuaikan kriteria pencarian atau jelajahi pilihan lainnya.
                     </p>
                     <Button
@@ -457,13 +457,13 @@ function MainContentSkeleton() {
   return (
     <div className="w-full px-1 sm:px-2 lg:px-4 py-6 md:py-8">
       <div className="max-w-[1920px] mx-auto">
-        <div className="w-full h-[400px] bg-gray-100 animate-pulse rounded-lg mb-6 md:mb-10"></div>
-        <hr className="border-t border-gray-200 my-6 md:my-8" />
-        <div className="h-8 bg-gray-200 animate-pulse rounded mb-4"></div>
-        <hr className="border-t border-gray-200 my-4 md:my-5" />
+        <div className="w-full h-[400px] bg-surface-tint animate-pulse rounded-lg mb-6 md:mb-10"></div>
+        <hr className="border-t border-hairline-input my-6 md:my-8" />
+        <div className="h-8 bg-surface-deep animate-pulse rounded mb-4"></div>
+        <hr className="border-t border-hairline-input my-4 md:my-5" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-x-6 gap-y-10">
           {[...Array(10)].map((_, i) => (
-            <div key={i} className="h-[400px] bg-gray-100 animate-pulse rounded-lg" />
+            <div key={i} className="h-[400px] bg-surface-tint animate-pulse rounded-lg" />
           ))}
         </div>
       </div>
