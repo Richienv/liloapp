@@ -172,8 +172,8 @@ export async function generateMetadata({ params }: LocationPageProps): Promise<M
   const title = `Live Streamer Profesional di ${city.name} | Salda`
   const description =
     streamers.length > 0
-      ? `Temukan ${streamers.length} host live streaming profesional di ${city.name}, ${city.province}. Book live streaming Shopee & TikTok untuk tingkatkan penjualan UMKM Anda.`
-      : `Daftar host live streaming profesional di ${city.name}, ${city.province}. Book live streaming Shopee & TikTok untuk tingkatkan penjualan UMKM Anda.`
+      ? `Temukan ${streamers.length} host live streaming profesional di ${city.name}, ${city.province}. Book live streaming Shopee & TikTok untuk tingkatkan penjualan UMKM kamu.`
+      : `Daftar host live streaming profesional di ${city.name}, ${city.province}. Book live streaming Shopee & TikTok untuk tingkatkan penjualan UMKM kamu.`
 
   return {
     title,
@@ -258,7 +258,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
           </h1>
           <p className="mt-2 text-gray-600">
             {streamers.length > 0
-              ? `${streamers.length} host live streaming siap membantu meningkatkan penjualan Anda.`
+              ? `${streamers.length} host live streaming siap membantu meningkatkan penjualan kamu.`
               : `Belum ada host live streaming terverifikasi di ${city.name} saat ini.`}
           </p>
         </header>
@@ -301,7 +301,7 @@ export default async function LocationPage({ params }: LocationPageProps) {
           <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
             <p className="text-gray-600">
               Live streaming berjalan sepenuhnya online, jadi host dari kota lain tetap bisa
-              membantu penjualan Anda.
+              membantu penjualan kamu.
             </p>
             <Link
               href="/locations"

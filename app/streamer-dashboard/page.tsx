@@ -10,7 +10,7 @@ import { signOutAction, acceptBooking, rejectBooking, startStream, endStream, ac
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { format, isToday, isThisWeek, isThisMonth, parseISO, differenceInHours, addHours, parse } from 'date-fns';
+import { format, isToday, isThisWeek, isThisMonth, isSameDay, parseISO, differenceInHours, addDays, addHours, parse, startOfDay } from 'date-fns';
 import { Calendar, Clock, Monitor, DollarSign, MessageSquare, Link as LinkIcon, AlertTriangle, MapPin, Users, XCircle, Video, Settings, Loader2, Info, ExternalLink, ChevronRight, CheckCircle, Radio, Package, CheckSquare, Circle, X, ArrowRight, BadgeCheck, Store, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import {
@@ -225,8 +225,8 @@ function ItemAcceptanceModal({
               <div>
                 <p className="text-sm font-medium text-gray-900 mb-1">Penting:</p>
                 <p className="text-sm text-gray-600 leading-relaxed">
-                  Pastikan Anda telah menyimpan foto bukti penerimaan barang sebelum melanjutkan. 
-                  Foto ini diperlukan untuk dokumentasi dan perlindungan Anda sebagai streamer.
+                  Pastikan kamu telah menyimpan foto bukti penerimaan barang sebelum melanjutkan. 
+                  Foto ini diperlukan untuk dokumentasi dan perlindungan kamu sebagai streamer.
                 </p>
               </div>
             </div>
@@ -337,7 +337,7 @@ function RescheduleModal({
             <ul className="space-y-3 pl-11">
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Pengajuan reschedule akan mempengaruhi performa dan reputasi Anda sebagai streamer</span>
+                <span className="text-sm">Pengajuan reschedule akan mempengaruhi performa dan reputasi kamu sebagai streamer</span>
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
@@ -345,11 +345,11 @@ function RescheduleModal({
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Pastikan Anda memiliki alasan yang kuat sebelum mengajukan reschedule</span>
+                <span className="text-sm">Pastikan kamu memiliki alasan yang kuat sebelum mengajukan reschedule</span>
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Pengajuan reschedule yang terlalu sering dapat mempengaruhi visibilitas profil Anda</span>
+                <span className="text-sm">Pengajuan reschedule yang terlalu sering dapat mempengaruhi visibilitas profil kamu</span>
               </li>
             </ul>
           </div>
@@ -371,7 +371,7 @@ function RescheduleModal({
                     setReason(e.target.value);
                     if (error) setError('');
                   }}
-                  placeholder="Mohon jelaskan alasan Anda mengajukan reschedule..."
+                  placeholder="Mohon jelaskan alasan kamu mengajukan reschedule..."
                   className={`mt-2 w-full min-h-[100px] p-3 text-sm text-gray-900 rounded-lg border ${
                     error ? 'border-red-300 focus:ring-red-500' : 'border-gray-200 focus:ring-blue-500'
                   } focus:border-transparent focus:ring-2 bg-white resize-none`}
@@ -467,7 +467,7 @@ function StatusFlow({ status, itemsReceived }: { status: string; itemsReceived: 
               steps[index].completed && steps[index + 1].completed 
                 ? 'bg-blue-600' 
                 : steps[index].completed 
-                ? 'bg-gradient-to-r from-blue-600 to-gray-200'
+                ? 'bg-brand'
                 : 'bg-gray-200'
             }`} />
           )}
@@ -785,7 +785,7 @@ function ScheduleCard({ booking, onStreamStart, onStreamEnd, setBookings }: Sche
                   </span>
                 )}
                 {booking.voucher_usage && booking.voucher_usage.length > 0 && (
-                  <div className="text-[10px] sm:text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2 py-0.5 rounded-md">
+                  <div className="text-[10px] sm:text-xs bg-brand-tint text-brand-deep border border-brand-line px-2 py-0.5 rounded-chip font-semibold">
                     <span className="sm:hidden">V | {Math.round(booking.voucher_usage[0].discount_applied / 1000)}K</span>
                     <span className="hidden sm:inline">Voucher | Rp {booking.voucher_usage[0].discount_applied.toLocaleString()}</span>
                   </div>
@@ -1229,7 +1229,7 @@ function RejectionModal({
               <AlertTriangle className="h-5 w-5 text-yellow-600" />
               <span className="font-medium">Perhatian</span>
             </div>
-            <p>Penolakan booking akan mempengaruhi performa dan reputasi Anda sebagai streamer.</p>
+            <p>Penolakan booking akan mempengaruhi performa dan reputasi kamu sebagai streamer.</p>
           </div>
 
           <div className="space-y-2">
@@ -1356,7 +1356,7 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
             </div>
             <div className="flex items-center gap-2 mt-1">
               {booking.voucher_usage && booking.voucher_usage.length > 0 && (
-                <div className="text-[10px] sm:text-xs bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-2 py-0.5 rounded-md">
+                <div className="text-[10px] sm:text-xs bg-brand-tint text-brand-deep border border-brand-line px-2 py-0.5 rounded-chip font-semibold">
                   Voucher | Rp {booking.voucher_usage[0].discount_applied.toLocaleString()}
                 </div>
               )}
@@ -1489,13 +1489,13 @@ const getStatusColor = (status: string) => {
 const getStatusInfo = (status: string) => {
   switch (status.toLowerCase()) {
     case 'pending':
-      return 'Menunggu streamer menerima pesanan Anda. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
+      return 'Menunggu streamer menerima pesanan kamu. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
     case 'accepted':
-      return 'Pesanan Anda telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
+      return 'Pesanan kamu telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
     case 'completed':
       return 'Sesi streaming telah selesai. Terima kasih telah menggunakan layanan kami.';
     case 'rejected':
-      return 'Maaf, streamer tidak dapat menerima pesanan Anda. Silakan coba waktu lain atau streamer lainnya.';
+      return 'Maaf, streamer tidak dapat menerima pesanan kamu. Silakan coba waktu lain atau streamer lainnya.';
     case 'live':
       return 'Sesi streaming sedang berlangsung.';
     default:
@@ -2151,7 +2151,7 @@ function StartLiveModal({
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
-                <span className="text-sm">Salin dan tempel link stream dari platform Anda</span>
+                <span className="text-sm">Salin dan tempel link stream dari platform kamu</span>
               </li>
               <li className="flex items-center gap-2 text-gray-600">
                 <div className="h-1.5 w-1.5 rounded-full bg-gray-400 flex-shrink-0" />
@@ -2341,7 +2341,7 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
 // Add this new LoadingScreen component before the StreamerDashboard component
 function LoadingScreen() {
   return (
-    <div className="min-h-screen bg-[#faf9f6]">
+    <div className="min-h-screen bg-canvas">
       {/* Navbar Skeleton */}
       <div className="w-full h-16 bg-white border-b border-gray-100 px-4 flex items-center justify-between">
         <div className="w-32 h-8 bg-gray-200 animate-pulse rounded"></div>
@@ -2550,7 +2550,7 @@ function SetupTracker({
         aria-label="Progres setup host"
       >
         <div
-          className="h-full rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 transition-all duration-500"
+          className="h-full rounded-full bg-brand transition-all duration-500"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -2599,9 +2599,9 @@ function SetupTracker({
 
         <Link
           href={milestoneActionHref(current)}
-          className="mt-3 inline-flex h-10 shrink-0 items-center justify-center rounded-xl
-            bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-medium text-white
-            transition-all hover:from-blue-700 hover:to-indigo-700 sm:mt-0"
+          className="mt-3 inline-flex h-10 shrink-0 items-center justify-center rounded-lg
+            bg-brand px-4 text-copy font-semibold text-white
+            transition-colors hover:bg-brand-hover sm:mt-0"
         >
           Lanjutkan
         </Link>
@@ -2611,13 +2611,16 @@ function SetupTracker({
 }
 
 const NOTICE_PRIMARY_ACTION =
-  `inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r from-blue-600
-   to-indigo-600 px-5 font-medium text-white transition-all hover:from-blue-700
-   hover:to-indigo-700`;
+  `inline-flex h-[46px] w-[220px] items-center justify-center rounded-lg bg-brand
+   px-4 text-ui font-semibold text-white transition-colors hover:bg-brand-hover`;
 
+// Deliberately the same 168/46 geometry as the `quiet` button variant, and a
+// 1px border rather than the old 2px: these notices sit where CardActionBar
+// would if they were inside a card, so they have to match it.
 const NOTICE_SECONDARY_ACTION =
-  `inline-flex h-11 items-center justify-center rounded-xl border-2 border-gray-200 px-5
-   font-medium text-gray-700 transition-colors hover:bg-gray-50`;
+  `inline-flex h-[46px] w-[168px] items-center justify-center rounded-lg border
+   border-hairline-input bg-surface px-4 text-copy font-medium text-ink-muted
+   transition-colors hover:bg-surface-raised hover:text-ink`;
 
 /**
  * Full-page notice for the states where the dashboard has nothing to render.
@@ -2646,6 +2649,206 @@ function DashboardNotice({
           {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
         </div>
       </main>
+    </div>
+  );
+}
+
+/**
+ * The section heading used across the dashboard.
+ *
+ * Numbered, because the dashboard is a sequence and not a pile: answer
+ * requests, run today's session, get paid, keep your listing accurate. The old
+ * page gave every section the same 24px bold heading with no ordering, so a
+ * host arriving with one thing to do had to read all of them to find it.
+ */
+function SectionHeading({
+  index,
+  title,
+  description,
+  action,
+}: {
+  index: number;
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline-soft px-5 py-4">
+      <span className="numeric text-mini font-semibold tracking-normal text-ink-ghost">
+        {String(index).padStart(2, '0')}
+      </span>
+      <h2 className="font-serif text-title font-semibold text-ink">{title}</h2>
+      {description && (
+        <p className="w-full text-meta text-ink-soft sm:w-auto sm:flex-1">{description}</p>
+      )}
+      {action}
+    </div>
+  );
+}
+
+/**
+ * "Yang harus kamu lakukan sekarang" — one card, one job.
+ *
+ * The stage is derived from the data in a fixed order of urgency, so the card
+ * can only ever show one thing and it is always the most pressing one. That is
+ * the whole point: a host opening this page on their phone between sessions
+ * should not have to work out which of four sections applies to them.
+ *
+ * `live` outranks `pending` deliberately. A session happening right now is
+ * losing the host money every minute it is not started; a booking request has
+ * hours left on its clock.
+ */
+function NowCard({
+  bookings,
+  pendingCount,
+}: {
+  bookings: Booking[];
+  pendingCount: number;
+}) {
+  const now = new Date();
+
+  const live = bookings.find((booking) => {
+    if (booking.status !== 'accepted' && booking.status !== 'live') return false;
+    const start = new Date(booking.start_time);
+    const end = new Date(booking.end_time);
+    return start <= now && end >= now;
+  });
+
+  const next = bookings
+    .filter((booking) => booking.status === 'accepted' && new Date(booking.start_time) > now)
+    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())[0];
+
+  const stage = live ? 'live' : pendingCount > 0 ? 'pending' : next ? 'next' : 'clear';
+  const subject = live ?? next;
+
+  return (
+    <section className="mt-6 overflow-hidden rounded-panel border border-hairline bg-surface">
+      <div className="flex items-center gap-2 border-b border-hairline-soft px-5 py-3.5">
+        {stage === 'live' && (
+          <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-critical" />
+        )}
+        <h2 className="font-serif text-title font-semibold text-ink">
+          Yang harus kamu lakukan sekarang
+        </h2>
+      </div>
+
+      {stage === 'clear' ? (
+        <div className="px-5 py-10 text-center">
+          <p className="text-copy font-medium text-ink">Tidak ada yang menunggu jawaban</p>
+          <p className="mt-1 text-meta text-ink-soft">
+            Semua permintaan sudah kamu jawab. Kerja bagus.
+          </p>
+        </div>
+      ) : stage === 'pending' ? (
+        <div className="flex flex-wrap items-center gap-4 px-5 py-5">
+          <div className="min-w-0 flex-1">
+            <p className="text-copy font-medium text-ink">
+              {pendingCount} permintaan menunggu jawaban kamu
+            </p>
+            <p className="mt-1 text-meta text-ink-soft">
+              Brand tidak bisa membayar sampai kamu menerima. Jawab hari ini.
+            </p>
+          </div>
+          <a
+            href="#permintaan"
+            className="inline-flex h-[46px] w-[220px] shrink-0 items-center justify-center rounded-lg bg-brand text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
+          >
+            Lihat permintaan
+          </a>
+        </div>
+      ) : subject ? (
+        <div className="px-5 py-5">
+          <div className="flex flex-wrap gap-x-8 gap-y-3">
+            {[
+              { label: 'Brand', value: `${subject.client_first_name} ${subject.client_last_name}`.trim() },
+              {
+                label: 'Jam',
+                value: `${format(new Date(subject.start_time), 'HH:mm')}–${format(new Date(subject.end_time), 'HH:mm')}`,
+              },
+              { label: 'Platform', value: subject.platform },
+              { label: 'Bayaran', value: formatPrice(baseFromTotal(subject.price)) },
+            ].map((field) => (
+              <div key={field.label}>
+                <p className="text-micro tracking-normal text-ink-faint">{field.label}</p>
+                <p className="numeric mt-0.5 text-copy font-medium text-ink">{field.value}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-meta text-ink-soft">
+            {stage === 'live'
+              ? 'Sesi ini sedang berlangsung. Tempel tautan siaran kamu supaya brand bisa menonton.'
+              : `Sesi berikutnya ${format(new Date(subject.start_time), 'EEEE, d MMMM')}.`}
+          </p>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+/**
+ * Earnings over the last seven days.
+ *
+ * A bar chart rather than a single "+18%" figure: a host wants to know which
+ * days actually earn, and a percentage against last week hides a good Saturday
+ * behind a bad Tuesday. Rendered from divs — a charting library for seven
+ * numbers is weight the page does not need to carry.
+ *
+ * Bars are drawn from `Math.max(...)`, so an all-zero week produces a flat row
+ * at the floor height rather than dividing by zero and rendering NaN% tall
+ * bars, which is what an empty state has to survive.
+ */
+function EarningsBar({ bookings }: { bookings: Booking[] }) {
+  const days = useMemo(() => {
+    const today = startOfDay(new Date());
+    return Array.from({ length: 7 }, (_, i) => {
+      const day = addDays(today, i - 6);
+      const total = bookings
+        .filter((booking) => {
+          if (booking.status !== 'completed' && booking.status !== 'live') return false;
+          return isSameDay(new Date(booking.start_time), day);
+        })
+        // The stored price is what the brand paid, tax and platform fee
+        // included. What the host earns is the base underneath it, which is the
+        // number this chart has to show — anything else quotes them money that
+        // was never theirs.
+        .reduce((sum, booking) => sum + baseFromTotal(booking.price), 0);
+      return { day, total };
+    });
+  }, [bookings]);
+
+  const peak = Math.max(...days.map((d) => d.total), 0);
+  const weekTotal = days.reduce((sum, d) => sum + d.total, 0);
+
+  return (
+    <div className="px-5 py-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="numeric text-price font-semibold text-ink">{formatPrice(weekTotal)}</p>
+        <p className="text-mini text-ink-soft">7 hari terakhir</p>
+      </div>
+
+      <div className="mt-4 flex h-24 items-end gap-1.5">
+        {days.map(({ day, total }) => (
+          <div key={day.toISOString()} className="flex flex-1 flex-col items-center gap-1.5">
+            <div
+              className={cn(
+                'w-full rounded-chip transition-colors',
+                total > 0 ? 'bg-brand' : 'bg-surface-deep',
+              )}
+              style={{ height: `${peak > 0 ? Math.max((total / peak) * 100, 3) : 3}%` }}
+              title={`${format(day, 'EEEE d MMMM')}: ${formatPrice(total)}`}
+            />
+            <span className="text-micro tracking-normal text-ink-faint">
+              {format(day, 'EEEEE')}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {weekTotal === 0 && (
+        <p className="mt-3 text-meta text-ink-soft">
+          Belum ada sesi selesai minggu ini.
+        </p>
+      )}
     </div>
   );
 }
@@ -3082,47 +3285,43 @@ export default function StreamerDashboard() {
           />
         )}
 
-        {/* Schedule Sections */}
-        <div className="mt-8 space-y-8">
-          {/* Upcoming Schedule Section */}
-          <div className="bg-white rounded-lg sm:rounded-xl border border-gray-100">
-            <div className="p-3 sm:p-4 md:p-6 border-b border-gray-100">
-              <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Jadwal Live Mendatang</h2>
-              <p className="text-gray-500 text-sm mt-1">Kelola semua sesi live streaming yang telah dijadwalkan</p>
-            </div>
-            <div className="p-3 sm:p-4 md:p-6">
-              <UpcomingSchedule 
-                bookings={bookings} 
-                onStreamStart={handleStreamStart}
-                onStreamEnd={handleStreamEnd}
-                setBookings={setBookings}
-              />
-            </div>
-          </div>
+        {/* One card, one job, always the most urgent one. Above every section
+            because a host between sessions should not have to work out which
+            of four headings applies to them. */}
+        <NowCard bookings={bookings} pendingCount={pendingBookings.length} />
 
-          {/* Booking Management Section */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-sm">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-2xl font-bold text-gray-900">Manajemen Booking</h2>
-            </div>
-            <div className="p-6">
+        {/* The sections are numbered because they are a sequence, not a pile:
+            answer requests, run the sessions, see what you earned. */}
+        <div className="mt-6 space-y-3.5">
+          <section
+            id="permintaan"
+            className="overflow-hidden rounded-panel border border-hairline bg-surface"
+          >
+            <SectionHeading
+              index={1}
+              title="Permintaan yang menunggu jawaban kamu"
+              description="Brand tidak bisa membayar sampai kamu menerima."
+            />
+            <div className="p-5">
               <Tabs defaultValue="pending" className="w-full">
-                <TabsList className="flex space-x-2 p-1 bg-gray-50 rounded-xl mb-6">
-                  <TabsTrigger 
-                    value="pending" 
-                    className="flex-1 py-2.5 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+                {/* A count in a tab label is the fastest possible answer to
+                    "is there anything for me here", so both carry one. */}
+                <TabsList className="mb-5 flex gap-1 rounded-field bg-surface-tint p-1">
+                  <TabsTrigger
+                    value="pending"
+                    className="flex-1 rounded-[6px] py-2 text-copy font-medium data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-none"
                   >
-                    Booking Menunggu ({pendingBookings.length})
+                    Menunggu ({pendingBookings.length})
                   </TabsTrigger>
-                  <TabsTrigger 
+                  <TabsTrigger
                     value="rejected"
-                    className="flex-1 py-2.5 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:text-blue-600 data-[state=active]:shadow-sm"
+                    className="flex-1 rounded-[6px] py-2 text-copy font-medium data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-none"
                   >
-                    Booking Dibatalkan ({rejectedBookings.length})
+                    Ditolak ({rejectedBookings.length})
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="pending" className="space-y-4">
+                <TabsContent value="pending" className="space-y-3.5">
                   {pendingBookings.length > 0 ? (
                     [...pendingBookings]
                       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -3135,13 +3334,18 @@ export default function StreamerDashboard() {
                         />
                       ))
                   ) : (
-                    <p className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg text-sm">
-                      Tidak ada booking yang menunggu persetujuan
-                    </p>
+                    <div className="rounded-panel border border-dashed border-hairline-input px-5 py-10 text-center">
+                      <p className="text-copy font-medium text-ink">
+                        Tidak ada yang menunggu jawaban
+                      </p>
+                      <p className="mt-1 text-meta text-ink-soft">
+                        Semua permintaan sudah kamu jawab.
+                      </p>
+                    </div>
                   )}
                 </TabsContent>
 
-                <TabsContent value="rejected" className="space-y-4">
+                <TabsContent value="rejected" className="space-y-3.5">
                   {rejectedBookings.length > 0 ? (
                     [...rejectedBookings]
                       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -3154,14 +3358,39 @@ export default function StreamerDashboard() {
                         />
                       ))
                   ) : (
-                    <p className="text-center text-gray-500 py-6 bg-gray-50 rounded-lg text-sm">
-                      Tidak ada booking yang dibatalkan
-                    </p>
+                    <div className="rounded-panel border border-dashed border-hairline-input px-5 py-10 text-center">
+                      <p className="text-meta text-ink-soft">Belum ada booking yang ditolak.</p>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>
             </div>
-          </div>
+          </section>
+
+          <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
+            <SectionHeading
+              index={2}
+              title="Sesi yang sudah kamu terima"
+              description="Sesi yang sudah dijawab tidak perlu kamu buka lagi."
+            />
+            <div className="p-5">
+              <UpcomingSchedule
+                bookings={bookings}
+                onStreamStart={handleStreamStart}
+                onStreamEnd={handleStreamEnd}
+                setBookings={setBookings}
+              />
+            </div>
+          </section>
+
+          <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
+            <SectionHeading
+              index={3}
+              title="Pendapatan kamu"
+              description="Yang kamu terima, sebelum Salda menambah 30% ke harga brand."
+            />
+            <EarningsBar bookings={bookings} />
+          </section>
         </div>
       </div>
     </div>

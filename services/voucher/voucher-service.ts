@@ -1,12 +1,32 @@
 import { createClient } from "@/utils/supabase/client";
-import { PostgrestError } from "@supabase/supabase-js";
+
+/**
+ * Read-only, and deliberately so.
+ *
+ * Checkout has to be able to check a code the moment someone types it, so this
+ * runs in the browser with the anon key and `public.vouchers` grants `select` to
+ * anon and authenticated (see
+ * supabase/migrations/20260806100000_lock_down_vouchers.sql). What that table no
+ * longer grants is any kind of write: creating a voucher is an admin server
+ * action, and recording a redemption happens server-side in
+ * services/payment/payment-service.ts with the service-role client.
+ *
+ * This module used to also export `trackVoucherUsage`, which inserted into
+ * `voucher_usage` and decremented `vouchers.remaining_quantity` from the
+ * browser. Nothing called it — the live redemption path has been the server-side
+ * one for some time — and keeping a client-callable writer against the tables
+ * that decide how much money changes hands is a liability with no upside, so it
+ * is gone rather than ported.
+ *
+ * Note that the result below is advisory. It drives what the user sees; it does
+ * not decide what they are charged. app/api/payments/create re-reads the voucher
+ * server-side and recomputes the discount before any amount reaches Midtrans.
+ */
 
 export interface Voucher {
   id: string;
   code: string;
-  description: string;
   discount_amount: number;
-  total_quantity: number;
   remaining_quantity: number;
   is_active: boolean;
   expires_at: string;
@@ -22,15 +42,23 @@ export interface VoucherValidationResult {
 export const voucherService = {
   async validateVoucher(code: string, bookingAmount: number): Promise<VoucherValidationResult> {
     const supabase = createClient();
-    
+
     try {
-      // Get voucher details
+      // Only the columns validation actually needs. The row is readable by
+      // anyone with the anon key, so there is no reason to pull the rest of it
+      // across the wire.
+      //
+      // maybeSingle, not single: a code that matches nothing — because it is
+      // mistyped, or because it is switched off and therefore invisible under
+      // the select policy — is an ordinary "not found", not a failure. With
+      // `single()` it raised PGRST116 and fell into the catch below, so the user
+      // got "terjadi kesalahan" for what is really a wrong code.
       const { data: voucher, error } = await supabase
         .from('vouchers')
-        .select('*')
-        .eq('code', code.toUpperCase())
+        .select('id, code, discount_amount, remaining_quantity, is_active, expires_at')
+        .eq('code', code.trim().toUpperCase())
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       if (!voucher) return { isValid: false, error: 'Voucher tidak ditemukan' };
@@ -57,76 +85,5 @@ export const voucherService = {
       console.error('Error validating voucher:', error);
       return { isValid: false, error: 'Terjadi kesalahan saat validasi voucher' };
     }
-  },
-
-  async trackVoucherUsage(
-    voucherId: string, 
-    bookingId: number, 
-    userId: string, 
-    discountApplied: number, 
-    originalPrice: number, 
-    finalPrice: number
-  ): Promise<boolean> {
-    const supabase = createClient();
-
-    try {
-      // Begin transaction-like operations
-      // 1. First create the usage record
-      const { error: usageError } = await supabase
-        .from('voucher_usage')
-        .insert({
-          voucher_id: voucherId,
-          booking_id: bookingId,
-          user_id: userId,
-          discount_applied: discountApplied,
-          original_price: originalPrice,
-          final_price: finalPrice
-        });
-
-      if (usageError) throw usageError;
-
-      // 2. Then update the voucher quantity directly
-      const { error: updateError } = await supabase
-        .rpc('decrement_voucher_quantity_safe', {
-          p_voucher_id: voucherId
-        });
-
-      if (updateError) throw updateError;
-
-      // 3. Verify the update
-      const { data: updatedVoucher, error: verifyError } = await supabase
-        .from('vouchers')
-        .select('remaining_quantity, total_quantity')
-        .eq('id', voucherId)
-        .single();
-
-      if (verifyError) throw verifyError;
-
-      // If quantity wasn't decremented, rollback by deleting the usage record
-      if (!updatedVoucher || updatedVoucher.remaining_quantity >= updatedVoucher.total_quantity) {
-        await supabase
-          .from('voucher_usage')
-          .delete()
-          .eq('voucher_id', voucherId)
-          .eq('booking_id', bookingId);
-        
-        throw new Error('Failed to decrement voucher quantity');
-      }
-
-      return true;
-    } catch (error) {
-      console.error('Error tracking voucher usage:', error);
-      // Attempt to rollback if there's an error
-      try {
-        await supabase
-          .from('voucher_usage')
-          .delete()
-          .eq('voucher_id', voucherId)
-          .eq('booking_id', bookingId);
-      } catch (rollbackError) {
-        console.error('Rollback failed:', rollbackError);
-      }
-      return false;
-    }
   }
-}; 
+};

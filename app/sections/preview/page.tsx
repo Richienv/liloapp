@@ -21,10 +21,10 @@ export default function Preview() {
             </h2>
             <div className="max-w-2xl mx-auto px-3 sm:px-4">
               <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed sm:leading-relaxed md:leading-relaxed font-light">
-                Salda adalah platform yang menyediakan jasa host live streaming terpercaya untuk jualan di TikTok dan Shopee Live. Dibuat oleh <span className="font-medium">TROLIVE</span>, Salda memudahkan Anda mencari host berpengalaman dengan sistem booking per jam.
+                Salda adalah platform yang menyediakan jasa host live streaming terpercaya untuk jualan di TikTok dan Shopee Live. Dibuat oleh <span className="font-medium">TROLIVE</span>, Salda memudahkan kamu mencari host berpengalaman dengan sistem booking per jam.
               </p>
               <p className="text-sm sm:text-base md:text-lg text-gray-600 leading-relaxed sm:leading-relaxed md:leading-relaxed font-light mt-3 sm:mt-4">
-                Semua host sudah terlatih dan terbukti bisa meningkatkan penjualan online Anda. Tanpa ribet, tanpa kontrak panjang, langsung bisa mulai dari 1 jam saja!
+                Semua host sudah terlatih dan terbukti bisa meningkatkan penjualan online kamu. Tanpa ribet, tanpa kontrak panjang, langsung bisa mulai dari 1 jam saja!
               </p>
             </div>
           </motion.div>
@@ -37,7 +37,7 @@ export default function Preview() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="group bg-[#faf9f4] rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
+              className="group bg-canvas rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="aspect-[4/3] sm:aspect-square relative p-4 sm:p-6">
                 <Image
@@ -61,7 +61,7 @@ export default function Preview() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              className="group bg-[#faf9f4] rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
+              className="group bg-canvas rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="aspect-[4/3] sm:aspect-square relative p-4 sm:p-6">
                 <Image
@@ -85,7 +85,7 @@ export default function Preview() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.3 }}
-              className="group bg-[#faf9f4] rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
+              className="group bg-canvas rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="aspect-[4/3] sm:aspect-square relative p-4 sm:p-6">
                 <Image
@@ -109,7 +109,7 @@ export default function Preview() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.4 }}
-              className="group bg-[#faf9f4] rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
+              className="group bg-canvas rounded-xl sm:rounded-2xl border border-black/[0.08] overflow-hidden hover:shadow-lg transition-all duration-300"
             >
               <div className="aspect-[4/3] sm:aspect-square relative p-4 sm:p-6">
                 <Image

@@ -139,10 +139,15 @@ async function resolveWriter(
 ): Promise<{ db: SupabaseClient; userId: string | null } | null> {
   const service: SupabaseClient | null = createAdminClient();
 
-  if (explicitUserId && service) {
-    // Nothing to look up: no cookies() call, so this also works from contexts
-    // that have no request scope.
-    return { db: service, userId: explicitUserId };
+  if (explicitUserId) {
+    // Nothing to look up. With the service key this needs no cookies() call at
+    // all, so it also works from contexts that have no request scope. Without
+    // it we still skip `getUser()`: that is a network round trip to the auth
+    // server whose answer we would immediately discard in favour of the id the
+    // caller passed, and it sits on the signup path. The session client can only
+    // insert this caller's own events; anything else is refused by RLS, which is
+    // the correct outcome for a telemetry write.
+    return { db: service ?? createClient(), userId: explicitUserId };
   }
 
   const session: SupabaseClient = createClient();
@@ -150,7 +155,8 @@ async function resolveWriter(
     data: { user },
   } = await session.auth.getUser();
 
-  const userId = explicitUserId ?? user?.id ?? null;
+  // `explicitUserId` is handled above, so the caller is the only candidate here.
+  const userId = user?.id ?? null;
 
   // No service key and nobody signed in: the insert could only be refused.
   if (!service && !userId) return null;

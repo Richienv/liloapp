@@ -172,7 +172,12 @@ export default async function FunnelPage({
       // Null on the first row and whenever the previous stage is empty: a
       // conversion rate with no denominator is not 0%, it is unknown.
       conversion: index === 0 || previous === 0 ? null : users / previous,
-      share: first === 0 ? 0 : Math.min(1, users / first),
+      // Same rule for the share of signups. Nobody entering the funnel in this
+      // window is not "0% got here" — it is a stage with nothing to divide by,
+      // and rendering it as 0% invites an admin to go and fix a step that has
+      // no data behind it at all. It happens routinely: pick a 7-day window and
+      // every host in it signed up last month.
+      share: first === 0 ? null : Math.min(1, users / first),
     };
   });
 
@@ -186,6 +191,8 @@ export default async function FunnelPage({
 
   const rejected = countFor(REJECTED_STAGE.event);
   const hasData = rows.length > 0;
+  /** The stage the summary card reports on: how many walked the whole thing. */
+  const finalStage = stages[stages.length - 1];
 
   return (
     <div className="p-8">
@@ -253,14 +260,14 @@ export default async function FunnelPage({
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <p className="text-sm font-medium text-gray-600">Selesai sampai akhir</p>
           <p className="mt-1 text-2xl font-semibold text-gray-900">
-            {stages[stages.length - 1].users.toLocaleString("id-ID")}
+            {finalStage.users.toLocaleString("id-ID")}
             <span className="ml-2 text-sm font-normal text-gray-500">
-              ({formatPercent(stages[stages.length - 1].share)})
+              {finalStage.share === null
+                ? "(belum ada data)"
+                : `(${formatPercent(finalStage.share)})`}
             </span>
           </p>
-          <p className="mt-1 text-xs text-gray-500">
-            {stages[stages.length - 1].label}
-          </p>
+          <p className="mt-1 text-xs text-gray-500">{finalStage.label}</p>
         </div>
         <div className="rounded-xl border border-gray-200 bg-white p-6">
           <div className="flex items-center justify-between">
@@ -343,17 +350,27 @@ export default async function FunnelPage({
                     )}
                   </TableCell>
                   <TableCell>
-                    {/* Deliberately a plain div, not a chart library: one bar
-                        per row, width = share of the first stage. */}
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
-                      <div
-                        className="h-full rounded-full bg-[#0066FF]"
-                        style={{ width: `${Math.round(stage.share * 100)}%` }}
-                      />
-                    </div>
-                    <div className="mt-1 text-xs text-gray-500">
-                      {formatPercent(stage.share)}
-                    </div>
+                    {stage.share === null ? (
+                      // No signups in this window to divide by. An empty bar
+                      // labelled "0%" would read as a stage everybody skipped.
+                      <span className="text-sm text-gray-400">
+                        Belum ada data
+                      </span>
+                    ) : (
+                      <>
+                        {/* Deliberately a plain div, not a chart library: one
+                            bar per row, width = share of the first stage. */}
+                        <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+                          <div
+                            className="h-full rounded-full bg-[#0066FF]"
+                            style={{ width: `${Math.round(stage.share * 100)}%` }}
+                          />
+                        </div>
+                        <div className="mt-1 text-xs text-gray-500">
+                          {formatPercent(stage.share)}
+                        </div>
+                      </>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}

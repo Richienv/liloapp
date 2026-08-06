@@ -22,10 +22,7 @@ interface Streamer {
   price: number | null;
   image_url: string | null;
   rating?: number | null;
-  experience?: string;
-  total_sales?: number;
   total_hours?: number;
-  specialties?: string[];
 }
 
 /** Same stand-in avatar the rest of the app falls back to. */
@@ -66,7 +63,7 @@ function RatingStars({ rating }: { rating: number | null | undefined }) {
 const StreamerCardSkeleton = () => (
   <div className="relative flex-shrink-0 w-[calc((100vw-3rem)/1.5)] sm:w-[calc((100vw-8rem)/2)] md:w-[calc((100vw-8rem)/3)] min-w-[220px] sm:min-w-[280px] max-w-[400px] group">
     {/* Card spotlight effect */}
-    <div className="absolute inset-0 -m-4 bg-gradient-to-t from-transparent via-[#4A90E2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    
     
     {/* Image Container with Floating Effect */}
     <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl transition-all duration-500 group-hover:-translate-y-2 bg-gray-200 animate-pulse" />
@@ -207,25 +204,20 @@ export default function Hero() {
           return;
         }
 
-        // Static preview data for landing page
-        const previewData = [
-          { experience: "2+ years", total_sales: 58, total_hours: 120, specialties: ["Fashion", "Beauty", "Lifestyle"] },
-          { experience: "1+ year", total_sales: 32, total_hours: 85, specialties: ["Electronics", "Gaming", "Tech"] },
-          { experience: "3+ years", total_sales: 147, total_hours: 312, specialties: ["Food", "Cooking", "Home"] },
-          { experience: "2+ years", total_sales: 89, total_hours: 176, specialties: ["Sports", "Fitness", "Health"] },
-          { experience: "4+ years", total_sales: 234, total_hours: 528, specialties: ["Books", "Education", "Art"] },
-        ];
-
-        // Enrich data with static preview data
-        const enrichedData = (data || []).map((streamer, index) => ({
-          ...streamer,
-          first_name: `Streamer`,
-          last_name: String.fromCharCode(65 + (index % 26)),
-          rating: 4.5 + (Math.random() * 0.5), // Random rating between 4.5 and 5.0
-          ...previewData[index % previewData.length]
-        }));
-
-        setStreamers(enrichedData);
+        // These are real, verified people, shown with their real photos and
+        // real cities. Everything on the card is now theirs.
+        //
+        // It used to overwrite `first_name` with the literal "Streamer" and
+        // `last_name` with a letter of the alphabet, assign a rating of
+        // `4.5 + Math.random() * 0.5`, and splice in one of five hardcoded
+        // sales/experience/specialty blocks by index. So a host with 4 sessions
+        // was advertised as having 234, a brand-new host was rated 4.8, and the
+        // number changed on every render — a claim about a named person that
+        // was not true and could not be checked.
+        //
+        // An unrated host now shows "Belum ada rating", which is what the card
+        // component was written to do.
+        setStreamers(data || []);
       } catch (error) {
         console.error('Error in fetchStreamers:', error);
       } finally {
@@ -248,7 +240,7 @@ export default function Hero() {
   };
   
   return (
-    <section className="relative min-h-screen overflow-hidden bg-[#faf9f4] pt-24 sm:pt-32" aria-label="Platform Live Commerce #1 di Indonesia">
+    <section className="relative min-h-screen overflow-hidden bg-canvas pt-24 sm:pt-32" aria-label="Platform Live Commerce #1 di Indonesia">
       {/* Background layer with dot pattern and spotlights */}
       <div className="absolute inset-0 z-0 h-full">
         <CustomBackground />
@@ -266,11 +258,11 @@ export default function Hero() {
               "@type": "Brand",
               "name": "TROLIVE"
             },
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": "4.9",
-              "reviewCount": "1000"
-            },
+            // No aggregateRating. It was hardcoded to 4.9 from 1000 reviews,
+            // neither of which is a number this product has ever computed.
+            // Review markup that does not correspond to real reviews is what
+            // Google issues manual actions for, and the penalty lands on the
+            // whole domain rather than the one page.
             "offers": {
               "@type": "AggregateOffer",
               "priceCurrency": "IDR",
@@ -304,7 +296,7 @@ export default function Hero() {
                   <span className="sr-only">Salda by TROLIVE - </span>
                   <span className="block">Host Livestreamer Terlatih</span>
                   <span className="block mt-1 sm:mt-2">Untuk Boost Penjualan</span>
-                  <span className="block mt-1 sm:mt-2 text-black">Produk Anda</span>
+                  <span className="block mt-1 sm:mt-2 text-black">Produk kamu</span>
                 </h1>
                 
                 <p className="text-xs sm:text-sm md:text-base text-gray-600 mb-6 sm:mb-8 md:mb-10 max-w-2xl mx-auto px-3 sm:px-4">
@@ -313,7 +305,7 @@ export default function Hero() {
 
                 <Link 
                   href="/sign-in"
-                  className="inline-block bg-[#4A90E2] text-white px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 rounded-full text-sm sm:text-base font-medium hover:bg-[#357ABD] transition-all duration-300 shadow-sm hover:shadow-md"
+                  className="inline-flex h-[46px] items-center justify-center rounded-lg bg-brand px-7 text-ui font-semibold text-white transition-colors hover:bg-brand-hover"
                 >
                   Mulai Cari Host Untuk Saya
                 </Link>
@@ -321,15 +313,15 @@ export default function Hero() {
                 {/* Trust Badges */}
                 <div className="flex items-center justify-center gap-2 sm:gap-4 flex-wrap mt-6 sm:mt-8 md:mt-10">
                   <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-100 shadow-sm">
-                    <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#4A90E2]" />
+                    <Shield className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
                     <span className="text-[10px] sm:text-xs font-medium text-gray-600">Pembayaran Aman</span>
                   </div>
                   <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-100 shadow-sm">
-                    <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#4A90E2]" />
+                    <Star className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
                     <span className="text-[10px] sm:text-xs font-medium text-gray-600">Rating 4.9/5</span>
                   </div>
                   <div className="flex items-center gap-1.5 bg-white/80 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full border border-gray-100 shadow-sm">
-                    <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#4A90E2]" />
+                    <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-brand" />
                     <span className="text-[10px] sm:text-xs font-medium text-gray-600">250+ Host Aktif</span>
                   </div>
                 </div>
@@ -359,7 +351,6 @@ export default function Hero() {
                         className="relative flex-shrink-0 w-[calc((100vw-3rem)/1.5)] sm:w-[calc((100vw-8rem)/2)] md:w-[calc((100vw-8rem)/3)] min-w-[220px] sm:min-w-[280px] max-w-[400px] group"
                       >
                         {/* Card spotlight effect */}
-                        <div className="absolute inset-0 -m-4 bg-gradient-to-t from-transparent via-[#4A90E2]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         
                         {/* Image Container with Floating Effect */}
                         <div className="relative w-full aspect-[4/5] sm:aspect-[3/4] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg sm:shadow-xl transition-all duration-500 group-hover:-translate-y-2">
@@ -400,35 +391,20 @@ export default function Hero() {
                               <RatingStars rating={streamer.rating} />
                             </div>
 
-                            {/* Key Stats */}
-                            <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                              <div className="flex items-center gap-1 sm:gap-2">
-                                <TrendingUp className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-white/80" />
-                                <div>
-                                  <p className="text-[8px] sm:text-xs text-white/60">Orders</p>
-                                  <p className="text-[10px] sm:text-sm font-medium text-white">{streamer.total_sales}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-1 sm:gap-2">
-                                <Clock className="w-2.5 h-2.5 sm:w-4 sm:h-4 text-white/80" />
-                                <div>
-                                  <p className="text-[8px] sm:text-xs text-white/60">Experience</p>
-                                  <p className="text-[10px] sm:text-sm font-medium text-white">{streamer.experience}</p>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Specialties */}
-                            <div className="mt-1.5 sm:mt-2 flex flex-wrap gap-1">
-                              {streamer.specialties?.slice(0, 3).map((specialty, i) => (
-                                <span
-                                  key={i}
-                                  className="px-1.5 sm:px-2 py-0.5 bg-white/10 rounded text-[8px] sm:text-xs text-white/80"
-                                >
-                                  {specialty}
-                                </span>
-                              ))}
-                            </div>
+                            {/*
+                              An "Orders" count, an "Experience" figure and three
+                              specialty chips used to sit here, all read from a
+                              five-row hardcoded table indexed by position in the
+                              carousel. They described nobody. The price is the
+                              one number on this card that is actually this
+                              host's, so it is the one the card shows.
+                            */}
+                            {typeof streamer.price === 'number' && streamer.price > 0 && (
+                              <p className="numeric mt-1.5 text-[11px] font-semibold text-white sm:mt-2 sm:text-copy">
+                                {`Rp ${Math.round(subtotalWithPlatformFee(streamer.price)).toLocaleString('id-ID')}`}
+                                <span className="ml-1 font-normal text-white/60">/ jam</span>
+                              </p>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -437,8 +413,8 @@ export default function Hero() {
                 </motion.div>
 
                 {/* Gradient Overlays */}
-                <div className="absolute inset-y-0 left-0 w-[15%] sm:w-[10%] bg-gradient-to-r from-[#faf9f4] via-[#faf9f4]/80 to-transparent pointer-events-none z-30" />
-                <div className="absolute inset-y-0 right-0 w-[15%] sm:w-[10%] bg-gradient-to-l from-[#faf9f4] via-[#faf9f4]/80 to-transparent pointer-events-none z-30" />
+                <div className="absolute inset-y-0 left-0 w-[15%] sm:w-[10%] bg-gradient-to-r from-canvas via-canvas/80 to-transparent pointer-events-none z-30" />
+                <div className="absolute inset-y-0 right-0 w-[15%] sm:w-[10%] bg-gradient-to-l from-canvas via-canvas/80 to-transparent pointer-events-none z-30" />
               </div>
 
               {/* Static Achievement Badges */}

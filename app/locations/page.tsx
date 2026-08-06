@@ -110,8 +110,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const description =
     entries.length > 0
-      ? `${total} host live streaming profesional tersebar di ${entries.length} kota di Indonesia. Pilih kota Anda dan book host untuk Shopee Live & TikTok Live.`
-      : 'Daftar kota dengan host live streaming profesional di Indonesia. Pilih kota Anda dan book host untuk Shopee Live & TikTok Live.'
+      ? `${total} host live streaming profesional tersebar di ${entries.length} kota di Indonesia. Pilih kota kamu dan book host untuk Shopee Live & TikTok Live.`
+      : 'Daftar kota dengan host live streaming profesional di Indonesia. Pilih kota kamu dan book host untuk Shopee Live & TikTok Live.'
 
   return {
     title: 'Live Streamer Profesional per Kota di Indonesia | Salda',
@@ -167,12 +167,12 @@ export default async function LocationsPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-gray-600">
             {entries.length > 0
-              ? `${total} host live streaming terverifikasi tersebar di ${entries.length} kota. Pilih kota Anda untuk melihat host yang tersedia.`
+              ? `${total} host live streaming terverifikasi tersebar di ${entries.length} kota. Pilih kota kamu untuk melihat host yang tersedia.`
               : 'Belum ada host live streaming terverifikasi yang bisa ditampilkan saat ini.'}
           </p>
           <p className="mt-2 max-w-2xl text-sm text-gray-500">
             Live streaming berjalan sepenuhnya online. Kota hanya memengaruhi lama pengiriman
-            produk Anda ke host, bukan kualitas siarannya — jadi Anda tetap bebas memilih host
+            produk kamu ke host, bukan kualitas siarannya — jadi kamu tetap bebas memilih host
             dari kota mana pun.
           </p>
         </header>

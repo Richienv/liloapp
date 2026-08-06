@@ -42,7 +42,7 @@ export default function Home() {
   }, []);
 
   return (
-    <main className="flex flex-col min-h-screen bg-white w-full">
+    <main className="flex w-full min-h-screen flex-col bg-canvas">
       <Navbar />
       <Hero />
       <Preview />

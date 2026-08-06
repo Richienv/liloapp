@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { createAdminClient } from "@/utils/supabase/admin";
+import { ONBOARDING_EVENTS, trackEvent } from "@/lib/analytics";
 
 /**
  * Write path for streamer KYC.
@@ -128,6 +129,9 @@ export async function submitStreamerVerification(
   const stamp = Date.now();
   const uploadedPaths: string[] = [];
   const columns: Partial<Record<DocumentSpec["column"], string>> = {};
+  // Recorded for the funnel: a first submission and a host replacing a blurry
+  // KTP photo are the same row but very different events to read.
+  let isResubmission = false;
 
   try {
     for (const { spec, file } of pending) {
@@ -156,6 +160,8 @@ export async function submitStreamerVerification(
       .eq("streamer_id", streamer.id)
       .eq("status", "pending")
       .maybeSingle();
+
+    isResubmission = Boolean(existing);
 
     const payload = {
       streamer_id: streamer.id,
@@ -211,6 +217,19 @@ export async function submitStreamerVerification(
       error: error instanceof Error ? error.message : "Terjadi kesalahan. Silakan coba lagi.",
     };
   }
+
+  // Logged only past the rollback, so a submission whose documents were unwound
+  // never counts as one that reached the queue. Ids and one boolean: the
+  // platform handle the host typed and the document paths stay out of it —
+  // those paths point into a private bucket holding identity documents, and an
+  // analytics table read in aggregate is the last place they belong.
+  await trackEvent(
+    ONBOARDING_EVENTS.VERIFICATION_SUBMITTED,
+    { streamer_id: streamer.id, resubmission: isResubmission },
+    // The session was already resolved above; passing the id spares analytics a
+    // second round trip to the auth server.
+    user.id,
+  );
 
   revalidatePath("/streamer-verification");
   return { success: true };

@@ -19,7 +19,7 @@ export default function FAQ() {
     },
     {
       question: "Berapa biaya untuk menggunakan layanan Salda?",
-      answer: "Biaya layanan Salda bervariasi tergantung paket yang dipilih. Kami menerapkan sistem komisi berdasarkan performa penjualan, sehingga Anda hanya membayar ketika berhasil melakukan penjualan. Hubungi tim kami untuk informasi pricing yang lebih detail."
+      answer: "Biaya layanan Salda bervariasi tergantung paket yang dipilih. Kami menerapkan sistem komisi berdasarkan performa penjualan, sehingga kamu hanya membayar ketika berhasil melakukan penjualan. Hubungi tim kami untuk informasi pricing yang lebih detail."
     },
     {
       question: "Bagaimana proses verifikasi livestreamer di Salda?",
@@ -55,7 +55,7 @@ export default function FAQ() {
           <div className="text-center mb-8 sm:mb-12 md:mb-16">
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif mb-4 sm:mb-6 tracking-[-0.02em]">
               Pertanyaan yang Sering{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1e40af] to-[#6b21a8]">
+              <span className="text-brand">
                 Ditanyakan
               </span>
             </h2>
@@ -124,8 +124,8 @@ export default function FAQ() {
 
       {/* Background Decorations */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-        <div className="absolute top-1/4 -left-12 w-24 h-24 bg-gradient-to-r from-[#1e40af] to-[#6b21a8] rounded-full opacity-[0.03] blur-2xl" />
-        <div className="absolute bottom-1/4 -right-12 w-24 h-24 bg-gradient-to-r from-[#6b21a8] to-[#1e40af] rounded-full opacity-[0.03] blur-2xl" />
+        
+        
       </div>
     </section>
   );

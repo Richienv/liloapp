@@ -195,7 +195,7 @@ export default function MessagesPage() {
               </h3>
               <div className="space-y-3 sm:space-y-4 max-w-[95%] mx-auto">
                 <p className="text-sm sm:text-base text-gray-600">
-                  Untuk melindungi pengguna dan streamer dari penipuan, Anda tidak dapat membagikan informasi pribadi di platform Salda.
+                  Untuk melindungi pengguna dan streamer dari penipuan, kamu tidak dapat membagikan informasi pribadi di platform Salda.
                 </p>
                 <div className="bg-red-50 p-3 sm:p-4 rounded-lg border border-red-100">
                   <p className="text-sm sm:text-base font-medium text-red-600 whitespace-normal">

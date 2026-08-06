@@ -50,8 +50,8 @@ export default function VideoGuide() {
               Mengapa Video Perkenalan Penting?
             </h2>
             <p className="text-blue-700">
-              Video perkenalan adalah kesempatan pertama Anda untuk menunjukkan profesionalisme dan 
-              kemampuan Anda kepada brand. Video yang berkualitas akan meningkatkan peluang Anda 
+              Video perkenalan adalah kesempatan pertama kamu untuk menunjukkan profesionalisme dan 
+              kemampuan kamu kepada brand. Video yang berkualitas akan meningkatkan peluang kamu 
               untuk dipilih oleh brand.
             </p>
           </div>
@@ -104,19 +104,19 @@ export default function VideoGuide() {
                   <ul className="space-y-2 text-gray-600">
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Perkenalkan diri Anda dengan singkat
+                      Perkenalkan diri kamu dengan singkat
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Jelaskan pengalaman live streaming Anda
+                      Jelaskan pengalaman live streaming kamu
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Tunjukkan contoh cara Anda mempromosikan produk
+                      Tunjukkan contoh cara kamu mempromosikan produk
                     </li>
                     <li className="flex items-center gap-2">
                       <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Sebutkan kategori produk yang Anda kuasai
+                      Sebutkan kategori produk yang kamu kuasai
                     </li>
                   </ul>
                 </div>
@@ -158,10 +158,10 @@ export default function VideoGuide() {
                     <h3 className="font-semibold text-gray-900">4. Upload ke YouTube</h3>
                   </div>
                   <ol className="space-y-2 text-gray-600 list-decimal list-inside">
-                    <li>Login ke akun YouTube Anda</li>
+                    <li>Login ke akun YouTube kamu</li>
                     <li>Klik tombol Upload (ikon kamera dengan tanda +)</li>
                     <li>Pilih "Unlisted" pada pengaturan privasi</li>
-                    <li>Isi judul: "Video Perkenalan [Nama Anda] - Lilo Host"</li>
+                    <li>Isi judul: "Video Perkenalan [Nama kamu] - Lilo Host"</li>
                     <li>Setelah selesai upload, klik "SHARE" dan copy link-nya</li>
                   </ol>
                 </div>
@@ -188,7 +188,7 @@ export default function VideoGuide() {
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>
-                Tunjukkan kepribadian Anda yang natural
+                Tunjukkan kepribadian kamu yang natural
               </li>
               <li className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>

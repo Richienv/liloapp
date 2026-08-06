@@ -13,6 +13,7 @@ import {
   type PublishableProfile,
 } from "@/lib/milestones";
 import { USERNAME_MAX, validateUsername, withSuffix } from "@/lib/username";
+import { ONBOARDING_EVENTS, trackEvent } from "@/lib/analytics";
 
 /**
  * Write path for the three-milestone streamer setup.
@@ -469,7 +470,14 @@ export async function saveStreamerProfile(
     ...payload,
   } as PublishableProfile;
 
-  if (isProfilePublishable(nextProfile) && !streamer?.profile_published_at) {
+  // Also the funnel's definition of this stage: "the save on which the profile
+  // first became publishable". Logging every successful save instead would let
+  // one host editing their bio on a Tuesday keep inflating the stage forever,
+  // which is exactly the reading that makes a funnel useless.
+  const justPublished =
+    isProfilePublishable(nextProfile) && !streamer?.profile_published_at;
+
+  if (justPublished) {
     payload.profile_published_at = new Date().toISOString();
   }
 
@@ -530,6 +538,21 @@ export async function saveStreamerProfile(
 
     console.error("Streamer setup: profile write failed", writeError);
     return { success: false, error: "Gagal menyimpan profil. Coba lagi sebentar lagi." };
+  }
+
+  // Logged after the write, so the event and `profile_published_at` can never
+  // disagree about whether the profile actually went live. Only the streamer id
+  // travels with it — a bio, a username and an address are all things this
+  // table must never hold.
+  if (justPublished) {
+    await trackEvent(
+      ONBOARDING_EVENTS.PROFILE_PUBLISHED,
+      { streamer_id: streamerId ?? undefined },
+      // Passed rather than looked up: `requireStreamerContext` already resolved
+      // the session, and letting analytics re-resolve it costs a round trip to
+      // the auth server on a path the host is waiting on.
+      user.id,
+    );
   }
 
   // ---- A published profile must come with a calendar. ----
@@ -696,9 +719,60 @@ export async function saveStreamerPayoutAccount(
     return { success: false, error: "Gagal menyimpan rekening. Coba lagi sebentar lagi." };
   }
 
+  // Last stage of the funnel, logged only once the account is actually the
+  // primary one — the rollback above means a half-saved account never counts.
+  // `bank_code` is one of twelve fixed values and says something useful about
+  // who our hosts bank with; the account number and the holder's name are
+  // exactly the kind of thing that must never leave the payouts table.
+  await trackEvent(
+    ONBOARDING_EVENTS.PAYOUT_ACCOUNT_ADDED,
+    { streamer_id: streamer.id, bank_code: bank.code },
+    user.id,
+  );
+
   revalidatePath("/streamer-setup");
   revalidatePath("/streamer-setup/rekening");
   revalidatePath("/streamer-dashboard");
 
   return { success: true };
+}
+
+// ---------------------------------------------------------------------------
+// Funnel: the host opened milestone 1
+// ---------------------------------------------------------------------------
+
+/**
+ * Record that a host opened the profile step.
+ *
+ * This is the one funnel stage with no write of its own to hang off: publishing
+ * a profile is a save, but *starting* one is only a page view, and the gap
+ * between the two is the whole question the funnel exists to answer — a host who
+ * opens /streamer-setup/profil, sees eight fields and closes the tab is
+ * invisible without it.
+ *
+ * Exported as an async function for the same reason `listPayoutBanks` is: a
+ * "use server" module may only export async functions, and the profile step's
+ * page calls this on render:
+ *
+ * ```ts
+ * // app/streamer-setup/profil/page.tsx, once the host is known to be a host
+ * await markProfileSetupStarted();
+ * ```
+ *
+ * Safe to call on every render. The funnel counts distinct users per stage, so a
+ * host who comes back to the form four times is still one person who started it,
+ * and `trackEvent` never throws — a page must not fail to render because a
+ * telemetry insert did.
+ */
+export async function markProfileSetupStarted(): Promise<void> {
+  const supabase = createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // No session, nothing to attribute. RLS would refuse the insert anyway.
+  if (!user) return;
+
+  await trackEvent(ONBOARDING_EVENTS.PROFILE_SETUP_STARTED, {}, user.id);
 }

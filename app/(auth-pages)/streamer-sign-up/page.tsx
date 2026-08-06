@@ -68,9 +68,9 @@ export default async function StreamerSignUpEntry() {
   // happened and offer both ways out.
   return (
     <div className="w-full max-w-[460px]">
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
         <div className="p-8">
-          <h1 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+          <h1 className="font-serif text-section font-medium text-ink">
             Akun ini terdaftar sebagai brand
           </h1>
           <p className="mt-3 leading-relaxed text-gray-600">
@@ -83,8 +83,8 @@ export default async function StreamerSignUpEntry() {
           <Link
             href={CLIENT_HOME}
             className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl
-              bg-gradient-to-r from-blue-600 to-indigo-600 font-medium text-white transition-all
-              duration-200 hover:from-blue-700 hover:to-indigo-700"
+              bg-brand font-medium text-white transition-all
+              duration-200 hover:bg-brand-hover"
           >
             Kembali ke dashboard brand
             <ArrowRight className="h-4 w-4" />

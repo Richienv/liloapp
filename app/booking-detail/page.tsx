@@ -567,13 +567,13 @@ function BookingDetailContent() {
   const getStatusInfo = (status: string) => {
     switch (status.toLowerCase()) {
       case 'pending':
-        return 'Menunggu streamer menerima pesanan Anda. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
+        return 'Menunggu streamer menerima pesanan kamu. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
       case 'accepted':
-        return 'Pesanan Anda telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
+        return 'Pesanan kamu telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
       case 'completed':
         return 'Sesi streaming telah selesai. Terima kasih telah menggunakan layanan kami.';
       case 'rejected':
-        return 'Maaf, streamer tidak dapat menerima pesanan Anda. Silakan coba waktu lain atau streamer lainnya.';
+        return 'Maaf, streamer tidak dapat menerima pesanan kamu. Silakan coba waktu lain atau streamer lainnya.';
       case 'live':
         return 'Sesi streaming sedang berlangsung.';
       default:
@@ -842,7 +842,7 @@ function BookingDetailContent() {
                 <div>
                   <h3 className="text-base font-semibold text-gray-900">Informasi Penting</h3>
                   <p className="mt-2 text-sm text-gray-600">
-                    Sebelum melanjutkan pemesanan, pastikan Anda telah mempersiapkan:
+                    Sebelum melanjutkan pemesanan, pastikan kamu telah mempersiapkan:
                   </p>
                 </div>
 

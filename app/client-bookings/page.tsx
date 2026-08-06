@@ -86,13 +86,13 @@ function formatBookingDate(dateString: string, formatStr: string = 'EEEE, MMMM d
 const getStatusInfo = (status: string) => {
   switch (status.toLowerCase()) {
     case 'pending':
-      return 'Menunggu streamer menerima pesanan Anda. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
+      return 'Menunggu streamer menerima pesanan kamu. Biasanya membutuhkan waktu 15-60 menit untuk konfirmasi.';
     case 'accepted':
-      return 'Pesanan Anda telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
+      return 'Pesanan kamu telah diterima oleh streamer. Silakan tunggu link streaming yang akan diberikan saat waktu yang ditentukan.';
     case 'completed':
       return 'Sesi streaming telah selesai. Terima kasih telah menggunakan layanan kami.';
     case 'rejected':
-      return 'Maaf, streamer tidak dapat menerima pesanan Anda. Silakan coba waktu lain atau streamer lainnya.';
+      return 'Maaf, streamer tidak dapat menerima pesanan kamu. Silakan coba waktu lain atau streamer lainnya.';
     case 'live':
       return 'Sesi streaming sedang berlangsung.';
     default:
@@ -508,7 +508,7 @@ function CancelConfirmationModal({
                   Peringatan:
                 </p>
                 <ul className="list-disc pl-4 space-y-1.5 text-xs sm:text-sm text-red-700">
-                  <li>Pembatalan akan mempengaruhi reputasi Anda sebagai client</li>
+                  <li>Pembatalan akan mempengaruhi reputasi kamu sebagai client</li>
                   <li>Pembatalan mendadak dapat menyebabkan kerugian bagi streamer</li>
                   <li>Mohon pertimbangkan kembali sebelum membatalkan pesanan</li>
                 </ul>
@@ -527,7 +527,7 @@ function CancelConfirmationModal({
                 className={`w-full min-h-[120px] p-3 rounded-lg border text-sm ${
                   error ? 'border-red-500' : 'border-gray-300'
                 } focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white`}
-                placeholder="Mohon jelaskan alasan pembatalan Anda..."
+                placeholder="Mohon jelaskan alasan pembatalan kamu..."
                 value={reason}
                 onChange={(e) => {
                   setReason(e.target.value);

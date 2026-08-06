@@ -135,7 +135,7 @@ export default function ResetPassword({
       <div className={cardClass}>
         <div className="p-8">
           <div className="mb-8">
-            <h1 className="text-2xl font-semibold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+            <h1 className="font-serif text-section font-medium text-ink">
               Buat kata sandi baru
             </h1>
             <p className="mt-2 text-gray-600">
@@ -212,8 +212,7 @@ export default function ResetPassword({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700
-                hover:to-indigo-700 text-white rounded-xl font-medium transition-all duration-200
+              className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-xl font-medium transition-all duration-200
                 shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.15)]
                 disabled:opacity-70 disabled:cursor-not-allowed"
             >

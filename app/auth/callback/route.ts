@@ -2,6 +2,7 @@ import { createClient } from "@/utils/supabase/server";
 import { NextResponse } from "next/server";
 
 import { readAccountState } from "@/app/types/auth";
+import { ONBOARDING_EVENTS, trackEvent } from "@/lib/analytics";
 import { nextPathFor } from "@/lib/auth-redirect";
 
 export const dynamic = 'force-dynamic';
@@ -169,6 +170,19 @@ export async function GET(request: Request) {
         console.error("Auth callback: could not create the users row", insertError);
         return NextResponse.redirect(`${origin}/auth/error`);
       }
+
+      // The profile row not existing is what makes this a signup rather than a
+      // sign-in, so this branch — not the code exchange — is the funnel's stage
+      // one for OAuth. Without it Google accounts entered the funnel at
+      // `role_selected`, which reads as a stage-one drop-off that never
+      // happened. Emitted after the insert succeeds, so a rejected write is not
+      // counted as an account. `method` distinguishes it from the email path;
+      // the provider name is an enum, not personal data.
+      await trackEvent(
+        ONBOARDING_EVENTS.ACCOUNT_CREATED,
+        { method: user.app_metadata?.provider ?? "oauth" },
+        user.id,
+      );
     }
 
     const state = await readAccountState(supabase, user.id);

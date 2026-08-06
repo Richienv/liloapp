@@ -166,15 +166,224 @@ interface BookingResponse {
   client_last_name: string;
 }
 
+// Postgres unique_violation. Raised by payments_transaction_id_key (see
+// supabase/migrations/20260806110000_payment_idempotency.sql) when a second
+// callback tries to record an order that is already recorded. It is the
+// expected outcome of a duplicate callback, not a failure.
+const UNIQUE_VIOLATION = '23505';
+
+// PostgREST "function not found in schema cache" / Postgres "function does not
+// exist". Both mean the RPC we're calling was never actually deployed.
+const MISSING_FUNCTION_CODES = new Set(['PGRST202', '42883']);
+
+/**
+ * Explain a write failure that happened while running WITHOUT the service-role
+ * key, because that failure has exactly one cause and it is an operations
+ * problem, not a data problem.
+ *
+ * `bookings` and `payments` have RLS on with no INSERT policy by design
+ * (supabase/rls_policies.sql): every write on this path is supposed to come
+ * from the service-role client, which bypasses RLS. With SUPABASE_SERVICE_ROLE_KEY
+ * unset we fall back to the anon key and hit that wall — after Midtrans has
+ * already captured the money. "Failed to create any bookings" sends whoever is
+ * on call hunting through the data for a problem that is one missing env var.
+ */
+const MISSING_SERVICE_ROLE_HINT =
+  'SUPABASE_SERVICE_ROLE_KEY is not set on this deployment, so this ran with the anon key. ' +
+  'bookings/payments have RLS enabled with no INSERT policy (supabase/rls_policies.sql) — ' +
+  'every insert on the payment path is refused until the service-role key is configured. ' +
+  'The money HAS been captured by Midtrans; set the env var and reconcile this order manually.';
+
+function writeFailure(stage: string, error: any, usingServiceRole: boolean): Error {
+  const detail = error?.message || (error ? String(error) : 'no rows returned');
+  const code = error?.code ? ` [${error.code}]` : '';
+  const message = `${stage} failed${code}: ${detail}`;
+  return new Error(usingServiceRole ? message : `${message} — ${MISSING_SERVICE_ROLE_HINT}`);
+}
+
+/**
+ * Find the payment row already recorded for a Midtrans order id.
+ *
+ * Deliberately `.limit(1)` over an ordered list rather than `.maybeSingle()`:
+ * on a database where the unique index has not been applied yet there may still
+ * be duplicates, and `maybeSingle()` turns that into a hard error — the same
+ * trap that used to wedge the webhook. The oldest row is the canonical one.
+ */
+async function findPaymentByTransactionId(supabase: any, transactionId: string) {
+  const { data, error } = await supabase
+    .from('payments')
+    .select('id, booking_id')
+    .eq('transaction_id', transactionId)
+    .order('created_at', { ascending: true })
+    .limit(1);
+
+  if (error) throw error;
+  return (data && data[0]) || null;
+}
+
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+/**
+ * The bookings belonging to an already-recorded payment, so a repeated callback
+ * gets the same answer the first one got.
+ *
+ * `payment_group_id` is stamped onto the bookings a moment AFTER the payment row
+ * is inserted, so a caller that lost a race by milliseconds can arrive while the
+ * winner is still between those two writes. Hence the short retry before falling
+ * back to the payment's anchor booking.
+ */
+async function bookingsForPayment(
+  supabase: any,
+  payment: { id: string; booking_id: number | null }
+): Promise<BookingResponse[]> {
+  const columns = 'id, client_id, client_first_name, client_last_name';
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(columns)
+      .eq('payment_group_id', payment.id)
+      .order('id', { ascending: true });
+
+    if (error) throw error;
+    if (data && data.length > 0) return data as BookingResponse[];
+    if (attempt < 2) await sleep(300);
+  }
+
+  if (payment.booking_id) {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select(columns)
+      .eq('id', payment.booking_id);
+
+    if (error) throw error;
+    if (data && data.length > 0) return data as BookingResponse[];
+  }
+
+  // A payment row with no reachable bookings means a previous attempt died
+  // between the two writes. Refusing here is right: silently returning an empty
+  // list would tell the brand its booking exists when nothing does.
+  throw new Error(
+    `Payment ${payment.id} is already recorded but none of its bookings could be found. ` +
+    'This order needs manual reconciliation — the money was captured.'
+  );
+}
+
+/**
+ * Remove the bookings this call inserted after losing the race for the payment
+ * row. Only rows that never got linked to a payment are touched, so a booking
+ * belonging to the winner can never be caught by this.
+ *
+ * Best-effort: failing to clean up leaves unpaid orphan bookings, which is bad,
+ * but re-throwing would fail a callback whose payment IS correctly recorded,
+ * which is worse.
+ */
+async function discardDuplicateBookings(
+  supabase: any,
+  bookingIds: number[],
+  transactionId: string
+): Promise<void> {
+  if (bookingIds.length === 0) return;
+
+  const { error } = await supabase
+    .from('bookings')
+    .delete()
+    .in('id', bookingIds)
+    .is('payment_group_id', null);
+
+  if (error) {
+    console.error(
+      `[payment][RECONCILE] Order ${transactionId}: could not remove duplicate bookings ` +
+      `${bookingIds.join(', ')} created by a concurrent callback. They have no payment and must ` +
+      'be cancelled by hand.',
+      error
+    );
+  }
+}
+
+/**
+ * Record that a voucher was used and decrement its stock. Never throws.
+ *
+ * NOTE ON THE RPC: `decrement_voucher_quantity` is defined by
+ * supabase/migrations/20260806120000_decrement_voucher_quantity.sql. It was
+ * called from here for a long time without existing anywhere, so every call
+ * failed with PGRST202/42883 and no voucher's stock has ever gone down. The
+ * block stays non-fatal regardless: a database that has not had the migration
+ * applied yet must still be able to take a payment.
+ *
+ * It is `security definer` and granted to service_role only, so it works with
+ * the service-role client used here and refuses a user session outright.
+ */
+async function recordVoucherUsage(
+  supabase: any,
+  metadata: PaymentMetadata,
+  anchorBookingId: number,
+  transactionId: string,
+  log: (message: string, data?: any) => void
+): Promise<void> {
+  const voucher = metadata.voucher;
+  if (!voucher) return;
+
+  try {
+    log('Processing voucher usage');
+
+    const { error: usageError } = await supabase
+      .from('voucher_usage')
+      .insert({
+        voucher_id: voucher.id,
+        booking_id: anchorBookingId,
+        user_id: metadata.userId,
+        discount_applied: voucher.discountAmount,
+        original_price: metadata.totalPrice,
+        final_price: metadata.finalPrice,
+        used_at: new Date().toISOString()
+      });
+
+    if (usageError) {
+      console.error(
+        `[payment][RECONCILE] Order ${transactionId}: voucher ${voucher.code} was applied to the ` +
+        'charged amount but its usage row could not be written. The booking stands.',
+        usageError
+      );
+    }
+
+    const { error: decrementError } = await supabase
+      .rpc('decrement_voucher_quantity', { voucher_uuid: voucher.id });
+
+    if (decrementError) {
+      const missing = MISSING_FUNCTION_CODES.has(decrementError.code);
+      console.error(
+        `[payment][RECONCILE] Order ${transactionId}: could not decrement voucher ${voucher.code}` +
+        (missing
+          ? ' — the RPC decrement_voucher_quantity does not exist in this database. Apply ' +
+            'supabase/migrations/20260806120000_decrement_voucher_quantity.sql. Until then the ' +
+            'voucher keeps its current remaining_quantity and can be over-redeemed.'
+          : '. Its remaining_quantity is now one too high.'),
+        decrementError
+      );
+    }
+
+    log('Voucher processing finished');
+  } catch (error) {
+    // Nothing about a voucher may take down a paid booking.
+    console.error(
+      `[payment][RECONCILE] Order ${transactionId}: voucher processing threw; booking kept.`,
+      error
+    );
+  }
+}
+
 export async function createBookingAfterPayment(
-  result: any, 
+  result: any,
   metadata: PaymentMetadata
 ): Promise<BookingResponse[]> {
   // This runs server-side with no user session, and it writes to RLS-protected
   // tables (bookings, payments, voucher_usage, notifications). Use the
   // service-role client so those writes bypass RLS; fall back to the anon client
   // only if the service-role key isn't configured (pre-RLS behavior).
-  const supabase = createAdminClient() ?? createClient();
+  const adminClient = createAdminClient();
+  const usingServiceRole = adminClient !== null;
+  const supabase = adminClient ?? createClient();
   const startTime = Date.now();
   const isProduction = process.env.NODE_ENV === 'production';
   
@@ -188,12 +397,34 @@ export async function createBookingAfterPayment(
     }
   };
   
+  if (!usingServiceRole) {
+    // Loud on every call, not only on failure: by the time the insert fails,
+    // Midtrans has already taken the brand's money.
+    console.error(`[payment] ${MISSING_SERVICE_ROLE_HINT}`);
+  }
+
   try {
     log('Creating booking after payment');
-    
+
     const transactionId = result.order_id || result.transaction_id;
     if (!transactionId) {
       throw new Error('Missing transaction ID in payment result');
+    }
+
+    // IDEMPOTENCY, first line of defence.
+    //
+    // This function is reached from the browser's Snap `onSuccess` handler, which
+    // fires more than once in ordinary use: a double-click, a retried fetch on a
+    // flaky connection, a reload of the success page. Without this check each of
+    // those created a second full set of bookings for one captured payment.
+    //
+    // This read is a fast path, not the guarantee — two concurrent callbacks can
+    // both see "nothing recorded yet". The unique index on payments.transaction_id
+    // is the actual arbiter; see the 23505 branch after the payment insert.
+    const alreadyRecorded = await findPaymentByTransactionId(supabase, transactionId);
+    if (alreadyRecorded) {
+      log(`Payment ${transactionId} is already recorded — returning the existing bookings`);
+      return await bookingsForPayment(supabase, alreadyRecorded);
     }
 
     // Create bookings array with proper time blocks
@@ -301,22 +532,29 @@ export async function createBookingAfterPayment(
 
       if (error) {
         log(`Error inserting chunk ${i+1}:`, error);
-        throw error;
+        throw writeFailure(`Booking insert (chunk ${i + 1}/${bookingChunks.length})`, error, usingServiceRole);
       }
-      
+
       if (!data || data.length === 0) {
         log(`No bookings returned for chunk ${i+1}`);
         continue;
       }
-      
+
       log(`Successfully inserted ${data.length} bookings in chunk ${i+1}`);
       newBookings.push(...data);
     }
-    
+
     if (newBookings.length === 0) {
-      throw new Error('Failed to create any bookings');
+      // Inserts that report no error and return no rows are what a silently
+      // filtered write looks like, so name the likeliest cause instead of
+      // leaving "Failed to create any bookings" to be guessed at.
+      throw writeFailure(
+        `Booking insert returned no rows for ${bookingInserts.length} booking(s) on order ${transactionId}`,
+        null,
+        usingServiceRole
+      );
     }
-    
+
     log(`Successfully created ${newBookings.length} bookings in total`);
 
     // Create payment record with the first booking's ID
@@ -342,9 +580,33 @@ export async function createBookingAfterPayment(
       .select()
       .single();
 
+    if (paymentError?.code === UNIQUE_VIOLATION) {
+      // IDEMPOTENCY, the guarantee.
+      //
+      // A concurrent callback won the race for this order id: it recorded the
+      // payment between our fast-path read above and this insert. Its bookings
+      // are the real ones, so ours are duplicates that nobody paid for — drop
+      // them before they become orphans a streamer is asked to accept, and
+      // answer with the winner's bookings so both callers see one booking set.
+      log(`Payment ${transactionId} was recorded concurrently — discarding this duplicate attempt`);
+      await discardDuplicateBookings(supabase, newBookings.map(b => b.id), transactionId);
+
+      const winner = await findPaymentByTransactionId(supabase, transactionId);
+      if (!winner) {
+        // The unique index just told us a row exists; not finding it means the
+        // winner rolled back after we deleted our bookings. Nothing was paid
+        // for twice, but this order now has no bookings at all.
+        throw new Error(
+          `Payment ${transactionId} collided with a concurrent insert that then disappeared. ` +
+          'This order needs manual reconciliation — the money was captured.'
+        );
+      }
+      return await bookingsForPayment(supabase, winner);
+    }
+
     if (paymentError || !newPayment) {
       log('Payment record creation error:', paymentError);
-      throw paymentError || new Error('Failed to create payment record');
+      throw writeFailure(`Payment record insert for order ${transactionId}`, paymentError, usingServiceRole);
     }
 
     log('Successfully created payment record');
@@ -370,41 +632,20 @@ export async function createBookingAfterPayment(
 
       if (updateError) {
         log(`Error updating chunk ${i+1} with payment ID:`, updateError);
-        throw updateError;
+        throw writeFailure(`Linking bookings to payment ${newPayment.id}`, updateError, usingServiceRole);
       }
     }
 
-    // Handle voucher if present
+    // Voucher bookkeeping is deliberately NON-FATAL from here on.
+    //
+    // Everything below happens after the bookings exist and after Midtrans has
+    // captured the money. Throwing here used to surface as "Failed to create
+    // booking" for a booking that had been created and paid for — the worst
+    // outcome available: the brand is charged, the booking is invisible to it,
+    // and the streamer has no idea. A voucher counter that is one too high is a
+    // rounding error next to that, and it reconciles from voucher_usage.
     if (metadata.voucher) {
-      log('Processing voucher usage');
-      const { error: voucherError } = await supabase
-        .from('voucher_usage')
-        .insert({
-          voucher_id: metadata.voucher.id,
-          booking_id: newBookings[0].id,
-          user_id: metadata.userId,
-          discount_applied: metadata.voucher.discountAmount,
-          original_price: metadata.totalPrice,
-          final_price: metadata.finalPrice,
-          used_at: new Date().toISOString()
-        });
-
-      if (voucherError) {
-        log('Voucher usage tracking error:', voucherError);
-        throw voucherError;
-      }
-
-      const { error: updateError } = await supabase
-        .rpc('decrement_voucher_quantity', {
-          voucher_uuid: metadata.voucher.id
-        });
-
-      if (updateError) {
-        log('Error updating voucher quantity:', updateError);
-        throw updateError;
-      }
-      
-      log('Voucher processed successfully');
+      await recordVoucherUsage(supabase, metadata, newBookings[0].id, transactionId, log);
     }
 
     // Create notifications for each booking asynchronously
@@ -464,7 +705,7 @@ async function createNotificationsAsync(
       notifications.push({
         user_id: metadata.userId,
         streamer_id: parseInt(metadata.streamerId),
-        message: `Payment confirmed for your booking on ${bookingDateStr}. Menunggu streamer menerima pesanan Anda.`,
+        message: `Payment confirmed for your booking on ${bookingDateStr}. Menunggu streamer menerima pesanan kamu.`,
         type: 'booking_payment',
         booking_id: booking.id,
         is_read: false,

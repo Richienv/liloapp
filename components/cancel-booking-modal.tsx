@@ -96,8 +96,8 @@ export default function CancelBookingModal({
       toast({
         title: isReschedule ? "Pengajuan Reschedule Berhasil" : "Pembatalan Berhasil",
         description: isReschedule 
-          ? "Permintaan reschedule Anda telah dikirim ke streamer" 
-          : "Booking Anda telah dibatalkan",
+          ? "Permintaan reschedule kamu telah dikirim ke streamer" 
+          : "Booking kamu telah dibatalkan",
       });
 
       // Add a small delay before redirecting
@@ -111,7 +111,7 @@ export default function CancelBookingModal({
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Gagal memproses permintaan Anda. Silakan coba lagi.",
+        description: "Gagal memproses permintaan kamu. Silakan coba lagi.",
       });
     } finally {
       setIsSubmitting(false);
@@ -147,7 +147,7 @@ export default function CancelBookingModal({
             <Textarea
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Tuliskan alasan Anda di sini..."
+              placeholder="Tuliskan alasan kamu di sini..."
               className="h-24"
             />
           </div>

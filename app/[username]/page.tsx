@@ -239,7 +239,7 @@ export default async function StreamerPage({ params }: { params: { username: str
         <section className="mt-10 rounded-2xl bg-blue-600 p-6 text-center text-white">
           <h2 className="text-xl font-semibold">Siap booking {streamer.first_name}?</h2>
           <p className="mt-1 text-sm text-blue-100">
-            Tingkatkan penjualan live streaming Anda bersama host profesional.
+            Tingkatkan penjualan live streaming kamu bersama host profesional.
           </p>
           <Link
             href="/streamers"
