@@ -3,8 +3,11 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
 import { readAccountState } from "@/app/types/auth";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { CLIENT_HOME, nextPathFor, ROLE_PICKER_PATH } from "@/lib/auth-redirect";
+
+import { AuthShell } from "../auth-shell";
 
 /**
  * /streamer-sign-up — kept alive as a signpost, not a form.
@@ -67,38 +70,34 @@ export default async function StreamerSignUpEntry() {
   // brand dashboard without a word would read as a broken link, so say what
   // happened and offer both ways out.
   return (
-    <div className="w-full max-w-[460px]">
-      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
-        <div className="p-8">
-          <h1 className="font-serif text-section font-medium text-ink">
-            Akun ini terdaftar sebagai brand
-          </h1>
-          <p className="mt-3 leading-relaxed text-ink-muted">
-            Kamu sedang masuk dengan akun brand, jadi pendaftaran host tidak
-            berlaku di sini. Satu akun hanya punya satu peran — kalau kamu ingin
-            jadi host live streaming, tim Salda bisa membantu memindahkan akun
-            kamu lewat dukungan WhatsApp.
-          </p>
+    // No proof panel: this screen explains a dead end, it does not sell one.
+    // Same card, same width and same type as the rest of the flow.
+    <AuthShell>
+      <h1 className="font-serif text-section font-medium text-ink">
+        Akun ini terdaftar sebagai brand
+      </h1>
+      <p className="mt-2 text-copy text-ink-muted">
+        Kamu sedang masuk dengan akun brand, jadi pendaftaran host tidak berlaku di
+        sini. Satu akun hanya punya satu peran — kalau kamu ingin jadi host live
+        streaming, tim Salda bisa membantu memindahkan akun kamu lewat dukungan
+        WhatsApp.
+      </p>
 
-          <Link
-            href={CLIENT_HOME}
-            className="mt-6 inline-flex h-11 w-full items-center justify-center gap-2 rounded-panel
-              bg-brand font-medium text-white transition-all
-              duration-200 hover:bg-brand-hover"
-          >
-            Kembali ke dashboard brand
-            <ArrowRight className="h-4 w-4" />
+      {/* The pair shares a row from `sm` up and never wraps: below that the
+          card itself is narrower than the two labels laid end to end. */}
+      <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+        {/* The screen's one accent. */}
+        <Button asChild variant="brand" size="action-compact" className="sm:flex-1">
+          <Link href={CLIENT_HOME}>
+            Ke dashboard brand
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Link>
+        </Button>
 
-          <Link
-            href="/streamers"
-            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded-panel border
-              border-hairline-input font-medium text-ink-body transition-colors hover:bg-surface-tint"
-          >
-            Lihat daftar host
-          </Link>
-        </div>
+        <Button asChild variant="quiet" size="action-compact" className="sm:flex-1">
+          <Link href="/streamers">Lihat daftar host</Link>
+        </Button>
       </div>
-    </div>
+    </AuthShell>
   );
 }

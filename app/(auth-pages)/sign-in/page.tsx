@@ -8,9 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 
-import { AuthShell, SIGN_IN_PANEL } from "../auth-shell";
+import {
+  AuthShell,
+  SIGN_IN_PANEL,
+  authFieldClass,
+  authLabelClass,
+  authLinkClass,
+} from "../auth-shell";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 type SignInSearchParams = {
   error?: string;
@@ -82,13 +88,7 @@ export default function Login({
               Satu akun untuk brand dan host. Kami arahkan otomatis sesuai peran kamu.
             </p>
             <p className="mt-3 text-copy text-ink-soft">
-              Baru di Salda?{" "}
-              <Link
-                href="/sign-up"
-                className="font-medium text-brand transition-colors hover:text-brand-hover"
-              >
-                Buat akun
-              </Link>
+              Baru di Salda? <Link href="/sign-up" className={authLinkClass}>Buat akun</Link>
             </p>
           </div>
 
@@ -112,10 +112,10 @@ export default function Login({
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-hairline-input" />
+                  <div className="w-full border-t border-hairline" />
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-surface px-4 text-ink-soft">atau</span>
+                <div className="relative flex justify-center">
+                  <span className="bg-surface px-4 text-copy text-ink-soft">atau</span>
                 </div>
               </div>
             </>
@@ -132,10 +132,7 @@ export default function Login({
             <input type="hidden" name="redirect_to" value={redirectTo} />
 
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-ink-body"
-              >
+              <Label htmlFor="email" className={authLabelClass}>
                 Alamat email
               </Label>
               <Input
@@ -148,24 +145,21 @@ export default function Login({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 pl-4 bg-surface-tint/50 border-hairline-input focus:bg-surface text-base rounded-panel
-                  focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
-                style={{ fontSize: "16px" }}
+                className={authFieldClass}
               />
             </div>
 
             <div className="space-y-2">
+              {/* One line, never two: the label and the escape hatch share the
+                  row and the row is not allowed to wrap. */}
               <div className="flex items-baseline justify-between gap-3">
-                <Label
-                  htmlFor="password"
-                  className="text-sm font-medium text-ink-body"
-                >
+                <Label htmlFor="password" className={authLabelClass}>
                   Kata sandi
                 </Label>
                 {/* /forgot-password existed but nothing on this page linked to it. */}
                 <Link
                   href="/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className={`shrink-0 text-copy ${authLinkClass}`}
                 >
                   Lupa kata sandi?
                 </Link>
@@ -178,9 +172,7 @@ export default function Login({
                   autoComplete="current-password"
                   placeholder="Masukkan kata sandi"
                   required
-                  className="h-11 pl-4 pr-11 bg-surface-tint/50 border-hairline-input focus:bg-surface text-base rounded-panel
-                    focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
-                  style={{ fontSize: "16px" }}
+                  className={`${authFieldClass} pr-12`}
                 />
                 <button
                   type="button"
@@ -211,17 +203,19 @@ export default function Login({
             <FormMessage message={searchParams} />
 
             <div className="space-y-5 pt-1">
+              {/* The screen's one accent. Everything else on it is ink. */}
               <Button
                 type="submit"
+                variant="brand"
+                size="action-full"
                 disabled={isSigningIn}
-                className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-panel font-medium transition-all duration-200 hover:
-                  disabled:opacity-70 disabled:cursor-not-allowed"
+                className="disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSigningIn ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    <span>Memproses…</span>
-                  </div>
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Memproses…
+                  </span>
                 ) : (
                   "Masuk"
                 )}
@@ -233,24 +227,19 @@ export default function Login({
                 same way read as a third way to sign in. What follows is
                 orientation, not a credential choice.
               */}
-              <div className="border-t border-hairline-input" />
+              <div className="border-t border-hairline-soft" />
 
               {/*
                 Discreet orientation for streamers, who used to look for a
                 separate portal. It points at sign-up, not at a second login —
                 the form above already handles both account types.
               */}
-              <div className="space-y-2 text-center">
-                <p className="text-sm text-ink-muted">
-                  Mau jadi streamer?{" "}
-                  <Link
-                    href="/streamer-sign-up"
-                    className="font-medium text-brand transition-colors hover:text-brand-hover"
-                  >
-                    Daftar sebagai streamer
-                  </Link>
-                </p>
-              </div>
+              <p className="text-center text-copy text-ink-soft">
+                Mau jadi host?{" "}
+                <Link href="/streamer-sign-up" className={authLinkClass}>
+                  Daftar sebagai host
+                </Link>
+              </p>
             </div>
           </form>
       </>

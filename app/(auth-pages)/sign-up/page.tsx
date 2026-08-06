@@ -14,6 +14,16 @@ import { ArrowLeft, Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import {
+  AuthShell,
+  AuthStepLabel,
+  PasswordStrength,
+  SIGN_UP_PANEL,
+  authFieldClass,
+  authLabelClass,
+  authLinkClass,
+} from "../auth-shell";
+
 /**
  * Account first, decisions later.
  *
@@ -185,41 +195,41 @@ export default function SignUp({
   const message: MessageLike | undefined = error ? { error } : searchParams;
 
   return (
-    <div className="relative w-full max-w-[460px]">
-      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
-        <div className="p-8">
+    // The same shell sign-in uses, with the panel that answers the only
+    // question a signup form provokes: how much is this going to ask me for.
+    <AuthShell panel={SIGN_UP_PANEL}>
+      <>
           <div className="mb-6">
             <h1 className="font-serif text-section font-medium text-ink">
               Buat akun Salda
             </h1>
-            <p className="mt-2 text-ink-muted">
+            <p className="mt-2 text-copy text-ink-muted">
               Sudah punya akun?{" "}
-              <Link
-                href="/sign-in"
-                className="font-medium text-blue-600 transition-colors hover:text-blue-700"
-              >
+              <Link href="/sign-in" className={authLinkClass}>
                 Masuk di sini
               </Link>
             </p>
           </div>
 
           {/* Two bars, not a six-dot stepper: the honest signal here is "this is
-              short", and a long indicator says the opposite. */}
-          <div className="mb-6 space-y-2">
-            <div className="flex gap-2" aria-hidden="true">
+              short", and a long indicator says the opposite. Ink, not blue —
+              the blue on this screen belongs to the button that submits. */}
+          <div className="mb-6 space-y-2.5">
+            <div className="flex gap-1.5" aria-hidden="true">
               {[1, 2].map((index) => (
                 <div
                   key={index}
-                  className={`h-1.5 flex-1 rounded-full transition-colors duration-200 ${
-                    index <= step ? "bg-blue-600" : "bg-surface-deep"
+                  className={`h-[3px] flex-1 rounded-full transition-colors duration-200 ${
+                    index <= step ? "bg-ink" : "bg-surface-deep"
                   }`}
                 />
               ))}
             </div>
-            <p className="text-sm text-ink-soft">
-              Langkah {step} dari {TOTAL_STEPS} ·{" "}
-              {step === 1 ? "Email & kata sandi" : "Nama & WhatsApp"}
-            </p>
+            <AuthStepLabel
+              step={step}
+              total={TOTAL_STEPS}
+              hint={step === 1 ? "Email & kata sandi" : "Nama & WhatsApp"}
+            />
           </div>
 
           {step === 1 && isGoogleAuthEnabled && (
@@ -228,10 +238,10 @@ export default function SignUp({
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-hairline-input" />
+                  <div className="w-full border-t border-hairline" />
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-surface px-4 text-ink-soft">atau</span>
+                <div className="relative flex justify-center">
+                  <span className="bg-surface px-4 text-copy text-ink-soft">atau</span>
                 </div>
               </div>
             </>
@@ -241,10 +251,7 @@ export default function SignUp({
             {step === 1 ? (
               <>
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="email"
-                    className="text-sm font-medium text-ink-body"
-                  >
+                  <Label htmlFor="email" className={authLabelClass}>
                     Alamat email
                   </Label>
                   <Input
@@ -257,17 +264,12 @@ export default function SignUp({
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 text-base transition-all
-                      duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
-                    style={{ fontSize: "16px" }}
+                    className={authFieldClass}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="text-sm font-medium text-ink-body"
-                  >
+                  <Label htmlFor="password" className={authLabelClass}>
                     Kata sandi
                   </Label>
                   <div className="relative">
@@ -281,9 +283,7 @@ export default function SignUp({
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 pr-11 text-base transition-all
-                        duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
-                      style={{ fontSize: "16px" }}
+                      className={`${authFieldClass} pr-12`}
                     />
                     {/* A visible-password toggle instead of a confirmation
                         field: it catches the same typos and costs one field
@@ -306,16 +306,18 @@ export default function SignUp({
                       )}
                     </button>
                   </div>
+                  {/* Reports, never blocks: the six-character minimum above is
+                      still the only rule that can refuse a password. */}
+                  <PasswordStrength value={password} />
                 </div>
               </>
             ) : (
               <>
-                <div className="grid grid-cols-2 gap-4">
+                {/* Two fields, one row, at every width: a name split across two
+                    lines reads as two separate questions. */}
+                <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="first_name"
-                      className="text-sm font-medium text-ink-body"
-                    >
+                    <Label htmlFor="first_name" className={authLabelClass}>
                       Nama depan
                     </Label>
                     <Input
@@ -327,16 +329,11 @@ export default function SignUp({
                       required
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
-                      className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 text-base transition-all
-                        duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
-                      style={{ fontSize: "16px" }}
+                      className={authFieldClass}
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="last_name"
-                      className="text-sm font-medium text-ink-body"
-                    >
+                    <Label htmlFor="last_name" className={authLabelClass}>
                       Nama belakang
                     </Label>
                     <Input
@@ -348,9 +345,7 @@ export default function SignUp({
                       required
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
-                      className="h-11 rounded-panel border-hairline-input bg-surface-tint/50 pl-4 text-base transition-all
-                        duration-200 focus:border-blue-600 focus:bg-surface focus:ring-2 focus:ring-blue-100"
-                      style={{ fontSize: "16px" }}
+                      className={authFieldClass}
                     />
                   </div>
                 </div>
@@ -360,10 +355,7 @@ export default function SignUp({
                     for here, before the account exists, precisely so that an
                     abandoned setup later is still recoverable. */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="phone"
-                    className="text-sm font-medium text-ink-body"
-                  >
+                  <Label htmlFor="phone" className={authLabelClass}>
                     Nomor WhatsApp
                   </Label>
                   <PhoneInput
@@ -387,14 +379,34 @@ export default function SignUp({
             */}
             <FormMessage message={message} className="max-w-none" />
 
-            <div className="space-y-3">
+            {/* One row, never two. The back button hugs its label and the
+                submit takes the rest — a pair that stacks reads as two
+                unrelated decisions. */}
+            <div className="flex items-center gap-3">
+              {step === 2 && (
+                <Button
+                  type="button"
+                  variant="quiet"
+                  size="action-full"
+                  onClick={() => {
+                    setError(null);
+                    setStep(1);
+                  }}
+                  disabled={isSubmitting}
+                  className="w-auto shrink-0 gap-2 px-4 text-ui disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Kembali
+                </Button>
+              )}
+
+              {/* The screen's one accent. */}
               <Button
                 type="submit"
+                variant="brand"
+                size="action-full"
                 disabled={isSubmitting}
-                className="h-11 w-full rounded-panel bg-brand font-medium
-                  text-white transition-all duration-200
-                  hover:bg-brand-hover hover:
-                  disabled:cursor-not-allowed disabled:opacity-70"
+                className="w-auto flex-1 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
@@ -407,55 +419,31 @@ export default function SignUp({
                   "Buat akun"
                 )}
               </Button>
-
-              {step === 2 && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setError(null);
-                    setStep(1);
-                  }}
-                  disabled={isSubmitting}
-                  className="flex h-11 w-full items-center justify-center gap-2 rounded-panel text-sm font-medium
-                    text-ink-muted transition-colors hover:bg-surface-tint hover:text-ink
-                    disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Kembali
-                </button>
-              )}
             </div>
           </form>
 
           {/* Sets the expectation for what comes right after the account: one
               question, not another form. */}
-          <p className="mt-6 border-t border-hairline pt-5 text-sm text-ink-soft">
+          <p className="mt-6 border-t border-hairline-soft pt-5 text-copy text-ink-soft">
             {wantsToHost
               ? "Setelah akun jadi, kamu tinggal konfirmasi bahwa kamu ingin jadi host — lalu lengkapi profil kapan pun kamu siap."
               : "Setelah akun jadi, kamu cukup pilih satu hal: cari host untuk brand kamu, atau jadi host live."}
           </p>
 
-          <p className="mt-3 text-xs leading-relaxed text-ink-soft">
+          {/* Both names are left in the casing the linked documents carry:
+              they title a page, they are not UI labels to re-sentence-case. */}
+          <p className="mt-3 text-meta text-ink-soft">
             Dengan membuat akun, kamu menyetujui{" "}
-            <Link
-              href="/terms"
-              target="_blank"
-              className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
-            >
+            <Link href="/terms" target="_blank" className={authLinkClass}>
               Syarat &amp; Ketentuan
             </Link>{" "}
             dan{" "}
-            <Link
-              href="/privacy-notice"
-              target="_blank"
-              className="font-medium text-blue-600 underline underline-offset-2 hover:text-blue-700"
-            >
+            <Link href="/privacy-notice" target="_blank" className={authLinkClass}>
               Kebijakan Privasi
             </Link>{" "}
             Salda.
           </p>
-        </div>
-      </div>
-    </div>
+      </>
+    </AuthShell>
   );
 }
