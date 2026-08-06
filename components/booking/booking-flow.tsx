@@ -129,27 +129,28 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
     setIsRequirementsValid(validateRequirementsForDateSelection(needsShipping, platform));
   }, [needsShipping, platform]);
 
+  /**
+   * Does any selected day clear the minimum booking?
+   *
+   * This is the gate on "Lanjut ke pembayaran", and it used to carry its own
+   * copy of the block-grouping logic ending in `block.length >= 2`. The shared
+   * rule in lib/booking-rules — the one whose error message the product shows —
+   * requires `>= 3`, and `validateMinimumBooking` was imported into this file
+   * and then never called.
+   *
+   * Two slots is one billable hour, because a slot is a boundary and not an
+   * hour of work. So the button was letting a brand pay for a one-hour session
+   * on a screen that says "Minimal 2 jam berurutan per hari", and the rule that
+   * would have stopped it was sitting unused three imports away.
+   *
+   * One rule, in one place, called from here.
+   */
   const isMinimumBookingMet = useCallback(() => {
     if (selectedDates.size === 0) return false;
 
-    return Array.from(selectedDates.values()).some(dateInfo => {
-      // Group consecutive hours into blocks
-      const blocks: string[][] = [];
-      let currentBlock: string[] = [dateInfo.hours[0]];
-
-      for (let i = 1; i < dateInfo.hours.length; i++) {
-        if (parseInt(dateInfo.hours[i]) === parseInt(dateInfo.hours[i - 1]) + 1) {
-          currentBlock.push(dateInfo.hours[i]);
-        } else {
-          blocks.push([...currentBlock]);
-          currentBlock = [dateInfo.hours[i]];
-        }
-      }
-      blocks.push(currentBlock);
-
-      // Check if any block meets the minimum requirement
-      return blocks.some(block => block.length >= 2);
-    });
+    return Array.from(selectedDates.values()).some(
+      (dateInfo) => validateMinimumBooking(dateInfo.hours).isValid,
+    );
   }, [selectedDates]);
 
   useEffect(() => {
