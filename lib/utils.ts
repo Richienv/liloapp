@@ -63,8 +63,15 @@ const FONT_SIZES = [
   "hero",
 ] as const;
 
-/** Mirrors `theme.extend.borderRadius` in tailwind.config.ts. */
-const RADII = ["chip", "field", "pill", "panel", "frame"] as const;
+/**
+ * Mirrors `theme.extend.borderRadius` in tailwind.config.ts.
+ *
+ * `lg`/`md`/`sm` are deliberately absent: the config redefines those three to
+ * `var(--radius)` and its derivations, but the NAMES are Tailwind's own, so
+ * tailwind-merge already groups them correctly. Only the names it has never
+ * heard of need registering.
+ */
+const RADII = ["hair", "chip", "field", "pill", "panel", "frame"] as const;
 
 const twMerge = extendTailwindMerge({
   extend: {
