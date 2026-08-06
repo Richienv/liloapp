@@ -97,12 +97,17 @@ CTA `Mulai cari host`. Footer tagline: `Platform live commerce untuk brand Indon
 
 | Screen | Design title | App route | Status |
 |---|---|---|---|
-| Marketplace | `Host siap live minggu ini` | `/protected`, `/streamers` | card done, layout/filters not |
-| Booking | `Atur sesi live` | `/booking/[streamerId]` | built, copy differs |
-| Checkout | `Detail pemesanan` | `/booking-detail` | not built |
-| Bookings | `Booking saya` | `/client-bookings` | not built |
-| Notifications | `Notifikasi` | `/notifications` | not built |
-| Success | `Pembayaran diterima` | — | not built |
+| Marketplace | `Host siap live minggu ini` | `/protected`, `/streamers` | built |
+| Booking | `Atur sesi live` | `/booking/[streamerId]` | built |
+| Checkout | `Detail pemesanan` | `/booking-detail` | built |
+| Bookings | `Booking saya` | `/client-bookings` | built |
+| Notifications | `Notifikasi` | `/notifications` | built |
+| Success | `Pembayaran diterima` | `/payment-success` | built |
+
+> The "Paling sering dibooking" sort chip is rendered **disabled**. Nothing in
+> the listing payload counts completed bookings, and ranking hosts by an
+> invented number is the fabricated data this redesign has been removing. It
+> lights up when there is an aggregate behind it.
 
 ### Filter bar
 Sort: `Rekomendasi` · `Harga terendah` · `Rating tertinggi` · `Paling sering dibooking`
@@ -155,12 +160,18 @@ CTAs: `Lihat booking saya` · `Cari host lain`
 | 4 | `Minggu ini sekilas` | missing |
 | 5 | `Sesi yang perlu kamu urus` | partial |
 | 6 | `Sudah selesai` | missing |
-| 7 | `Uang yang bisa kamu ambil sekarang` | missing — needs backend |
-| 8 | `Dari mana uangnya bulan ini` | missing — needs backend |
-| 9 | `Riwayat pembayaran` | missing — needs backend |
-| 10 | `Ini yang brand lihat` | missing |
-| 11 | `Atur harga dan hari kerja` | missing |
-| 12 | `Performa kamu` | missing — needs backend |
+| 7 | `Uang yang bisa kamu ambil sekarang` | built — backend in `20260806140000_payouts.sql` |
+| 8 | `Dari mana uangnya bulan ini` | built |
+| 9 | `Riwayat pembayaran` | built |
+| 10 | `Ini yang brand lihat` | built |
+| 11 | `Atur harga dan hari kerja` | built |
+| 12 | `Performa kamu` | built, minus response time — no schema support |
+
+> Balances are **derived** from bookings, never stored: a stored total drifts
+> the first time a booking is cancelled after it was incremented. Every figure
+> runs through `salda_host_earnings()` so the ÷1.443 happens in exactly one
+> place — the chart previously plotted the raw brand price and over-reported a
+> host's earnings by ~44%.
 
 Copy worth keeping exact:
 
@@ -188,8 +199,14 @@ Copy worth keeping exact:
 
 | Screen | Design title | Status |
 |---|---|---|
-| Role picker | `Kamu daftar sebagai apa?` | built, **our copy says "Saya ingin…"** |
-| Sign in | `Masuk ke akun kamu` | not built to the split layout |
+| Role picker | `Kamu daftar sebagai apa?` | built |
+| Sign in | `Masuk ke akun kamu` | built — shares `AuthShell` with the role picker |
+
+> Sign-in's proof panel carries **no statistics**. The role picker's panels quote
+> figures lifted from the design file that nobody has confirmed are true
+> ("250+ Host aktif", "4,9 Rating rata-rata", "Rp 443rb rata-rata per sesi") —
+> those are still awaiting a decision. There is no reason to repeat an
+> unverified claim to someone who already has an account.
 
 Layout: `minmax(0,1fr) minmax(0,1.05fr)`, form column max 452px, proof panel
 `#f2f1ee` for brand and `#171717` for host. Step label `Langkah 1 dari 2`.
