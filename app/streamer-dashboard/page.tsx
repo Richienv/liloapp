@@ -10,7 +10,7 @@ import { signOutAction, acceptBooking, rejectBooking, startStream, endStream, ac
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import { format, isToday, isThisWeek, isThisMonth, isSameDay, parseISO, differenceInHours, addDays, addHours, parse, startOfDay } from 'date-fns';
+import { format, isToday, isThisWeek, isThisMonth, isSameDay, parseISO, differenceInHours, addDays, addHours, parse, startOfDay, startOfWeek, endOfWeek } from 'date-fns';
 import { Calendar, Clock, Monitor, DollarSign, MessageSquare, Link as LinkIcon, AlertTriangle, MapPin, Users, XCircle, Video, Settings, Loader2, Info, ExternalLink, ChevronRight, CheckCircle, Radio, Package, CheckSquare, Circle, X, ArrowRight, BadgeCheck, Store, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { ListingSections, MoneySections, PerformanceSection } from './money-sections';
@@ -181,8 +181,8 @@ function ItemAcceptanceModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-ink">
-              Konfirmasi Penerimaan Barang
+            <h2 className="font-serif text-title font-semibold text-ink">
+              Konfirmasi penerimaan barang
             </h2>
             <button 
               onClick={onClose}
@@ -202,8 +202,8 @@ function ItemAcceptanceModal({
               <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Info className="h-4 w-4 text-blue-600" />
               </div>
-              <h4 className="text-base font-medium text-ink">
-                Panduan Penerimaan Barang
+              <h4 className="text-ui font-medium text-ink">
+                Panduan penerimaan barang
               </h4>
             </div>
             <ul className="space-y-3 pl-11">
@@ -315,8 +315,8 @@ function RescheduleModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-ink">
-              Pengajuan Reschedule
+            <h2 className="font-serif text-title font-semibold text-ink">
+              Pengajuan reschedule
             </h2>
             <button 
               onClick={onClose}
@@ -336,8 +336,8 @@ function RescheduleModal({
               <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                 <Info className="h-4 w-4 text-blue-600" />
               </div>
-              <h4 className="text-base font-medium text-ink">
-                Kebijakan Reschedule
+              <h4 className="text-ui font-medium text-ink">
+                Kebijakan reschedule
               </h4>
             </div>
             <ul className="space-y-3 pl-11">
@@ -368,7 +368,7 @@ function RescheduleModal({
               </div>
               <div>
                 <label htmlFor="reschedule-reason" className="block text-sm font-medium text-ink">
-                  Alasan Reschedule<span className="text-blue-600">*</span>
+                  Alasan reschedule<span className="text-blue-600">*</span>
                 </label>
                 <textarea
                   id="reschedule-reason"
@@ -512,8 +512,8 @@ function PaymentGroupModal({ isOpen, onClose, booking, relatedBookings }: Paymen
         {/* Header */}
         <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-ink">
-              Grup Booking
+            <h2 className="font-serif text-title font-semibold text-ink">
+              Grup booking
             </h2>
             <button 
               onClick={onClose}
@@ -1114,14 +1114,16 @@ function UpcomingSchedule({ bookings, onStreamStart, onStreamEnd, setBookings }:
     return counts;
   }, [bookings]);
 
-  // List of statuses to display (ordered as requested)
-  const displayStatuses = ['Diterima', 'Barang Diterima', 'Live Dimulai', 'Selesai'];
+  // List of statuses to display (ordered as requested). "Selesai" is not here:
+  // finished sessions have their own section, and a tab that repeats it makes
+  // this list longer without making it more useful.
+  const displayStatuses = ['Diterima', 'Barang Diterima', 'Live Dimulai'];
 
   return (
     <div className="w-full">
       {/* Status-based filter tabs - Enhanced UI */}
       <div className="bg-surface border border-hairline-input rounded-lg overflow-hidden mb-6">
-        <div className="grid grid-cols-4 gap-1">
+        <div className="grid grid-cols-3 gap-1">
           {displayStatuses.map((status) => {
             // Determine icon for each status
             let StatusIcon;
@@ -1226,7 +1228,7 @@ function RejectionModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
       <div className="bg-surface rounded-panel w-full max-w-lg mx-4 overflow-hidden">
         <div className="p-6 border-b border-hairline">
-          <h3 className="text-xl font-bold text-ink">Konfirmasi Penolakan</h3>
+          <h3 className="font-serif text-title font-semibold text-ink">Konfirmasi penolakan</h3>
         </div>
         
         <div className="p-6 space-y-4">
@@ -1240,7 +1242,7 @@ function RejectionModal({
 
           <div className="space-y-2">
             <Label htmlFor="reason" className="text-sm font-medium text-ink-body">
-              Alasan Penolakan<span className="text-red-500">*</span>
+              Alasan penolakan<span className="text-red-500">*</span>
             </Label>
             <Textarea
               id="reason"
@@ -1812,7 +1814,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                   <p className="text-base sm:text-lg font-semibold mt-1">{rating.toFixed(1)}/5.0</p>
                 </div>
                 <div className="bg-surface-tint rounded-panel p-3 sm:p-4">
-                  <p className="text-xs sm:text-sm text-ink-soft">Total Durasi</p>
+                  <p className="text-xs sm:text-sm text-ink-soft">Total durasi</p>
                   <p className="text-base sm:text-lg font-semibold mt-1">{Math.round(stats.totalLiveHours)} jam</p>
                 </div>
               </div>
@@ -1822,7 +1824,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
             <div className="w-full lg:w-[400px] lg:pl-12">
               {/* Gallery Section */}
               <div className="space-y-4">
-                <h3 className="text-sm sm:text-base font-semibold text-ink">Galeri Photo Kamu</h3>
+                <h3 className="text-ui font-semibold text-ink">Galeri foto kamu</h3>
                 <div className="grid grid-cols-3 gap-2 sm:gap-3 relative">
                   {galleryPhotos.slice(0, 3).map((photo, index) => (
                     <div 
@@ -1843,7 +1845,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                       className="absolute right-0 bottom-0 w-[calc(33.33%-4px)] aspect-square rounded-panel overflow-hidden cursor-pointer transform transition-transform duration-200 hover:scale-105"
                       onClick={() => openGalleryModal(3)}
                     >
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/80 flex items-center justify-center z-10">
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
                         <span className="text-white font-medium text-lg">+{galleryPhotos.length - 3}</span>
                       </div>
                       <img 
@@ -1867,7 +1869,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                   <Button
                     onClick={() => router.push('/streamer-schedule')}
                     className="w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-[#E23744] hover:bg-[#E23744]/90 text-white transition-all duration-200"
-                    title="Atur Jadwal"
+                    title="Atur jadwal"
                   >
                     <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                   </Button>
@@ -1883,7 +1885,7 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
                     className={`w-10 h-10 sm:w-12 sm:h-12 p-0 rounded-panel bg-surface-tint hover:bg-surface-deep text-ink-body transition-all duration-200 ${
                       isExpanded ? 'bg-surface-deep' : ''
                     }`}
-                    title="Lihat Analytics"
+                    title="Lihat analytics"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -1910,22 +1912,22 @@ function IDCard({ userId, streamerId, firstName, stats, joinDate, rating, galler
           <div className="p-4 sm:p-6 pt-0 border-t border-hairline">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
               <AnalyticsCard
-                title="Total Pendapatan"
+                title="Total pendapatan"
                 value={`Rp ${stats.totalEarnings.toLocaleString('id-ID')}`}
                 trend={stats.trends.earnings}
               />
               <AnalyticsCard
-                title="Total Booking"
+                title="Total booking"
                 value={stats.totalBookings.toString()}
                 trend={stats.trends.bookings}
               />
               <AnalyticsCard
-                title="Total Live"
+                title="Total live"
                 value={stats.totalLive.toString()}
                 trend={stats.trends.lives}
               />
               <AnalyticsCard
-                title="Booking Dibatalkan"
+                title="Booking dibatalkan"
                 value={stats.cancelledBookings.toString()}
                 trend={stats.trends.cancellations}
               />
@@ -2125,8 +2127,8 @@ function StartLiveModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-ink">
-              Mulai Live Stream
+            <h2 className="font-serif text-title font-semibold text-ink">
+              Mulai live stream
             </h2>
             <button 
               onClick={onClose}
@@ -2254,8 +2256,8 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-hairline">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-base sm:text-xl font-semibold text-ink">
-                Grup Booking
+              <h2 className="font-serif text-title font-semibold text-ink">
+                Grup booking
               </h2>
               <p className="text-xs sm:text-sm text-ink-soft mt-1">
                 {booking.client_first_name} {booking.client_last_name}
@@ -2278,7 +2280,7 @@ function PaymentGroupBookingModal({ isOpen, onClose, booking, relatedBookings, o
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                  <span className="text-xs sm:text-sm font-medium text-ink">Total Pembayaran</span>
+                  <span className="text-xs sm:text-sm font-medium text-ink">Total pembayaran</span>
                 </div>
                 <span className="text-base sm:text-lg font-bold text-blue-600">
                   Rp {totalPrice.toLocaleString('id-ID')}
@@ -2650,7 +2652,7 @@ function DashboardNotice({
       <Navbar />
       <main className="mx-auto w-full max-w-2xl px-4 py-10">
         <div className="rounded-frame border border-hairline bg-surface p-6 sm:p-8">
-          <h1 className="text-xl font-semibold text-ink">{title}</h1>
+          <h1 className="font-serif text-title font-semibold text-ink">{title}</h1>
           <p className="mt-2 text-ink-muted">{description}</p>
           {children && <div className="mt-6 flex flex-wrap gap-3">{children}</div>}
         </div>
@@ -2769,6 +2771,8 @@ function NowCard({
   return (
     <section className="mt-6 overflow-hidden rounded-panel border border-hairline bg-surface">
       <div className="flex items-center gap-2 border-b border-hairline-soft px-5 py-3.5">
+        {/* The first step of the sequence the numbered sections below continue. */}
+        <span className="numeric text-mini font-semibold tracking-normal text-ink-ghost">01</span>
         {(stage === 'live' || stage === 'overdue') && (
           <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-critical" />
         )}
@@ -2870,7 +2874,7 @@ function EarningsBar({ bookings }: { bookings: Booking[] }) {
     <div className="px-5 py-5">
       <div className="flex items-baseline justify-between gap-3">
         <p className="numeric text-price font-semibold text-ink">{formatPrice(weekTotal)}</p>
-        <p className="text-mini text-ink-soft">7 hari terakhir</p>
+        <p className="text-mini text-ink-soft">Pendapatan 7 hari terakhir</p>
       </div>
 
       {/*
@@ -2916,6 +2920,201 @@ function EarningsBar({ bookings }: { bookings: Booking[] }) {
         </p>
       )}
     </div>
+  );
+}
+
+/**
+ * One word per booking status, as text.
+ *
+ * The rest of this file still renders `booking.status` raw — English, lowercase,
+ * straight out of the column — inside a filled colour pill. Both of those are
+ * things the design says not to do, so the two sections written here carry their
+ * own mapping rather than borrowing `getStatusColor`.
+ */
+const WEEK_STATUS: Record<string, { label: string; tone: string }> = {
+  pending: { label: 'Menunggu', tone: 'text-caution' },
+  accepted: { label: 'Diterima', tone: 'text-ink-soft' },
+  live: { label: 'Live', tone: 'text-critical' },
+  completed: { label: 'Selesai', tone: 'text-positive' },
+};
+
+/**
+ * "Minggu ini sekilas" — the seven days of the current week, Senin to Minggu,
+ * with what each one holds.
+ *
+ * Deliberately not a second total. The summary above it answers "what did the
+ * week earn"; this answers the other question a host actually opens the
+ * dashboard with — which days are taken, which are still free, and who is on
+ * them. So it is a list of days, it carries no money, and it looks forward as
+ * well as back: a Wednesday booking is on this screen on Monday, which is the
+ * only time knowing about it is any use.
+ *
+ * The week starts on Monday. `isThisWeek` elsewhere in this file uses date-fns'
+ * default of Sunday, which would put a Sunday session in "next week" for every
+ * host in Indonesia.
+ */
+function WeekGlance({ index, bookings }: { index: number; bookings: Booking[] }) {
+  const { days, rangeLabel, sessionCount } = useMemo(() => {
+    const today = new Date();
+    const start = startOfWeek(today, { weekStartsOn: 1 });
+    const end = endOfWeek(today, { weekStartsOn: 1 });
+
+    const relevant = bookings.filter((booking) =>
+      ['pending', 'accepted', 'live', 'completed'].includes(booking.status.toLowerCase()),
+    );
+
+    const days = Array.from({ length: 7 }, (_, offset) => {
+      const day = addDays(start, offset);
+      const sessions = relevant
+        .filter((booking) => isSameDay(new Date(booking.start_time), day))
+        .sort(
+          (a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime(),
+        );
+      return { day, sessions };
+    });
+
+    return {
+      days,
+      rangeLabel: `${format(start, 'd MMMM', { locale: idLocale })} – ${format(end, 'd MMMM', { locale: idLocale })}`,
+      sessionCount: days.reduce((total, entry) => total + entry.sessions.length, 0),
+    };
+  }, [bookings]);
+
+  return (
+    <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
+      <SectionHeading index={index} title="Minggu ini sekilas" description={rangeLabel} />
+
+      {sessionCount === 0 ? (
+        <p className="px-5 py-10 text-center text-meta text-ink-soft">
+          Belum ada sesi terjadwal minggu ini.
+        </p>
+      ) : (
+        <ul>
+          {days.map(({ day, sessions }) => (
+            <li
+              key={day.toISOString()}
+              className="flex items-start gap-4 border-t border-hairline-soft px-5 py-3.5 first:border-t-0"
+            >
+              <div className="w-[86px] shrink-0">
+                {/* The single accent in this section, and it can only ever
+                    appear on one of the seven rows. */}
+                <p
+                  className={cn(
+                    'truncate text-copy font-medium',
+                    isToday(day) ? 'text-brand' : 'text-ink',
+                  )}
+                >
+                  {format(day, 'EEEE', { locale: idLocale })}
+                </p>
+                <p className="numeric mt-0.5 text-micro tracking-normal text-ink-faint">
+                  {format(day, 'd MMM', { locale: idLocale })}
+                </p>
+              </div>
+
+              <div className="min-w-0 flex-1">
+                {sessions.length === 0 ? (
+                  <p className="text-copy text-ink-ghost">—</p>
+                ) : (
+                  <ul className="flex flex-col gap-2">
+                    {sessions.map((booking) => {
+                      const status =
+                        WEEK_STATUS[booking.status.toLowerCase()] ?? WEEK_STATUS.accepted;
+                      return (
+                        <li key={booking.id} className="flex items-baseline gap-3">
+                          <span className="numeric shrink-0 text-copy text-ink">
+                            {format(new Date(booking.start_time), 'HH:mm')}–
+                            {format(new Date(booking.end_time), 'HH:mm')}
+                          </span>
+                          <span className="min-w-0 flex-1 truncate text-copy text-ink-body">
+                            {`${booking.client_first_name} ${booking.client_last_name}`.trim()}
+                            {booking.platform ? ` · ${booking.platform}` : ''}
+                          </span>
+                          {/* Status is text. */}
+                          <span className={cn('shrink-0 text-meta', status.tone)}>
+                            {status.label}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/** How many finished sessions the list shows before it stops. */
+const COMPLETED_VISIBLE = 8;
+
+/**
+ * "Sudah selesai" — sessions that are closed and need nothing further.
+ *
+ * They used to sit in a tab alongside the sessions that still need work, which
+ * meant the one list a host has to act on was padded with months of finished
+ * jobs. Newest first, and the figure on the right is the host's share
+ * (`baseFromTotal`), not the tax-inclusive price the brand paid — the same
+ * division the earnings chart and the balance make.
+ */
+function CompletedSessions({ index, bookings }: { index: number; bookings: Booking[] }) {
+  const completed = useMemo(
+    () =>
+      bookings
+        .filter((booking) => booking.status.toLowerCase() === 'completed')
+        .sort(
+          (a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime(),
+        ),
+    [bookings],
+  );
+
+  const visible = completed.slice(0, COMPLETED_VISIBLE);
+
+  return (
+    <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
+      <SectionHeading index={index} title="Sudah selesai" />
+
+      {completed.length === 0 ? (
+        <p className="px-5 py-10 text-center text-meta text-ink-soft">
+          Belum ada sesi yang selesai.
+        </p>
+      ) : (
+        <>
+          <ul>
+            {visible.map((booking) => (
+              <li
+                key={booking.id}
+                className="flex items-center gap-4 border-t border-hairline-soft px-5 py-3.5 first:border-t-0"
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-copy font-medium text-ink">
+                    {`${booking.client_first_name} ${booking.client_last_name}`.trim()}
+                  </p>
+                  <p className="numeric mt-0.5 truncate text-mini text-ink-soft">
+                    {format(new Date(booking.start_time), 'd MMM yyyy', { locale: idLocale })}
+                    {' · '}
+                    {format(new Date(booking.start_time), 'HH:mm')}–
+                    {format(new Date(booking.end_time), 'HH:mm')}
+                    {booking.platform ? ` · ${booking.platform}` : ''}
+                  </p>
+                </div>
+                <p className="numeric shrink-0 text-copy font-medium text-ink">
+                  {formatPrice(baseFromTotal(booking.price))}
+                </p>
+              </li>
+            ))}
+          </ul>
+
+          {completed.length > visible.length && (
+            <p className="border-t border-hairline-soft px-5 py-3 text-meta text-ink-soft">
+              Menampilkan {visible.length} sesi terakhir dari {completed.length}.
+            </p>
+          )}
+        </>
+      )}
+    </section>
   );
 }
 
@@ -3093,6 +3292,16 @@ export default function StreamerDashboard() {
   const handleStreamEnd: StreamHandler = useCallback(() => {
     fetchData();
   }, [fetchData]);
+
+  // Section 05 is the work list, so it gets only the sessions that still have
+  // work in them. Finished sessions are section 06's job — showing them in both
+  // is how the one list a host has to act on ended up padded with months of
+  // closed jobs. Same array, filtered at the call site: nothing else on the page
+  // sees a different set of bookings.
+  const openBookings = useMemo(
+    () => bookings.filter((booking) => booking.status.toLowerCase() !== 'completed'),
+    [bookings],
+  );
 
   const todayBookings = bookings.filter(booking => isToday(parseISO(booking.start_time)));
   const thisWeekBookings = bookings.filter(booking => 
@@ -3364,7 +3573,7 @@ export default function StreamerDashboard() {
             className="overflow-hidden rounded-panel border border-hairline bg-surface"
           >
             <SectionHeading
-              index={1}
+              index={2}
               title="Permintaan yang menunggu jawaban kamu"
               description="Brand tidak bisa membayar sampai kamu menerima."
             />
@@ -3433,15 +3642,31 @@ export default function StreamerDashboard() {
             </div>
           </section>
 
+          {/* The week, twice over, and deliberately not the same way twice:
+              first what it earned, then what it holds. */}
           <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
             <SectionHeading
-              index={2}
-              title="Sesi yang sudah kamu terima"
-              description="Sesi yang sudah dijawab tidak perlu kamu buka lagi."
+              index={3}
+              title="Ringkasan minggu ini"
+              description="Yang kamu terima, sebelum Salda menambah 30% ke harga brand."
+            />
+            <EarningsBar bookings={bookings} />
+          </section>
+
+          <WeekGlance index={4} bookings={bookings} />
+
+          {/* Only the sessions that still need something from the host. The
+              finished ones have their own section below rather than a fourth
+              tab here, so this list is short enough to act on. */}
+          <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
+            <SectionHeading
+              index={5}
+              title="Sesi yang perlu kamu urus"
+              description="Konfirmasi barang, mulai live, lalu akhiri sesinya."
             />
             <div className="p-5">
               <UpcomingSchedule
-                bookings={bookings}
+                bookings={openBookings}
                 onStreamStart={handleStreamStart}
                 onStreamEnd={handleStreamEnd}
                 setBookings={setBookings}
@@ -3449,14 +3674,7 @@ export default function StreamerDashboard() {
             </div>
           </section>
 
-          <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
-            <SectionHeading
-              index={3}
-              title="Pendapatan kamu"
-              description="Yang kamu terima, sebelum Salda menambah 30% ke harga brand."
-            />
-            <EarningsBar bookings={bookings} />
-          </section>
+          <CompletedSessions index={6} bookings={bookings} />
 
           {/*
             The money sections. They read `payouts` and `salda_streamer_balance`,
@@ -3467,11 +3685,11 @@ export default function StreamerDashboard() {
             <>
               <MoneySections
                 streamerId={userData.streamer_id}
-                index={4}
+                index={7}
                 bookings={bookings}
               />
               <ListingSections
-                index={7}
+                index={10}
                 price={
                   typeof streamerProfile?.price === 'string'
                     ? Number(streamerProfile.price)
@@ -3488,7 +3706,7 @@ export default function StreamerDashboard() {
                 isVerified={verificationStatus === 'approved'}
               />
               <PerformanceSection
-                index={9}
+                index={12}
                 bookings={bookings}
                 rating={streamerStats?.rating ?? null}
               />
