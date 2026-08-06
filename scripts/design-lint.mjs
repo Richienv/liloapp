@@ -56,6 +56,15 @@ const RULES = [
     re: /\b(text|bg|border)-(gray|slate|zinc|neutral|stone)-\d/,
   },
   {
+    id: "dead-token",
+    why: "A token name with digits after it is not a class — it resolves to nothing and renders as nothing. Usually left by a find-and-replace over Tailwind's numbered scale.",
+    // This found `bg-surface-tint0` in both status-dot switches on the host
+    // dashboard, in the DEFAULT branch — so any unrecognised status rendered an
+    // invisible dot. It survived seven commits and a full audit, because it
+    // type-checks, it builds, and it looks entirely normal in the source.
+    re: /\b(bg|text|border|ring|from|via|to)-(canvas|surface|ink|hairline|brand|positive|caution|destructive)[a-z-]*\d+\b/,
+  },
+  {
     id: "off-palette",
     why: "Tailwind's colour families are not the design's. Accent is bg-brand; states are text-positive / text-caution / text-destructive-emphasis on their -tint and -line.",
     // Deliberately narrower than "any colour": `bg-brand` resolves to #2563eb,
