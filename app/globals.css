@@ -4,7 +4,12 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
+    /* The page is the warm canvas #faf9f6, not white. `body` applies
+       `bg-background`, and app/layout.tsx separately hardcoded #faf9f6 on top
+       of it — the two now agree instead of one painting over the other.
+       `--card` and `--popover` stay white on purpose: a white card on a warm
+       canvas is what makes the card read as a card without a shadow. */
+    --background: 45 29% 97%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
@@ -20,10 +25,20 @@
     --accent-foreground: 0 0% 9%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --radius: 0.5rem;
+    /* Hairlines, warm rather than neutral grey. `*` is `@apply border-border`
+       in the base layer below, so this is the default edge colour for the
+       whole app: #e7e5e0 for structure, #dedbd4 for anything you can type in.
+       Kept as HSL triplets because shadcn primitives wrap them in `hsl()`; the
+       exact hex equivalents live in tailwind.config.ts as `hairline.*`. */
+    --border: 43 13% 89%; /* #e7e5e0 */
+    --input: 42 13% 85%; /* #dedbd4 */
+    /* Focus is the one place the accent is allowed to appear more than once
+       per section — it is never on screen twice at the same time. */
+    --ring: 221 83% 53%; /* #2563eb */
+    /* 9px. The shadcn scale derives md and sm from this as 7px and 5px, which
+       are the design's other two working radii, so `rounded-lg/md/sm` land on
+       the right geometry without touching a single component. */
+    --radius: 9px;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -94,13 +109,50 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* Inter at 13.5px is the workhorse size in this design; unsmoothed it
+       renders heavy enough on macOS to lose the distinction between 400 and
+       500, which the type hierarchy depends on. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Prices, counts and durations sit in vertical stacks and in table columns.
+     Proportional digits make those columns jitter as the values change. */
+  .numeric {
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
   }
 }
 
-/* Remove unnecessary float animations */
-@keyframes card-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
+/* ---------------------------------------------------------------------------
+   Scroll reveal.
+
+   The contract is: content is VISIBLE by default. The hidden state is opt-in
+   and is only ever applied by script, after the script has confirmed it is
+   running and has armed a timer to un-hide everything regardless. An
+   IntersectionObserver that never fires — script error, an element that starts
+   off-screen in a container that never scrolls, a browser that bails on the
+   observer — must not be able to leave a page permanently blank. Any CSS that
+   hides first and reveals later gets that exactly backwards.
+   --------------------------------------------------------------------------- */
+[data-reveal] {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* `.reveal-armed` is set on <html> by the observer's own setup code, so the
+     hidden state cannot exist unless something is alive to undo it. */
+  .reveal-armed [data-reveal]:not([data-revealed="true"]) {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  .reveal-armed [data-reveal] {
+    transition:
+      opacity 420ms var(--ease-out),
+      transform 420ms var(--ease-out);
+  }
 }
 
 /* Optimized animation utilities */
@@ -130,27 +182,12 @@
   -webkit-backdrop-filter: blur(12px);
 }
 
-/* Remove perspective and 3D transforms */
-.perspective-1000 {
-  perspective: none !important;
-}
+/* `.perspective-1000`, `.preserve-3d`, `.card-transition`, `.card-float` and a
+   hand-rolled `.blur-3xl` used to live here. All five had zero call sites, and
+   the `.blur-3xl` one shadowed Tailwind's own utility of the same name — a
+   trap for anyone who later reached for it and got a filter that ignores the
+   surrounding blur classes. Deleted rather than left as decoration. */
 
-.preserve-3d {
-  transform-style: flat !important;
-  transform: none !important;
-}
-
-/* Optimize transitions */
-.card-transition {
-  transition: transform var(--transition-fast) var(--ease-out);
-}
-
-.blur-3xl {
-  --tw-blur: blur(64px);
-  filter: var(--tw-blur);
-}
-
-/* Remove unnecessary rotations */
 .transform-gpu {
   transform: translateZ(0);
   backface-visibility: hidden;
@@ -236,24 +273,29 @@ html {
   transition-duration: var(--transition-fast);
 }
 
-/* Custom scrollbar styles */
+/* Scrollbars inside scrolling panels — the booking rail and the dashboard
+   lists. Warm to match the canvas; the old rule used cool greys and had no
+   call sites at all. */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: theme('colors.gray.300') theme('colors.gray.100');
+  scrollbar-color: #dedbd4 transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
-  background: theme('colors.gray.100');
-  border-radius: 3px;
+  background: transparent;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background-color: theme('colors.gray.300');
+  background-color: #dedbd4;
   border-radius: 3px;
-  border: 2px solid transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #c7c5be;
 }
 
