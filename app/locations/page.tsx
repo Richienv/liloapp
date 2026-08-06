@@ -7,6 +7,7 @@ import { BreadcrumbStructuredData } from '@/components/structured-data/breadcrum
 import { CityListStructuredData } from '@/components/structured-data/city-list-data'
 import { getCityBySlug, resolveCity, type City } from '@/lib/cities'
 import { SITE_URL, absoluteUrl } from '@/lib/site'
+import { Button } from '@/components/ui/button'
 
 const BASE_URL = SITE_URL
 const CANONICAL_URL = absoluteUrl('/locations')
@@ -143,34 +144,46 @@ export default async function LocationsPage() {
       <BreadcrumbStructuredData items={breadcrumbItems} />
       <CityListStructuredData entries={entries} url={CANONICAL_URL} />
 
-      <main className="mx-auto max-w-5xl px-4 py-10">
-        <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-ink-soft">
+      <main className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-12">
+        {/* Separators are list items rather than bare icons: an <ol> whose
+            children are not <li> is a list a screen reader stops counting. */}
+        <nav aria-label="Breadcrumb">
+          <ol className="flex flex-wrap items-center gap-1.5 text-meta text-ink-soft">
             <li>
-              <Link href="/" className="hover:text-blue-600">
+              <Link href="/" className="transition-colors hover:text-ink">
                 Beranda
               </Link>
             </li>
-            <ChevronRight className="h-3 w-3" aria-hidden="true" />
+            <li aria-hidden="true" className="flex items-center">
+              <ChevronRight className="h-3 w-3 text-ink-ghost" />
+            </li>
             <li aria-current="page" className="text-ink">
               Kota
             </li>
           </ol>
         </nav>
 
-        <header className="mb-10">
-          <p className="inline-flex items-center gap-1 text-sm text-ink-soft">
-            <MapPin className="h-4 w-4" /> Seluruh Indonesia
+        <header className="mt-6">
+          <p className="inline-flex items-center gap-1.5 font-mono text-tiny uppercase text-ink-ghost">
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+            Seluruh Indonesia
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-ink sm:text-3xl">
-            Live Streamer Profesional per Kota
+          <h1 className="mt-2 font-serif text-section font-semibold text-ink sm:text-display">
+            Live streamer profesional per kota
           </h1>
-          <p className="mt-2 max-w-2xl text-ink-muted">
-            {entries.length > 0
-              ? `${total} host live streaming terverifikasi tersebar di ${entries.length} kota. Pilih kota kamu untuk melihat host yang tersedia.`
-              : 'Belum ada host live streaming terverifikasi yang bisa ditampilkan saat ini.'}
+          <p className="mt-3 max-w-[62ch] text-lede text-ink-soft">
+            {entries.length > 0 ? (
+              <>
+                <span className="numeric text-ink">{total}</span> host live streaming
+                terverifikasi tersebar di{' '}
+                <span className="numeric text-ink">{entries.length}</span> kota. Pilih kota
+                kamu untuk melihat host yang tersedia.
+              </>
+            ) : (
+              'Belum ada host live streaming terverifikasi yang bisa ditampilkan saat ini.'
+            )}
           </p>
-          <p className="mt-2 max-w-2xl text-sm text-ink-soft">
+          <p className="mt-3 max-w-[62ch] text-meta text-ink-soft">
             Live streaming berjalan sepenuhnya online. Kota hanya memengaruhi lama pengiriman
             produk kamu ke host, bukan kualitas siarannya — jadi kamu tetap bebas memilih host
             dari kota mana pun.
@@ -178,28 +191,55 @@ export default async function LocationsPage() {
         </header>
 
         {groups.length > 0 ? (
-          <div className="space-y-10">
-            {groups.map((group) => (
+          <div className="mt-10 space-y-10">
+            {groups.map((group, groupIndex) => (
               <section key={group.province}>
-                <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-soft">
-                  {group.province}
-                </h2>
-                <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Mono index, serif province, count — the same three-part
+                    section head the booking list uses, so a brand moving
+                    between the two surfaces reads one hierarchy, not two. */}
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline-soft pb-2.5">
+                  <span className="numeric font-mono text-tiny text-ink-ghost">
+                    {String(groupIndex + 1).padStart(2, '0')}
+                  </span>
+                  <h2 className="font-serif text-title font-semibold text-ink">
+                    {group.province}
+                  </h2>
+                  <span className="numeric text-mini text-ink-ghost">
+                    {group.cities.length}
+                  </span>
+                </div>
+
+                {/*
+                  `shadow-cell` per cell, never a border: two bordered
+                  neighbours draw their shared seam twice and it renders 2px.
+                  The container's border plus `overflow-hidden` clips the
+                  outermost rings so every line here is exactly 1px.
+                */}
+                <ul className="mt-4 grid grid-cols-1 overflow-hidden rounded-frame border border-hairline bg-surface sm:grid-cols-2 lg:grid-cols-3">
                   {group.cities.map(({ city, count }) => (
-                    <li key={city.slug}>
+                    <li key={city.slug} className="shadow-cell">
                       <Link
                         href={`/location/${city.slug}`}
-                        className="group flex items-center justify-between rounded-frame border border-hairline bg-surface p-4 transition-shadow"
+                        className="flex min-w-0 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-surface-raised"
                       >
-                        <span>
-                          <span className="block font-semibold text-ink group-hover:text-blue-600">
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate text-ui font-medium text-ink">
                             {city.name}
                           </span>
-                          <span className="mt-0.5 inline-flex items-center gap-1 text-xs text-ink-soft">
-                            <Users className="h-3 w-3" /> {count} host tersedia
+                          <span className="mt-0.5 flex min-w-0 items-center gap-1.5 text-meta text-ink-soft">
+                            <Users
+                              className="h-3.5 w-3.5 shrink-0 text-ink-faint"
+                              aria-hidden="true"
+                            />
+                            <span className="truncate">
+                              <span className="numeric">{count}</span> host tersedia
+                            </span>
                           </span>
                         </span>
-                        <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint group-hover:text-blue-600" />
+                        <ChevronRight
+                          className="h-4 w-4 shrink-0 text-ink-ghost"
+                          aria-hidden="true"
+                        />
                       </Link>
                     </li>
                   ))}
@@ -208,16 +248,16 @@ export default async function LocationsPage() {
             ))}
           </div>
         ) : (
-          <div className="rounded-frame border border-dashed border-hairline-input bg-surface p-8 text-center">
-            <p className="text-ink-muted">
+          <div className="mt-10 rounded-frame border border-hairline bg-surface px-5 py-16 text-center">
+            <p className="font-serif text-title font-semibold text-ink">Belum ada kota</p>
+            <p className="mx-auto mt-2 max-w-md text-meta text-ink-soft">
               Daftar kota akan muncul di sini begitu ada host yang terverifikasi.
             </p>
-            <Link
-              href="/"
-              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
-            >
-              Kembali ke beranda <ChevronRight className="h-4 w-4" />
-            </Link>
+            <div className="mt-6 flex justify-center">
+              <Button asChild variant="brand" size="action-compact">
+                <Link href="/">Kembali ke beranda</Link>
+              </Button>
+            </div>
           </div>
         )}
       </main>
