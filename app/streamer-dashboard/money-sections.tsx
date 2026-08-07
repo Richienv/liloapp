@@ -168,7 +168,7 @@ export function MoneySections({
       >
         <div className="grid grid-cols-1 gap-px bg-hairline-soft sm:grid-cols-3">
           {[
-            { label: "Siap dicairkan", value: balance?.available, tone: "positive" as const },
+            { label: "Selesai, siap cair", value: balance?.available, tone: "positive" as const },
             { label: "Tertahan", value: balance?.held, tone: "muted" as const },
             { label: "Total di Salda", value: balance?.lifetime, tone: "muted" as const },
           ].map((tile) => (
@@ -355,6 +355,10 @@ export function ListingSections({
         title="Ini yang brand lihat"
         description="Kartu kamu di hasil pencarian"
       >
+        <p className="border-b border-hairline-soft px-5 py-3.5 text-meta text-ink-soft">
+          Brand memutuskan dalam hitungan detik. Tiga hal yang paling menentukan:
+          harga, rating, dan seberapa cepat kamu membalas.
+        </p>
         <div className="flex flex-col gap-5 px-5 py-5 sm:flex-row">
           <div className="w-full max-w-[220px] overflow-hidden rounded-panel border border-hairline bg-surface">
             <div

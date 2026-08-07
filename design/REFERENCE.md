@@ -193,6 +193,19 @@ Copy worth keeping exact:
   `Brand hanya bisa memesan di hari yang kamu nyalakan.` /
   `Perubahan berlaku untuk booking baru. Sesi yang sudah dipesan tidak berubah.`
 
+> **Two balance lines deviate, deliberately.** The reference reads
+> `Dana masuk ke BCA ••4471 dalam 1×24 jam kerja` and `Diproses tiap Senin ke
+> BCA ••4471`. "BCA ••4471" is mockup placeholder data — hardcoding it would
+> show every host the same bank and the same four digits regardless of the
+> account they actually registered. The screen says "rekening kamu" instead.
+> The payout *history* rows do show the real bank and masked number, because
+> `payouts` snapshots them at request time.
+>
+> **The hero's live proof strip is not built** — `47 host sedang live`,
+> `12,4rb like hari ini`, `18.902 nonton sekarang`. Nothing the page loads
+> counts live sessions, likes, or concurrent viewers. Wire real aggregates
+> before adding it.
+
 ---
 
 ## Auth — `app/(auth-pages)`

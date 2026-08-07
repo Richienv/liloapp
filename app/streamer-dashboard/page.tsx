@@ -1239,12 +1239,15 @@ function RejectionModal({
               <AlertTriangle className="h-5 w-5 text-caution" />
               <span className="font-medium">Perhatian</span>
             </div>
-            <p>Penolakan booking akan mempengaruhi performa dan reputasi kamu sebagai streamer.</p>
+            <p>
+              Brand akan melihat alasan ini. Menolak terlalu sering menurunkan urutan
+              kamu di pencarian.
+            </p>
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="reason" className="text-ui font-medium text-ink-body">
-              Alasan penolakan<span className="text-destructive-emphasis">*</span>
+              Pilih satu alasan<span className="text-destructive-emphasis">*</span>
             </Label>
             <Textarea
               id="reason"
@@ -1276,7 +1279,7 @@ function RejectionModal({
                 Memproses...
               </>
             ) : (
-              'Konfirmasi Penolakan'
+              'Kirim penolakan'
             )}
           </Button>
         </div>
@@ -1415,7 +1418,7 @@ function BookingCard({ booking, onAccept, onReject }: BookingCardProps) {
                 onClick={() => onAccept(booking.id)}
                 className="px-4 sm:px-8 py-2 sm:py-3 bg-brand hover:bg-brand-hover text-white text-mini sm:text-ui font-medium rounded-panel transition-colors"
               >
-                Terima
+                Terima booking
               </button>
             </div>
           )}
@@ -2817,7 +2820,7 @@ function NowCard({
                 value: `${format(new Date(subject.start_time), 'HH:mm')}–${format(new Date(subject.end_time), 'HH:mm')}`,
               },
               { label: 'Platform', value: subject.platform },
-              { label: 'Bayaran', value: formatPrice(baseFromTotal(subject.price)) },
+              { label: 'Bayaran kamu', value: formatPrice(baseFromTotal(subject.price)) },
             ].map((field) => (
               <div key={field.label}>
                 <p className="text-micro tracking-normal text-ink-faint">{field.label}</p>
