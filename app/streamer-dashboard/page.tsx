@@ -1,19 +1,23 @@
 "use client";
 
 import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { baseFromTotal } from "@/lib/pricing";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { signOutAction, acceptBooking, rejectBooking, startStream, endStream, acceptItems, requestReschedule } from "@/app/actions";
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { format, isToday, isThisWeek, isThisMonth, isSameDay, parseISO, differenceInHours, addDays, addHours, parse, startOfDay, startOfWeek, endOfWeek } from 'date-fns';
 import { Calendar, Clock, Monitor, DollarSign, MessageSquare, Link as LinkIcon, AlertTriangle, MapPin, Users, XCircle, Video, Settings, Loader2, Info, ExternalLink, ChevronRight, CheckCircle, Radio, Package, CheckSquare, Circle, X, ArrowRight, BadgeCheck, Store, Wallet } from 'lucide-react';
 import Link from 'next/link';
 import { ListingSections, MoneySections, PerformanceSection } from './money-sections';
+import { HostShell, type HostTab } from './host-shell';
+import { BerandaTab } from './tabs/beranda';
+import { JadwalTab } from './tabs/jadwal';
+import { setAcceptingBookings } from './availability-actions';
 import {
   milestoneProgress,
   streamerMilestones,
@@ -3123,7 +3127,20 @@ function CompletedSessions({ index, bookings }: { index: number; bookings: Booki
   );
 }
 
+/**
+ * useSearchParams needs a Suspense boundary or the whole route opts into
+ * dynamic rendering and `next build` fails. The dashboard is client-side and
+ * auth-gated anyway, so the fallback is only ever a paint away.
+ */
 export default function StreamerDashboard() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-canvas" />}>
+      <StreamerDashboardContent />
+    </Suspense>
+  );
+}
+
+function StreamerDashboardContent() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [pendingBookings, setPendingBookings] = useState<Booking[]>([]);
@@ -3143,6 +3160,100 @@ export default function StreamerDashboard() {
   // The profile row itself, so milestone 1 is recomputed from the same fields
   // lib/milestones checks rather than from a flag that could drift.
   const [streamerProfile, setStreamerProfile] = useState<PublishableProfile | null>(null);
+
+  /* ------------------------------------------------------------------ shell */
+
+  const searchParams = useSearchParams();
+
+  /**
+   * The tab lives in the URL, not in state alone.
+   *
+   * A host who reloads while looking at Pendapatan should land on Pendapatan.
+   * With useState they land on Beranda and have to find their way back, which
+   * on a dashboard people keep open all day is the difference between a tab bar
+   * and a nuisance. An unknown or missing value falls back to Beranda.
+   */
+  const activeTab: HostTab = (() => {
+    const raw = searchParams?.get('tab');
+    return raw === 'schedule' || raw === 'earnings' || raw === 'profile' ? raw : 'home';
+  })();
+
+  const handleTabChange = useCallback(
+    (tab: HostTab) => {
+      const next = new URLSearchParams(Array.from(searchParams?.entries() ?? []));
+      if (tab === 'home') next.delete('tab');
+      else next.set('tab', tab);
+      const qs = next.toString();
+      // replace, not push: flipping tabs should not fill the back button with
+      // steps a host has to press their way out of.
+      router.replace(qs ? `/streamer-dashboard?${qs}` : '/streamer-dashboard', { scroll: false });
+    },
+    [router, searchParams],
+  );
+
+  /**
+   * "Terima booking" — a real write, to `streamers.is_active`, which
+   * app/api/streamers/route.ts filters the whole marketplace on.
+   *
+   * Optimistic, because the switch has to feel immediate, but it REVERTS on
+   * failure and says so. A host who flips this off and is not told it failed
+   * would stop watching for bookings while still receiving them.
+   */
+  const [accepting, setAccepting] = useState(true);
+  const [acceptingBusy, setAcceptingBusy] = useState(false);
+
+  const handleAcceptingChange = useCallback(async (next: boolean) => {
+    if (acceptingBusy) return;
+    setAcceptingBusy(true);
+    const previous = accepting;
+    setAccepting(next);
+    try {
+      const result = await setAcceptingBookings(next);
+      if (!result.success) {
+        setAccepting(previous);
+        toast.error(result.error ?? 'Gagal menyimpan.');
+        return;
+      }
+      // Settle on what was actually stored, not on what we asked for.
+      setAccepting(result.accepting ?? next);
+      toast.success(next
+        ? 'Kamu muncul lagi di pencarian brand.'
+        : 'Kamu tidak muncul di pencarian sampai dinyalakan lagi.');
+    } catch {
+      setAccepting(previous);
+      toast.error('Gagal menyimpan. Coba lagi sebentar lagi.');
+    } finally {
+      setAcceptingBusy(false);
+    }
+  }, [accepting, acceptingBusy]);
+
+  /**
+   * mm:ss since the live session started, or null when nothing is live. The
+   * shell renders its pill only when this is non-null — it never invents a
+   * clock, and a zeroed one would read as "live for 00:00".
+   */
+  const liveBooking = useMemo(
+    () => bookings.find((b) => b.status === 'live') ?? null,
+    [bookings],
+  );
+  const [liveClock, setLiveClock] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!liveBooking) {
+      setLiveClock(null);
+      return;
+    }
+    const tick = () => {
+      const started = new Date(liveBooking.start_time).getTime();
+      const seconds = Math.max(0, Math.floor((Date.now() - started) / 1000));
+      const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const ss = String(seconds % 60).padStart(2, '0');
+      setLiveClock(`${mm}:${ss}`);
+    };
+    tick();
+    const timer = setInterval(tick, 1000);
+    return () => clearInterval(timer);
+  }, [liveBooking]);
   const [hasPayoutAccount, setHasPayoutAccount] = useState(false);
   // A signed-in account with no `streamers` row is not a failure. It is either a
   // brand — which has no host dashboard at all — or a host whose row was never
@@ -3537,9 +3648,19 @@ export default function StreamerDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-canvas">
-      <Navbar />
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-3 sm:py-6 md:py-8">
+    <HostShell
+      activeTab={activeTab}
+      onTabChange={handleTabChange}
+      hostName={userData?.first_name ?? ''}
+      hostPhotoUrl={streamerProfile?.image_url ?? null}
+      rating={streamerStats?.rating ?? null}
+      sessionCount={streamerStats?.totalLive ?? null}
+      pendingCount={pendingBookings.length}
+      liveClock={liveClock}
+      accepting={accepting}
+      onAcceptingChange={handleAcceptingChange}
+    >
+      <div className="flex flex-col gap-7">
         <ToastContainer />
 
         {/* Setup tracker: the only persistent entry point back into setup for a
@@ -3565,143 +3686,46 @@ export default function StreamerDashboard() {
           />
         )}
 
-        {/* One card, one job, always the most urgent one. Above every section
-            because a host between sessions should not have to work out which
-            of four headings applies to them. */}
-        <NowCard bookings={bookings} pendingCount={pendingBookings.length} />
-
-        {/* The sections are numbered because they are a sequence, not a pile:
-            answer requests, run the sessions, see what you earned. */}
-        <div className="mt-6 space-y-3.5">
-          <section
-            id="permintaan"
-            className="overflow-hidden rounded-panel border border-hairline bg-surface"
-          >
-            <SectionHeading
-              index={2}
-              title="Permintaan yang menunggu jawaban kamu"
-              description="Brand tidak bisa membayar sampai kamu menerima."
-            />
-            <div className="p-5">
-              <Tabs defaultValue="pending" className="w-full">
-                {/* A count in a tab label is the fastest possible answer to
-                    "is there anything for me here", so both carry one. */}
-                <TabsList className="mb-5 flex gap-1 rounded-field bg-surface-tint p-1">
-                  <TabsTrigger
-                    value="pending"
-                    className="flex-1 rounded-[6px] py-2 text-copy font-medium data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-none"
-                  >
-                    Menunggu ({pendingBookings.length})
-                  </TabsTrigger>
-                  <TabsTrigger
-                    value="rejected"
-                    className="flex-1 rounded-[6px] py-2 text-copy font-medium data-[state=active]:bg-surface data-[state=active]:text-ink data-[state=active]:shadow-none"
-                  >
-                    Ditolak ({rejectedBookings.length})
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="pending" className="space-y-3.5">
-                  {pendingBookings.length > 0 ? (
-                    [...pendingBookings]
-                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                      .map((booking) => (
-                        <BookingCard
-                          key={booking.id}
-                          booking={booking}
-                          onAccept={handleAcceptBooking}
-                          onReject={handleRejectBooking}
-                        />
-                      ))
-                  ) : (
-                    <div className="rounded-panel border border-dashed border-hairline-input px-5 py-10 text-center">
-                      <p className="text-copy font-medium text-ink">
-                        Tidak ada yang menunggu jawaban
-                      </p>
-                      <p className="mt-1 text-meta text-ink-soft">
-                        Semua permintaan sudah kamu jawab.
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="rejected" className="space-y-3.5">
-                  {rejectedBookings.length > 0 ? (
-                    [...rejectedBookings]
-                      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                      .map((booking) => (
-                        <BookingCard
-                          key={booking.id}
-                          booking={booking}
-                          onAccept={handleAcceptBooking}
-                          onReject={handleRejectBooking}
-                        />
-                      ))
-                  ) : (
-                    <div className="rounded-panel border border-dashed border-hairline-input px-5 py-10 text-center">
-                      <p className="text-meta text-ink-soft">Belum ada booking yang ditolak.</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
-          </section>
-
-          {/* The week, twice over, and deliberately not the same way twice:
-              first what it earned, then what it holds. */}
-          <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
-            <SectionHeading
-              index={3}
-              title="Ringkasan minggu ini"
-              description="Yang kamu terima, sebelum Salda menambah 30% ke harga brand."
-            />
-            <EarningsBar bookings={bookings} />
-          </section>
-
-          <WeekGlance index={4} bookings={bookings} />
-
-          {/* Only the sessions that still need something from the host. The
-              finished ones have their own section below rather than a fourth
-              tab here, so this list is short enough to act on. */}
-          <section className="overflow-hidden rounded-panel border border-hairline bg-surface">
-            <SectionHeading
-              index={5}
-              title="Sesi yang perlu kamu urus"
-              description="Konfirmasi barang, mulai live, lalu akhiri sesinya."
-            />
-            <div className="p-5">
-              <UpcomingSchedule
-                bookings={openBookings}
-                onStreamStart={handleStreamStart}
-                onStreamEnd={handleStreamEnd}
-                setBookings={setBookings}
-              />
-            </div>
-          </section>
-
-          <CompletedSessions index={6} bookings={bookings} />
-
-          {/*
-            The money sections. They read `payouts` and `salda_streamer_balance`,
-            which did not exist until 20260806140000_payouts.sql — the bank
-            details collected at onboarding had nowhere to pay into.
+        {/*
+            Four tabs, per design/Salda_Host.dc.html. The twelve sections that
+            used to stack in one scroll are split by what a host came here to
+            do: answer something, check a schedule, look at money, or edit a
+            listing. Nothing was dropped — the tab each section belongs to is
+            the design's own grouping.
           */}
-          {userData?.streamer_id ? (
+        {activeTab === 'home' && (
+            <BerandaTab
+              bookings={bookings}
+              pendingBookings={pendingBookings}
+              onAccept={handleAcceptBooking}
+              onReject={handleRejectBooking}
+            />
+          )}
+
+          {activeTab === 'schedule' && <JadwalTab bookings={bookings} />}
+
+          {activeTab === 'earnings' && userData?.streamer_id ? (
+            <MoneySections
+              streamerId={userData.streamer_id}
+              index={7}
+              bookings={bookings}
+            />
+          ) : null}
+
+          {activeTab === 'profile' && userData?.streamer_id ? (
             <>
-              <MoneySections
-                streamerId={userData.streamer_id}
-                index={7}
-                bookings={bookings}
-              />
               <ListingSections
                 index={10}
                 price={
-                  typeof streamerProfile?.price === 'string'
-                    ? Number(streamerProfile.price)
-                    : streamerProfile?.price ?? null
+                  // string | number | null — PostgREST returns numeric as a
+                  // string. Coerced, not cast: a cast lets "120000" through as
+                  // a number and the section formats a string as rupiah.
+                  streamerProfile?.price == null || streamerProfile.price === ''
+                    ? null
+                    : Number(streamerProfile.price)
                 }
                 rating={streamerStats?.rating ?? null}
-                city={streamerProfile?.city_slug || streamerProfile?.location || ''}
+                city={streamerProfile?.location ?? ''}
                 platforms={(streamerProfile?.platform ?? '')
                   .split(',')
                   .map((value: string) => value.trim())
@@ -3717,9 +3741,7 @@ export default function StreamerDashboard() {
               />
             </>
           ) : null}
-        </div>
       </div>
-    </div>
+    </HostShell>
   );
 }
-
