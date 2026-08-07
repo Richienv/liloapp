@@ -260,7 +260,7 @@ function NowCard({
         ? "bg-surface border-brand"
         : "bg-surface border-hairline";
   const barCls = live ? "" : ready ? "bg-brand-wash" : "bg-surface-raised";
-  const fgCls = live ? "text-[#fafafa]" : "text-ink";
+  const fgCls = live ? "text-ink-inverse" : "text-ink";
   const subCls = live ? "text-[rgba(255,255,255,.62)]" : "text-ink-muted";
   const eyebrowCls = live
     ? "text-brand-line-strong"
@@ -270,7 +270,7 @@ function NowCard({
         ? "text-brand"
         : "text-ink-ghost";
   const railBorder = live
-    ? "border-[#2e2e2e]"
+    ? "border-ink-line"
     : done
       ? "border-positive-line"
       : ready
@@ -324,7 +324,7 @@ function NowCard({
   const primaryCls = done
     ? "bg-ink text-white hover:bg-brand"
     : live
-      ? "bg-white text-ink"
+      ? "bg-surface text-ink"
       : linkMissing
         ? "bg-hairline-soft text-ink-ghost"
         : "bg-brand text-white hover:bg-brand-hover";
@@ -334,7 +334,7 @@ function NowCard({
       className={cn(
         "overflow-hidden rounded-frame border transition-colors duration-[400ms] ease-out",
         cardCls,
-        live && "border-[#2e2e2e]",
+        live && "border-ink-line",
       )}
     >
       <div className="flex flex-wrap items-start gap-6 px-7 pb-[22px] pt-[26px]">
@@ -388,7 +388,7 @@ function NowCard({
                   style={{ height: "100%", animation: "h-bar 1.1s ease-in-out infinite" }}
                 />
                 <span
-                  className="w-1 origin-bottom rounded-hair bg-white"
+                  className="w-1 origin-bottom rounded-hair bg-surface"
                   style={{ height: "100%", animation: "h-bar 1.1s ease-in-out infinite .2s" }}
                 />
                 <span
@@ -424,7 +424,7 @@ function NowCard({
                         : active
                           ? "border-brand bg-surface text-brand"
                           : live
-                            ? "border-[#3a3a3a] bg-transparent text-[#6b6b66]"
+                            ? "border-ink-line-strong bg-transparent text-ink-inverse-soft"
                             : "border-hairline-input bg-transparent text-ink-ghost",
                     )}
                   >
@@ -433,7 +433,7 @@ function NowCard({
                   <span
                     className={cn(
                       "h-0.5 flex-1 transition-colors duration-[400ms]",
-                      step.ok ? "bg-brand" : live ? "bg-[#2e2e2e]" : "bg-hairline",
+                      step.ok ? "bg-brand" : live ? "bg-ink-line" : "bg-hairline",
                     )}
                   />
                 </div>
@@ -443,12 +443,12 @@ function NowCard({
                     active ? "font-semibold" : "font-medium",
                     step.ok
                       ? live
-                        ? "text-[#fafafa]"
+                        ? "text-ink-inverse"
                         : "text-ink"
                       : active
                         ? "text-ink"
                         : live
-                          ? "text-[#6b6b66]"
+                          ? "text-ink-inverse-soft"
                           : "text-ink-ghost",
                   )}
                 >
@@ -457,7 +457,7 @@ function NowCard({
                 <span
                   className={cn(
                     "h-[13px] text-[10.5px] leading-[13px]",
-                    active ? "text-brand" : live ? "text-[#6b6b66]" : "text-ink-ghost",
+                    active ? "text-brand" : live ? "text-ink-inverse-soft" : "text-ink-ghost",
                   )}
                 >
                   {active ? "Kamu di sini" : step.ok ? step.hint : ""}
@@ -503,8 +503,9 @@ function NowCard({
           "flex flex-wrap items-center gap-4 border-t px-7 py-4 transition-colors duration-[400ms]",
           railBorder,
           barCls,
+          // The bar sits ON the dark card, one step lighter than it.
+          live && "bg-ink-raised",
         )}
-        style={live ? { background: "#1f1f1f" } : undefined}
       >
         <p className={cn("min-w-0 flex-1 basis-[200px] text-meta", subCls)}>{text.foot}</p>
         <div className="ml-auto flex flex-shrink-0 gap-3">
@@ -517,7 +518,7 @@ function NowCard({
               className={cn(
                 "h-[46px] w-[168px] rounded-field border bg-transparent text-copy font-medium transition-colors",
                 live
-                  ? "border-[rgba(255,255,255,.3)] text-[#fafafa]"
+                  ? "border-ink-line-strong text-ink-inverse"
                   : "border-hairline-input text-ink-muted hover:border-ink hover:text-ink",
               )}
             >

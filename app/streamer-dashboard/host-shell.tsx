@@ -143,7 +143,7 @@ function AcceptingToggle({
           }`}
         >
           <span
-            className="absolute top-[2px] h-[15px] w-[15px] rounded-[8px] bg-white"
+            className="absolute top-[2px] h-[15px] w-[15px] rounded-[8px] bg-surface"
             style={{
               left: on ? "17px" : "2px",
               transition: "left .3s cubic-bezier(.16,1,.3,1)",
@@ -304,7 +304,7 @@ export function HostShell({
             <div className="flex flex-shrink-0 items-center gap-[9px] rounded-[8px] bg-brand px-[13px] py-2">
               <span
                 aria-hidden
-                className="h-[6px] w-[6px] flex-shrink-0 rounded-[3px] bg-white"
+                className="h-[6px] w-[6px] flex-shrink-0 rounded-[3px] bg-surface"
                 style={{ animation: "h-live 1.6s ease-in-out infinite" }}
               />
               <span className="font-mono text-mini tracking-[.06em] text-white">

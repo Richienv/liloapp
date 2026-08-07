@@ -119,12 +119,19 @@ function stripComments(source) {
     .replace(/(^|[^:])\/\/[^\n]*/g, (m, p) => p + m.slice(p.length).replace(/./g, " "));
 }
 
-const files = execSync(
-  "git ls-files 'app/**/*.tsx' 'app/**/*.ts' 'components/**/*.tsx' 'components/**/*.ts'",
-  { encoding: "utf8" },
-)
+/**
+ * Directories, then filter by extension — NOT a `**` pathspec.
+ *
+ * `git ls-files 'components/**\/*.tsx'` uses git's default wildmatch, where `**`
+ * requires at least one intervening directory. It silently skips every
+ * top-level file: components/streamer-card.tsx, components/hero.tsx,
+ * components/payment-modal.tsx and eighteen others. This scanned 46 of 67
+ * component files and reported clean over the gap — the exact failure the
+ * header warns about, in the tool written to catch it.
+ */
+const files = execSync("git ls-files app components", { encoding: "utf8" })
   .split("\n")
-  .filter(Boolean);
+  .filter((f) => f.endsWith(".tsx") || f.endsWith(".ts"));
 
 const counts = new Map(RULES.map((r) => [r.id, 0]));
 const dirty = new Map();

@@ -1,3 +1,9 @@
+/*
+ * design-lint-allow: raw-hex
+ *
+ * Supabase's brand green, inside Supabase's own logo. A vendor mark is
+ * reproduced as published or not at all.
+ */
 export default function SupabaseLogo() {
   return (
     <svg
