@@ -119,6 +119,13 @@ export default function RolePicker() {
    * duplicate the revamp existed to remove.
    */
   const [step, setStep] = useState<"choose" | "client-city">("choose");
+  /**
+   * True when a brand was sent straight to the city question without ever
+   * seeing the two cards. It changes two things: the step label (there is no
+   * step 1 to have completed) and the back button, which would otherwise say
+   * "Kembali" and lead to a screen this person has never laid eyes on.
+   */
+  const [skippedChoice, setSkippedChoice] = useState(false);
   const [citySlug, setCitySlug] = useState("");
   /**
    * Which panel to show. Seeded from the intent the visitor already expressed
@@ -189,19 +196,43 @@ export default function RolePicker() {
     };
   }, [router]);
 
-  // Pre-highlight the card the visitor already implied by clicking "Daftar
-  // sebagai host". Read once the picker is actually on screen.
+  /**
+   * Read the intent the visitor already expressed, and skip the question when
+   * they have effectively answered it.
+   *
+   * BRAND IS THE DEFAULT, AND THE QUESTION IS NOT ASKED.
+   *
+   * Everything that leads here from the public site is a brand action. The
+   * landing page's only call to action is "Mulai cari host"; the marketplace
+   * asks for a sign-in when someone tries to book. By the time an account
+   * exists, that person has already told us what they are — asking again is a
+   * coin toss they can lose, and losing it lands them in host onboarding
+   * (KTP, selfie, platform proof, a listing) to do something a brand does in
+   * one click.
+   *
+   * Becoming a host is the deliberate path, and it has two entrances that both
+   * set this intent: /streamer-sign-up, and "Mau jadi host? Daftar sebagai
+   * host" on the sign-in screen. Only those reach the two-card screen. Anyone
+   * who arrives without that signal goes straight to the brand's one follow-up
+   * question — their city — and the escape hatch on that step covers the rest.
+   */
   useEffect(() => {
     if (status !== "ready") return;
     try {
       const stored = asRole(window.sessionStorage.getItem(ROLE_INTENT_STORAGE_KEY));
       setIntentRole(stored);
-      // Seed the proof panel from the same signal, so someone who arrived via
-      // "Daftar sebagai host" opens on the host panel rather than being shown
-      // the brand pitch they already declined.
       if (stored) setPreviewRole(stored);
+      // No host intent recorded: this is a brand. Skip "choose" entirely.
+      if (stored !== "streamer") {
+        setStep("client-city");
+        setSkippedChoice(true);
+      }
     } catch {
-      // Private mode / storage disabled: no highlight, nothing else changes.
+      // Private mode / storage disabled. sessionStorage is the only place the
+      // host intent lives, so it cannot be read — and defaulting to the brand
+      // path would send a would-be host down the wrong one with no way back
+      // except the escape hatch. Show the choice instead: a question is the
+      // safe answer when the signal is genuinely missing.
     }
   }, [status]);
 
@@ -297,11 +328,11 @@ export default function RolePicker() {
             transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
         >
           <ArrowLeft className="h-4 w-4" />
-          Kembali
+          {skippedChoice ? "Sebenarnya aku mau jadi host" : "Kembali"}
         </button>
 
         <div className="mb-6">
-          <AuthStepLabel step={2} />
+          {!skippedChoice && <AuthStepLabel step={2} />}
           <h1 className="mt-2 font-serif text-section font-medium text-ink">
             Brand kamu ada di kota mana?
           </h1>
