@@ -1,5 +1,14 @@
 import type { ReactNode } from 'react';
 
+/*
+ * design-lint-allow: white-surface, raw-hex
+ *
+ * One bg-white: the 5px dot inside the brand-blue LIVE chip on step 08 —
+ * white on blue, not a surface. One raw hex: the envelope flap on step 01 is a
+ * CSS triangle, and border-top-color in an inline style cannot take a Tailwind
+ * class. It is the hairline value.
+ */
+
 /**
  * "01 / Cara kerja" — Delapan langkah dari daftar sampai live.
  *

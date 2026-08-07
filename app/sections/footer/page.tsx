@@ -1,107 +1,124 @@
-"use client";
+import Link from "next/link";
+
+/* ==========================================================================
+   Footer — ported from design/Salda_Landing.dc.html (markup lines 496-519,
+   `footerCols` at line 715).
+
+   A directory and a giant wordmark. No animation: the design gives this
+   section none, and nothing here is hidden behind an observer.
+   ========================================================================== */
+
+/*
+ * NOTE ON EXPORTS — this file sits at app/sections/footer/page.tsx, so Next
+ * treats it as a ROUTE and a route module may only carry the named exports
+ * Next allows. `COLUMNS` is module-private.
+ */
 
 /**
- * The last thing on the page.
+ * The design's `footerCols`.
  *
- * It is a directory, not a section: nothing here competes for attention, so
- * everything is ink and hairline and the labels are mono micro-caps rather than
- * bold 14px headings. There is no accent in the footer at all — the page spends
- * its last blue on the Closing CTA directly above it.
+ * Every link in the design points at `href="#"` — a placeholder, not a
+ * destination. The four that have a real destination in this app now point at
+ * it; the other five have no page to go to, so they render as plain text
+ * rather than as anchors that scroll you to the top of the document and call
+ * it navigation. A dead link is worse than an unlinked label: it promises
+ * something and then does nothing.
  */
+const COLUMNS = [
+  {
+    title: "Produk",
+    links: [
+      { label: "Cari host", href: "/streamers" },
+      { label: "Harga", href: null },
+      { label: "Untuk host", href: null },
+    ],
+  },
+  {
+    title: "Perusahaan",
+    links: [
+      { label: "Tentang TROLIVE", href: null },
+      { label: "Kontak", href: null },
+      { label: "Karier", href: null },
+    ],
+  },
+  {
+    title: "Bantuan",
+    links: [
+      { label: "FAQ", href: "#faq" },
+      { label: "WhatsApp support", href: "https://wa.me/62895700120901" },
+      { label: "Syarat & ketentuan", href: "/terms" },
+    ],
+  },
+] as const;
+
 export default function Footer() {
   return (
-    <footer className="border-t border-hairline bg-surface-tint">
-      <div className="mx-auto w-full max-w-[1180px] px-5 py-14 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-1 gap-10 md:grid-cols-3 md:gap-8">
-          {/* Tagline — verbatim from the design reference. */}
-          <div>
-            <p className="font-serif text-title font-medium text-ink">Salda</p>
-            <p className="mt-2 max-w-[28ch] text-copy leading-relaxed text-ink-muted">
-              Platform live commerce untuk brand Indonesia.
-            </p>
+    <footer className="mx-auto max-w-[1180px] overflow-hidden px-[clamp(20px,5vw,48px)] pb-16 pt-[clamp(56px,9vh,100px)]">
+      <div className="flex flex-wrap justify-between gap-10 border-t border-hairline pt-8">
+        <div>
+          <div className="mb-[9px] flex items-baseline gap-[7px]">
+            <span className="font-serif text-title font-semibold text-ink">Salda</span>
+            <span className="text-[9.5px] font-semibold uppercase tracking-[.13em] text-ink-ghost">
+              by TROLIVE
+            </span>
           </div>
+          <p className="text-meta text-ink-faint">
+            Platform live commerce untuk brand Indonesia.
+          </p>
+        </div>
 
-          {/* Office Locations */}
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-mono text-tiny uppercase text-ink-ghost">Kantor Balikpapan</h4>
-              <p className="mt-2 text-copy leading-relaxed text-ink-muted">
-                Jl. Mayjend Sutoyo, Gg. Surya No.89<br />
-                Klandasan Ilir, Kec. Balikpapan Kota<br />
-                Kota Balikpapan, Kalimantan Timur 76113
+        <div className="flex flex-wrap gap-12">
+          {COLUMNS.map((column) => (
+            <div key={column.title}>
+              <p className="mb-[13px] font-mono text-[10.5px] uppercase tracking-[.1em] text-ink-ghost">
+                {column.title}
               </p>
-            </div>
-            <div>
-              <h4 className="font-mono text-tiny uppercase text-ink-ghost">Kantor Jakarta</h4>
-              <p className="mt-2 text-copy leading-relaxed text-ink-muted">
-                Apartment Neo Soho Central Park #3110<br />
-                Tanjung Duren Selatan, Kec. Grogol Petamburan<br />
-                Kota Jakarta Barat, DKI Jakarta 11470
-              </p>
-            </div>
-          </div>
-
-          {/* Contact Details */}
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-mono text-tiny uppercase text-ink-ghost">Hubungi kami</h4>
-              <dl className="mt-2 space-y-1.5">
-                <div className="flex items-baseline gap-2">
-                  <dt className="shrink-0 text-copy text-ink-soft">Email</dt>
-                  <dd className="min-w-0 truncate">
+              <div className="flex flex-col gap-[9px]">
+                {column.links.map((link) =>
+                  link.href === null ? (
+                    <span key={link.label} className="text-[13px] text-ink-muted">
+                      {link.label}
+                    </span>
+                  ) : link.href.startsWith("http") ? (
                     <a
-                      href="mailto:admin@trolive.id"
-                      className="text-copy text-ink-body transition-colors hover:text-ink"
+                      key={link.label}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] text-ink-muted transition-colors hover:text-brand"
                     >
-                      admin@trolive.id
+                      {link.label}
                     </a>
-                  </dd>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <dt className="shrink-0 text-copy text-ink-soft">WhatsApp</dt>
-                  <dd className="min-w-0 truncate">
-                    <a
-                      href="https://wa.me/62895700120901"
-                      className="numeric text-copy text-ink-body transition-colors hover:text-ink"
+                  ) : (
+                    <Link
+                      key={link.label}
+                      href={link.href}
+                      className="text-[13px] text-ink-muted transition-colors hover:text-brand"
                     >
-                      62895700120901
-                    </a>
-                  </dd>
-                </div>
-              </dl>
-            </div>
-            <div>
-              <h4 className="font-mono text-tiny uppercase text-ink-ghost">Ikuti kami</h4>
-              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1.5">
-                <a href="#" className="text-copy text-ink-muted transition-colors hover:text-ink">Instagram</a>
-                <a href="#" className="text-copy text-ink-muted transition-colors hover:text-ink">LinkedIn</a>
-                <a href="#" className="text-copy text-ink-muted transition-colors hover:text-ink">Twitter</a>
+                      {link.label}
+                    </Link>
+                  ),
+                )}
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Bottom Bar */}
-        <div className="mt-12 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-hairline pt-6">
-          <span className="text-meta text-ink-soft">
-            © 2024 Salda by Trolive. Hak cipta dilindungi.
-          </span>
-          <span className="text-ink-ghost">·</span>
-          <a
-            href="https://trolive.id"
-            className="text-meta text-ink-soft transition-colors hover:text-ink"
-          >
-            trolive.id
-          </a>
-          {/*
-            A `<select>` offering "Indonesia / English" used to sit at the right
-            edge. It had no `value`, no `onChange` and no handler anywhere —
-            picking English did nothing at all. A control that cannot do the one
-            thing it advertises is worse than no control, and the product speaks
-            one language on purpose.
-          */}
+          ))}
         </div>
       </div>
+
+      {/*
+        The giant wordmark. It bleeds off the bottom of the page by its own
+        negative bottom margin (-.16em), which is why the footer clips
+        overflow. `text-surface-tint` is #f2f1ee, the design's colour, used
+        here as a text colour rather than a fill. It is decoration — the real
+        "Salda" lockup is above it — so it is hidden from assistive tech and
+        from selection.
+      */}
+      <p
+        aria-hidden
+        className="mb-[-.16em] mt-[clamp(28px,5vh,56px)] select-none font-serif text-[clamp(72px,17vw,220px)] font-semibold leading-[.9] tracking-[-.04em] text-surface-tint"
+      >
+        Salda
+      </p>
     </footer>
   );
 }

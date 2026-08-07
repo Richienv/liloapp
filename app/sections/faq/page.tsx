@@ -83,9 +83,12 @@ export default function FAQ() {
           return (
             <div
               key={question}
-              className="border-b border-hairline border-l-2"
+              // The left bar is a class, not an inline colour: the token owns
+              // the accent, so it follows if the brand colour ever moves.
+              className={`border-b border-hairline border-l-2 ${
+                isOpen ? 'border-l-brand' : 'border-l-transparent'
+              }`}
               style={{
-                borderLeftColor: isOpen ? '#2563eb' : 'transparent', // brand
                 paddingLeft: isOpen ? '18px' : '0px',
                 transition:
                   'border-color .35s ease,padding-left .35s cubic-bezier(.16,1,.3,1)',

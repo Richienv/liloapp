@@ -22,9 +22,17 @@ const SECTIONS = [
   { href: "#faq", label: "FAQ" },
 ] as const;
 
+/*
+  `sticky`, not `fixed` — the design file's header is `position:sticky`, i.e. IN
+  FLOW. That matters: the hero below carries the design's own
+  `pt-[clamp(64px,11vh,120px)]`, and a fixed header is out of flow, so that
+  padding would start behind the nav and put the eyebrow pill underneath it on a
+  short viewport. Nothing in the app compensated for the fixed position because
+  nothing else uses this component.
+*/
 export function Navbar() {
   return (
-    <nav className="fixed inset-x-0 top-0 z-50 border-b border-hairline bg-canvas/94 backdrop-blur-md">
+    <nav className="sticky inset-x-0 top-0 z-50 border-b border-hairline bg-canvas/[.78] backdrop-blur-[20px] backdrop-saturate-[180%]">
       <div className="mx-auto flex h-16 max-w-[1180px] items-center gap-7 px-5 sm:px-8 md:h-[72px] lg:px-12">
         <Link href="/" className="relative shrink-0" aria-label="Salda by TROLIVE">
           <Image

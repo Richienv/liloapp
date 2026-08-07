@@ -95,8 +95,17 @@ const RULES = [
   },
 ];
 
-/** Rules a file can opt out of, for the cases the brief itself allows. */
-const ALLOW_MARKER = /design-lint-allow:\s*([a-z-,\s]+)/;
+/**
+ * Rules a file can opt out of, for the cases the brief itself allows.
+ *
+ * Global, and every match is accumulated. It used to be a single non-global
+ * match, which read only the FIRST marker in a file — so a file needing two
+ * different exemptions could declare one and silently fail on the other, with
+ * no hint that its second marker was being ignored. The CTA section hit exactly
+ * that: a `gradient` marker for its photo scrim, and no way to also allow the
+ * white button sitting on its blue panel.
+ */
+const ALLOW_MARKER = /design-lint-allow:\s*([a-z-,\s]+)/g;
 
 /**
  * Comments are not markup. A hex in a sentence explaining WHY a panel is
@@ -123,7 +132,10 @@ const dirty = new Map();
 for (const file of files) {
   const raw = readFileSync(file, "utf8");
   const allowed = new Set(
-    (raw.match(ALLOW_MARKER)?.[1] ?? "").split(",").map((s) => s.trim()).filter(Boolean),
+    [...raw.matchAll(ALLOW_MARKER)]
+      .flatMap((m) => m[1].split(","))
+      .map((s) => s.trim())
+      .filter(Boolean),
   );
   const source = stripComments(raw);
   const lines = source.split("\n");

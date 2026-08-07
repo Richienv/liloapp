@@ -1,157 +1,156 @@
-"use client";
-
-import { useEffect, useRef, useState } from "react";
-import { motion, useAnimationControls } from "framer-motion";
-
-/**
- * design-lint-allow: gradient
+/*
+ * design-lint-allow: raw-hex
  *
- * Two marquee edge fades. Same exception as the hero: they signal that the
- * row scrolls, which nothing else in the layout communicates.
+ * Two design values with no token: #c9dcff, the card's hover border, and
+ * #262626 for the quote, which sits between text-ink (#171717) and
+ * text-ink-body (#404040). Both are the design file's own.
+ */
+/* ==========================================================================
+   03 / Apa kata mereka — ported from design/Salda_Landing.dc.html
+   (markup lines 414-438, data in the `TESTI` const at line 553).
+
+   A centred header over a full-bleed marquee. The only animation is `drift`,
+   already defined in app/globals.css; nothing here is hidden behind an
+   observer, so the section's SSR output is its final output.
+   ========================================================================== */
+
+/*
+ * NOTE ON EXPORTS — this file sits at app/sections/wrapup/page.tsx, so Next
+ * treats it as a ROUTE and a route module may only carry the named exports
+ * Next allows. Everything below is module-private and reaches the landing page
+ * through the default export.
  */
 
 /**
- * "Kita udah ngebantu mereka."
+ * The design's `TESTI`, verbatim.
  *
- * Four quotes, attributed, as they were given. The five-star row that used to
- * sit above each one is gone: it was a hardcoded `rating: 5` on every card,
- * drawn in `fill-red-500`. Nothing in this product produced those stars, no
- * reviewer left them, and a rating nobody gave is exactly the fabricated social
- * proof this redesign has been removing everywhere else. The quote and who said
- * it are the claim; five red glyphs were decoration pretending to be data.
- *
- * The quotes themselves are left verbatim, including the two in English —
- * translating what someone said is not a copy fix, it is putting words in their
- * mouth.
+ * These are attributed quotes from named people at named companies — Jiniso,
+ * Mondelez, the Herbal Essences/Pantene/Rejoice group, Shopee. Two of them are
+ * in English. They are left exactly as given: translating or tidying what
+ * someone said is not a copy fix, it is putting words in their mouth.
  */
-const testimonials = [
+const TESTIMONIALS = [
   {
     name: "Chynta Claudia",
     occupation: "Jiniso",
-    testimonial: "Selama Jiniso menggunakan jasa host service TRO, penjualan di Shopee Live Jiniso ada peningkatan, dari host dan managementnya pun juga bisa menyesuaikan dengan sistem dan rules yang jiniso berikan.",
+    text: "Selama Jiniso menggunakan jasa host service TRO, penjualan di Shopee Live Jiniso ada peningkatan, dari host dan managementnya pun juga bisa menyesuaikan dengan sistem dan rules yang jiniso berikan.",
   },
   {
     name: "Andjani",
     occupation: "Mondelez",
-    testimonial: "I want to give a huge shoutout to TRO for their exceptional work on our live streaming and short video for the past 2 years. The production quality was top-notch, and the technical support was always prompt and effective. They selected perfect host for our brand, and the content created was engaging and spot-on!",
+    text: "I want to give a huge shoutout to TRO for their exceptional work on our live streaming and short video for the past 2 years. The production quality was top-notch, and the technical support was always prompt and effective. They selected perfect host for our brand, and the content created was engaging and spot-on!",
   },
   {
     name: "Maggie",
     occupation: "Herbal Essences | Pantene | Rejoice",
-    testimonial: "It's a very great experience working with TRO Team. A very speedy & proactive team - allowing brands to improve my brands' livestream performance while investing on their team. Thankyou TRO!",
+    text: "It's a very great experience working with TRO Team. A very speedy & proactive team - allowing brands to improve my brands' livestream performance while investing on their team. Thankyou TRO!",
   },
   {
     name: "Lala",
     occupation: "Shopee Team",
-    testimonial: "Tro helpful bgt for the accounts i hold sampe ak rekomen-rekomen ke brandku yg lain dan juga brand-brand personal tmn tmn aku yg mau coba live streaming.",
-  }
-];
+    text: "Tro helpful bgt for the accounts i hold sampe ak rekomen-rekomen ke brandku yg lain dan juga brand-brand personal tmn tmn aku yg mau coba live streaming.",
+  },
+] as const;
 
-// Double the testimonials array for smooth infinite scroll
-const doubledTestimonials = [...testimonials, ...testimonials];
+/** The design's `t.initials` — first letter of each word, first two, upper. */
+function initialsOf(name: string): string {
+  return name
+    .split(" ")
+    .map((word) => word[0] ?? "")
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
+/*
+  The list twice over. `drift` ends at translateX(-50%), so the halfway point
+  of a doubled track is pixel-for-pixel its start — that is what makes the loop
+  seamless, and it is why the duplication cannot be dropped.
+*/
+const MARQUEE = [...TESTIMONIALS, ...TESTIMONIALS];
 
 export default function Wrapup() {
-  const controls = useAnimationControls();
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
-
-  useEffect(() => {
-    const startAnimation = async () => {
-      if (isHovered) return;
-
-      await controls.start({
-        x: [0, -100 * testimonials.length],
-        transition: {
-          duration: 20,
-          ease: "linear",
-          repeat: Infinity,
-        },
-      });
-    };
-
-    startAnimation();
-  }, [controls, isHovered]);
-
   return (
-    /*
-      Canvas, not a white band — the cards are the white. Two blurred grey
-      circles used to float behind this section as "background decorations";
-      they said nothing and are gone.
-    */
     <section
       id="testimoni"
-      className="relative overflow-hidden bg-canvas pt-[clamp(72px,12vh,140px)]"
+      className="mx-auto max-w-[1180px] px-[clamp(20px,5vw,48px)] pt-[clamp(72px,12vh,140px)]"
     >
-      <div className="mx-auto w-full max-w-[1180px] px-5 sm:px-8 lg:px-12">
-        {/* Section Header */}
-        <div className="mx-auto max-w-[46ch] text-center">
-          {/* The numbered eyebrow ties this to the other sections; the
-              heading and sub are the reference's, split across the two lines
-              it splits them across. */}
-          <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">
-            03 / Apa kata mereka
-          </p>
-          <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
-            Kita udah ngebantu mereka.
-          </h2>
-          <p className="mt-3.5 text-lede text-ink-muted">
-            Sekarang kita ingin ngebantu kamu.
-          </p>
-        </div>
+      <div className="mx-auto mb-[clamp(36px,6vh,60px)] max-w-[640px] text-center">
+        <p className="mb-4 font-mono text-mini tracking-[.08em] text-ink-ghost">
+          03 / Apa kata mereka
+        </p>
+        <h2 className="mb-3.5 font-serif text-heading font-medium text-balance text-ink">
+          Kita udah ngebantu mereka.
+        </h2>
+        <p className="text-[15.5px] leading-[1.6] text-ink-muted">
+          Sekarang kita ingin ngebantu kamu.
+        </p>
       </div>
 
-      {/* Full-width slider container */}
-      <div className="relative mt-12">
-        {/* Edge fades — the marquee runs off the page rather than stopping at
-            a hard edge. One of the two gradients the brief still allows. */}
-        <div className="pointer-events-none absolute inset-0 z-20 mx-auto max-w-[1400px]">
-          <div className="absolute bottom-0 left-0 top-0 w-16 bg-gradient-to-r from-canvas to-transparent md:w-32" />
-          <div className="absolute bottom-0 right-0 top-0 w-16 bg-gradient-to-l from-canvas to-transparent md:w-32" />
-        </div>
-
-        {/* Testimonials Slider Container */}
+      {/*
+        Full bleed out of the 1180px column: `margin: 0 calc(50% - 50vw)` is the
+        design's own escape hatch, and it is exact rather than a `100vw` trick
+        that would drift by the scrollbar width.
+      */}
+      <div className="overflow-hidden py-1 [margin:0_calc(50%-50vw)]">
+        {/*
+          Longhand animation properties rather than the `animation` shorthand:
+          the shorthand also resets `animation-play-state` to `running`, and an
+          inline declaration beats the `hover:` class, so the shorthand would
+          make the marquee unpausable. globals.css still stops all of it under
+          prefers-reduced-motion — its rule matches on `[style*="animation"]`,
+          which the longhands satisfy.
+        */}
         <div
-          className="relative touch-none overflow-hidden"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => {
-            setIsHovered(false);
-            controls.start({
-              x: [0, -100 * testimonials.length],
-              transition: {
-                duration: 20,
-                ease: "linear",
-                repeat: Infinity,
-              },
-            });
+          className="flex w-max gap-5 px-2.5 hover:[animation-play-state:paused]"
+          style={{
+            animationName: "drift",
+            animationDuration: "64s",
+            animationTimingFunction: "linear",
+            animationIterationCount: "infinite",
           }}
         >
-          {/* Cards Container with max-width and center alignment */}
-          <div className="mx-auto max-w-[1400px]">
-            <div className="flex gap-4 px-4 md:gap-8 md:px-8" ref={containerRef}>
-              <motion.div
-                className="flex gap-4 md:gap-8"
-                animate={controls}
+          {MARQUEE.map((t, i) => (
+            <figure
+              key={`${t.name}-${i}`}
+              // The second pass is the same four people again. Sighted readers
+              // see one continuous band; a screen reader would read the list
+              // twice, so the duplicate half is hidden from it.
+              aria-hidden={i >= TESTIMONIALS.length}
+              // One arbitrary `transition` declaration rather than a duration
+              // utility plus an easing utility: tailwindcss-animate claims
+              // those prefixes too, so an arbitrary value on either is
+              // ambiguous and Tailwind emits nothing — the card would snap
+              // instead of easing.
+              // hover:border-[#c9dcff] — that pale blue is the design file's
+              // own hover border (line 423) and has no token in the palette.
+              className="m-0 flex w-[clamp(280px,32vw,400px)] flex-shrink-0 flex-col rounded-panel border border-hairline bg-surface p-[26px] [transition:transform_.4s_cubic-bezier(.16,1,.3,1),border-color_.3s_ease] hover:-translate-y-1.5 hover:border-[#c9dcff]"
+            >
+              <div
+                aria-hidden
+                className="mb-4 flex gap-[3px] text-mini tracking-[.12em] text-brand"
               >
-                {doubledTestimonials.map((testimonial, index) => (
-                  <div
-                    key={index}
-                    className="relative z-10 flex w-[260px] flex-shrink-0 flex-col rounded-frame border border-hairline bg-surface p-5 sm:w-[320px] md:w-[400px] md:p-6"
-                  >
-                    {/* Testimonial Text */}
-                    <p className="flex-1 text-copy leading-relaxed text-ink-body md:text-lede">
-                      &ldquo;{testimonial.testimonial}&rdquo;
-                    </p>
-
-                    {/* Profile */}
-                    <div className="mt-5 border-t border-hairline-soft pt-4 md:mt-6">
-                      <p className="truncate text-ui font-medium text-ink">{testimonial.name}</p>
-                      <p className="truncate text-meta text-ink-soft">{testimonial.occupation}</p>
-                    </div>
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          </div>
+                ★★★★★
+              </div>
+              <blockquote className="m-0 mb-[22px] flex-1 text-[14.5px] leading-[1.65] text-pretty text-[#262626]">
+                {/* #262626 is the design's quote colour; it sits between
+                    text-ink (#171717) and text-ink-body (#404040). */}
+                {t.text}
+              </blockquote>
+              <figcaption className="flex items-center gap-[11px] border-t border-hairline-soft pt-[18px]">
+                <span
+                  aria-hidden
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-2xl bg-hairline-soft text-mini font-semibold text-ink-muted"
+                >
+                  {initialsOf(t.name)}
+                </span>
+                <div>
+                  <p className="mb-0.5 text-copy font-semibold text-ink">{t.name}</p>
+                  <p className="text-meta text-ink-faint">{t.occupation}</p>
+                </div>
+              </figcaption>
+            </figure>
+          ))}
         </div>
       </div>
     </section>

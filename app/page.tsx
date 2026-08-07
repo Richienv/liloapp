@@ -4,7 +4,9 @@ import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
 import { Navbar } from "./components/navbar";
+import { ScrollProgress } from "./sections/scroll-progress";
 import Hero from "./sections/hero/page";
+import HostStrip from "./sections/host-strip/page";
 import CaraKerja from "./sections/cara-kerja/page";
 import DiDalam from "./sections/di-dalam/page";
 import FAQ from "./sections/faq/page";
@@ -53,8 +55,15 @@ export default function Home() {
         brief describes. `CaraKerja` and `DiDalam` replace them and say which
         question each one answers.
       */}
+      <ScrollProgress />
       <Navbar />
       <Hero />
+      {/*
+        The host strip carries id="host", which the nav links to. It also holds
+        the stats band. Both sit between the hero and "Cara kerja" in the design:
+        you see who is available before you are told how the process works.
+      */}
+      <HostStrip />
       <CaraKerja />
       <DiDalam />
       <Wrapup />

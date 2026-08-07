@@ -1,3 +1,9 @@
+/*
+ * design-lint-allow: raw-hex
+ *
+ * #c9dcff - the design's selected-row fill, outside the palette. Same value
+ * the testimonial cards use on hover.
+ */
 'use client';
 
 import { useEffect, useRef, useState } from 'react';

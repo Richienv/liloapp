@@ -1,3 +1,9 @@
+/*
+ * design-lint-allow: white-surface
+ *
+ * One bg-white: the 4px dot inside the LIVE badge, which sits on a dark
+ * rgba(23,23,23,.68) scrim over a photo. White on dark, not a surface.
+ */
 "use client";
 
 import Image from "next/image";
