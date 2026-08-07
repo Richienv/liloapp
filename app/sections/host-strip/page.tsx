@@ -20,6 +20,20 @@ import { subtotalWithPlatformFee } from "@/lib/pricing";
    back — see the note on `t` in `Stats` below.
    ========================================================================== */
 
+/*
+ * NOTE ON EXPORTS — this file sits at app/sections/host-strip/page.tsx, so
+ * Next treats it as a ROUTE, and a route module may only carry the named
+ * exports Next allows (`metadata`, `revalidate`, `dynamic`, …). A named
+ * `export function HostStrip()` compiles under tsc and then fails
+ * `next build` with:
+ *
+ *   Type error: "HostStrip" is not a valid Page export field.
+ *
+ * Both sections are therefore module-private and reach the landing page
+ * through the default export below. Same constraint the hero hit with its
+ * PROOF_STRIP const.
+ */
+
 /**
  * `10000 -> "10.000"`.
  *
@@ -99,7 +113,7 @@ const STRIP_CHIPS = [...CHIPS, ...CHIPS];
  * The host strip: a row of cards drifting left over a row of category chips
  * drifting right. Both pause while the pointer is over them.
  */
-export function HostStrip() {
+function HostStrip() {
   return (
     <section
       id="host"
@@ -290,7 +304,7 @@ const EGG_PARTICLES = [
 /** How long the egg's alternate label and blue figure stay up. */
 const EGG_DURATION_MS = 2600;
 
-export function Stats() {
+function Stats() {
   /**
    * `t` runs 0 -> 1 and every figure is `stat.to * t`.
    *
