@@ -302,3 +302,72 @@ html {
   background-color: #c7c5be;
 }
 
+/* ==========================================================================
+   Landing animations — ported verbatim from design/Salda_Landing.dc.html.
+
+   Thirty-six keyframes. Most drive one bespoke illustration each: the
+   envelope that opens and gets stamped on step 01, the cursor tracing a grid
+   on 02, the tick boxes on 04, the QR scan line on 05, the equaliser bars on
+   08. They are written as CSS keyframes rather than framer-motion because
+   they are decorative loops, not entrance transitions — the browser runs them
+   off the main thread and they cost nothing to mount.
+
+   RULE THIS FILE MUST KEEP: none of these hide anything. A keyframe that
+   starts at opacity 0 and loops is fine, because it always comes back. What
+   is forbidden is a REVEAL that leaves content at opacity 0 when script does
+   not run. The reveal logic lives in the section components and defaults to
+   visible; see app/sections/di-dalam for the contract.
+
+   Every one of these is paused under prefers-reduced-motion, at the bottom.
+   ========================================================================== */
+
+@keyframes drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes k-env{0%{transform:translateX(-52px);opacity:0}12%{opacity:1}30%,100%{transform:translateX(0);opacity:1}}
+@keyframes k-flap{0%,34%{transform:rotateX(0deg)}48%,100%{transform:rotateX(-168deg)}}
+@keyframes k-letter{0%,40%{transform:translateY(0);opacity:0}44%{opacity:1}56%,100%{transform:translateY(-26px);opacity:1}}
+@keyframes k-stamp{0%,64%{transform:scale(.3) rotate(-16deg);opacity:0}76%{transform:scale(1.14) rotate(-8deg);opacity:1}86%,100%{transform:scale(1) rotate(-8deg);opacity:1}}
+@keyframes k-cursor{0%{transform:translate(10px,30px)}22%{transform:translate(44px,14px)}45%{transform:translate(82px,30px)}68%{transform:translate(120px,14px)}100%{transform:translate(10px,30px)}}
+@keyframes k-hl{0%,100%{background:#e7e5e0}18%,32%{background:#2563eb}}
+@keyframes k-lift{0%,100%{transform:translateY(0);border-color:#e7e5e0}38%,72%{transform:translateY(-8px);border-color:#2563eb}}
+@keyframes k-tick{0%,25%{background:#fff;border-color:#dedbd4}38%,100%{background:#2563eb;border-color:#2563eb}}
+@keyframes k-tickmark{0%,30%{opacity:0;transform:scale(.4)}42%,100%{opacity:1;transform:scale(1)}}
+@keyframes k-fill{0%{width:8%}68%,100%{width:100%}}
+@keyframes k-scan{0%,100%{transform:translateY(2px)}50%{transform:translateY(46px)}}
+@keyframes k-pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes k-ring{0%{transform:scale(.5);opacity:.45}100%{transform:scale(2.6);opacity:0}}
+@keyframes k-drop{0%{transform:translateY(-140%);opacity:0}18%,78%{transform:translateY(0);opacity:1}100%{transform:translateY(-140%);opacity:0}}
+@keyframes k-bub{0%{opacity:0;transform:translateY(6px)}12%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k-parcel{0%{transform:translateX(0);opacity:0}12%{opacity:1}82%{transform:translateX(74px);opacity:1}100%{transform:translateX(74px);opacity:0}}
+@keyframes k-bar{0%,100%{height:20%}50%{height:100%}}
+@keyframes k-livedot{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes k-select{0%,28%{border-color:#e7e5e0;background:#fff}42%,100%{border-color:#2563eb;background:#f7faff}}
+@keyframes k-chip{0%,48%{background:#fff;border-color:#e7e5e0}62%,100%{background:#2563eb;border-color:#2563eb}}
+@keyframes k-rowhl{0%,10%{background:transparent}22%,36%{background:#eff6ff}48%,100%{background:transparent}}
+@keyframes k-radio{0%,35%{opacity:0;transform:scale(.2)}48%,100%{opacity:1;transform:scale(1)}}
+@keyframes k-btnfill{0%,58%{background:#eceae5;color:#a3a19a}70%,100%{background:#2563eb;color:#fff}}
+@keyframes k-dots{0%,100%{opacity:.22}50%{opacity:1}}
+@keyframes k-appear{0%{opacity:0;transform:translateY(5px)}12%,100%{opacity:1;transform:translateY(0)}}
+@keyframes k-heart{0%{transform:translate(0,0) scale(.6);opacity:0}12%{opacity:1}55%{transform:translate(10px,-46px) scale(1)}100%{transform:translate(-4px,-86px) scale(.8);opacity:0}}
+@keyframes k-chat{0%{transform:translateY(16px);opacity:0}18%,72%{transform:translateY(0);opacity:1}100%{transform:translateY(-14px);opacity:0}}
+@keyframes k-count{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+@keyframes k-sway{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes k-cheer{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+@keyframes k-burst{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--bx),var(--by)) scale(.2);opacity:0}}
+@keyframes k-word{0%,24%{transform:translateY(0)}33%,57%{transform:translateY(-25%)}66%,90%{transform:translateY(-50%)}100%{transform:translateY(-75%)}}
+@keyframes k-driftr{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@keyframes k-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes k-shine{0%{transform:translateX(-120%)}100%{transform:translateX(320%)}}
+
+/*
+  Respect the setting. The design's own script bails out of both
+  IntersectionObservers under prefers-reduced-motion; this covers the CSS
+  loops it could not reach. `animation: none` rather than a long duration,
+  so a looping illustration settles on its first frame instead of crawling.
+*/
+@media (prefers-reduced-motion: reduce) {
+  [class*="anim-"],
+  [style*="animation"] {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}
