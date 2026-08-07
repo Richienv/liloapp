@@ -1,142 +1,137 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState } from 'react';
 
-import { Section } from "../section-heading";
+/**
+ * "04 / FAQ".
+ *
+ * An 820px column, one accordion, hairline seams. The open row grows a 2px
+ * blue left border and slides its content 18px right over .35s — the only
+ * motion in the section, and the only accent.
+ */
 
-interface FAQItem {
-  question: string;
-  answer: string;
-}
+/*
+  Questions and answers verbatim from the design file's FAQS const, with one
+  edit: #2 said "Anda hanya membayar" and this app addresses the reader as
+  "kamu", never "Anda".
+
+  FLAG, deliberately not fixed here: #2 describes a commission model — "hanya
+  membayar ketika berhasil melakukan penjualan" — which contradicts
+  lib/pricing.ts, where PLATFORM_FEE_RATE is a 30% platform fee charged on the
+  base price at booking time (plus 11% tax), regardless of whether the session
+  sells anything. Someone who owns the commercial policy has to resolve this;
+  rewriting the answer here would mean inventing a pricing policy.
+*/
+const FAQS: readonly (readonly [question: string, answer: string])[] = [
+  [
+    'Apa itu Salda dan bagaimana cara kerjanya?',
+    'Salda adalah platform live commerce yang menghubungkan brand dengan livestreamer profesional. Platform kami menyediakan fitur lengkap untuk mengelola sesi live streaming, mulai dari penjadwalan, pembayaran, hingga analitik performa penjualan.',
+  ],
+  [
+    'Berapa biaya untuk menggunakan layanan Salda?',
+    'Biaya layanan Salda bervariasi tergantung paket yang dipilih. Kami menerapkan sistem komisi berdasarkan performa penjualan, sehingga kamu hanya membayar ketika berhasil melakukan penjualan. Hubungi tim kami untuk informasi pricing yang lebih detail.',
+  ],
+  [
+    'Bagaimana proses verifikasi livestreamer di Salda?',
+    'Setiap livestreamer di Salda melalui proses verifikasi ketat yang mencakup: pengecekan pengalaman, portfolio penjualan, kemampuan komunikasi, dan pemahaman produk. Kami juga memberikan pelatihan khusus untuk memastikan kualitas layanan terbaik.',
+  ],
+  [
+    'Platform e-commerce apa saja yang didukung oleh Salda?',
+    'Saat ini Salda mendukung integrasi dengan platform e-commerce major seperti Shopee dan TikTok Shop. Kami terus menambah dukungan untuk platform lainnya untuk memberikan fleksibilitas maksimal bagi pengguna kami.',
+  ],
+  [
+    'Apakah ada jaminan keamanan transaksi di Salda?',
+    'Ya, Salda menggunakan sistem escrow dan enkripsi data untuk menjamin keamanan setiap transaksi. Dana akan ditahan dalam sistem escrow hingga sesi live streaming selesai dan kedua belah pihak menyetujui penyelesaian transaksi.',
+  ],
+  [
+    'Bagaimana sistem pembayaran di Salda bekerja?',
+    'Salda menggunakan sistem pembayaran yang aman dan transparan. Pembayaran dapat dilakukan melalui berbagai metode seperti transfer bank, e-wallet, dan kartu kredit. Pencairan dana dilakukan secara otomatis sesuai jadwal yang telah ditentukan.',
+  ],
+  [
+    'Apakah Salda menyediakan laporan analitik performa?',
+    'Ya, Salda menyediakan dashboard analitik komprehensif yang mencakup metrik penting seperti jumlah viewer, engagement rate, conversion rate, dan total penjualan. Laporan dapat diakses real-time dan dapat di-export untuk analisis lebih lanjut.',
+  ],
+  [
+    'Bagaimana jika terjadi kendala teknis saat live streaming?',
+    'Tim support teknis Salda tersedia 24/7 untuk membantu mengatasi kendala teknis. Kami juga menyediakan backup system dan panduan troubleshooting untuk memastikan kelancaran setiap sesi live streaming.',
+  ],
+] as const;
 
 export default function FAQ() {
-  const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-  const faqs: FAQItem[] = [
-    {
-      question: "Apa itu Salda dan bagaimana cara kerjanya?",
-      answer: "Salda adalah platform live commerce yang menghubungkan brand dengan livestreamer profesional. Platform kami menyediakan fitur lengkap untuk mengelola sesi live streaming, mulai dari penjadwalan, pembayaran, hingga analitik performa penjualan."
-    },
-    {
-      question: "Berapa biaya untuk menggunakan layanan Salda?",
-      answer: "Biaya layanan Salda bervariasi tergantung paket yang dipilih. Kami menerapkan sistem komisi berdasarkan performa penjualan, sehingga kamu hanya membayar ketika berhasil melakukan penjualan. Hubungi tim kami untuk informasi pricing yang lebih detail."
-    },
-    {
-      question: "Bagaimana proses verifikasi livestreamer di Salda?",
-      answer: "Setiap livestreamer di Salda melalui proses verifikasi ketat yang mencakup: pengecekan pengalaman, portfolio penjualan, kemampuan komunikasi, dan pemahaman produk. Kami juga memberikan pelatihan khusus untuk memastikan kualitas layanan terbaik."
-    },
-    {
-      question: "Platform e-commerce apa saja yang didukung oleh Salda?",
-      answer: "Saat ini Salda mendukung integrasi dengan platform e-commerce major seperti Shopee dan TikTok Shop. Kami terus menambah dukungan untuk platform lainnya untuk memberikan fleksibilitas maksimal bagi pengguna kami."
-    },
-    {
-      question: "Apakah ada jaminan keamanan transaksi di Salda?",
-      answer: "Ya, Salda menggunakan sistem escrow dan enkripsi data untuk menjamin keamanan setiap transaksi. Dana akan ditahan dalam sistem escrow hingga sesi live streaming selesai dan kedua belah pihak menyetujui penyelesaian transaksi."
-    },
-    {
-      question: "Bagaimana sistem pembayaran di Salda bekerja?",
-      answer: "Salda menggunakan sistem pembayaran yang aman dan transparan. Pembayaran dapat dilakukan melalui berbagai metode seperti transfer bank, e-wallet, dan kartu kredit. Pencairan dana dilakukan secara otomatis sesuai jadwal yang telah ditentukan."
-    },
-    {
-      question: "Apakah Salda menyediakan laporan analitik performa?",
-      answer: "Ya, Salda menyediakan dashboard analitik komprehensif yang mencakup metrik penting seperti jumlah viewer, engagement rate, conversion rate, dan total penjualan. Laporan dapat diakses real-time dan dapat di-export untuk analisis lebih lanjut."
-    },
-    {
-      question: "Bagaimana jika terjadi kendala teknis saat live streaming?",
-      answer: "Tim support teknis Salda tersedia 24/7 untuk membantu mengatasi kendala teknis. Kami juga menyediakan backup system dan panduan troubleshooting untuk memastikan kelancaran setiap sesi live streaming."
-    }
-  ];
+  // The design opens the first question on load — the section reads as answers,
+  // not as eight closed doors. Clicking the open row closes it.
+  const [open, setOpen] = useState(0);
 
   return (
-    /*
-      The section sits on the canvas like every other one.
-
-      It used to paint itself `bg-surface` — a full-bleed white band across a
-      warm page, which is the one background the brief rules out. The white is
-      the panel the questions live in; the page stays #faf9f6.
-    */
-    <Section id="faq">
-      <div className="mx-auto max-w-[860px]">
-        {/* Section Header */}
-        <div className="mx-auto max-w-[46ch] text-center">
-          <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">04 / FAQ</p>
-          {/* One accent per section, and on this one it is spent on the
-              support link at the bottom — so the heading is plain ink rather
-              than the half-blue it used to be. */}
-          <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
-            Pertanyaan yang sering ditanyakan.
-          </h2>
-          <p className="mx-auto mt-3.5 text-lede text-ink-muted">
-            Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya.
-          </p>
-        </div>
-
-        {/*
-          One panel, hairline dividers — not eight floating cards.
-
-          Eight separately-bordered boxes with a gap between them draw sixteen
-          horizontal lines down the page and give every question the visual
-          weight of a card. A single framed list draws one edge and one hairline
-          per seam, so the eye reads a list of questions rather than a stack of
-          objects.
-
-          The per-item `whileInView` fade is gone with them: it started at
-          `opacity: 0` and staggered to 0.7s on the last item, so a failed
-          observer left the answers to a page of questions invisible.
-        */}
-        <div className="mt-12 overflow-hidden rounded-frame border border-hairline bg-surface">
-          {faqs.map((faq, index) => {
-            const isOpen = openIndex === index;
-            return (
-              <div key={index} className="border-b border-hairline-soft last:border-b-0">
-                <button
-                  type="button"
-                  aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between gap-4 px-4 py-4 text-left transition-colors hover:bg-surface-raised sm:px-5"
-                  onClick={() => setOpenIndex(isOpen ? null : index)}
-                >
-                  <span className="text-ui font-medium text-ink">{faq.question}</span>
-                  <ChevronDown
-                    className={`h-4 w-4 shrink-0 text-ink-ghost transition-transform ${
-                      isOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-                <AnimatePresence>
-                  {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: "auto", opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="overflow-hidden"
-                    >
-                      <p className="px-4 pb-4 text-copy leading-relaxed text-ink-muted sm:px-5">
-                        {faq.answer}
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Support Link — the section's one accent. */}
-        <p className="mt-8 text-center text-meta text-ink-soft">
-          Masih punya pertanyaan?{" "}
-          <a
-            href="https://wa.me/62895700120901"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-brand transition-colors hover:text-brand-hover"
-          >
-            Hubungi tim support kami
-          </a>
+    <section
+      id="faq"
+      className="mx-auto w-full max-w-[820px] px-[clamp(20px,5vw,48px)] pt-[clamp(72px,12vh,140px)]"
+    >
+      <div className="mx-auto mb-[clamp(36px,6vh,56px)] text-center">
+        <p className="font-mono text-mini tracking-[.08em] text-ink-ghost">04 / FAQ</p>
+        <h2 className="mt-4 font-serif text-heading font-medium text-balance text-ink">
+          Pertanyaan yang sering ditanyakan.
+        </h2>
+        <p className="mt-3.5 text-[15.5px] leading-[1.6] text-pretty text-ink-muted">
+          Temukan jawaban untuk pertanyaan umum seputar layanan Salda dan cara kerjanya.
         </p>
       </div>
-    </Section>
+
+      <div className="border-t border-hairline">
+        {FAQS.map(([question, answer], i) => {
+          const isOpen = open === i;
+          return (
+            <div
+              key={question}
+              className="border-b border-hairline border-l-2"
+              style={{
+                borderLeftColor: isOpen ? '#2563eb' : 'transparent', // brand
+                paddingLeft: isOpen ? '18px' : '0px',
+                transition:
+                  'border-color .35s ease,padding-left .35s cubic-bezier(.16,1,.3,1)',
+              }}
+            >
+              <button
+                type="button"
+                aria-expanded={isOpen}
+                onClick={() => setOpen(isOpen ? -1 : i)}
+                className="flex w-full items-start justify-between gap-5 border-0 bg-transparent py-[19px] text-left"
+              >
+                <span
+                  className={`text-[15.5px] leading-[1.45] text-ink ${
+                    isOpen ? 'font-semibold' : 'font-medium'
+                  }`}
+                >
+                  {question}
+                </span>
+                <span
+                  aria-hidden
+                  className={`shrink-0 text-[16px] leading-[1.4] ${
+                    isOpen ? 'text-brand' : 'text-ink-ghost'
+                  }`}
+                >
+                  {isOpen ? '−' : '+'}
+                </span>
+              </button>
+              {isOpen && (
+                <p className="mb-6 text-[14.5px] leading-[1.7] text-ink-muted">{answer}</p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="mt-6 text-center text-copy text-ink-soft">
+        Masih punya pertanyaan?{' '}
+        <a
+          href="https://wa.me/62895700120901"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-brand hover:text-brand-hover"
+        >
+          Hubungi tim support kami
+        </a>
+      </p>
+    </section>
   );
 }
