@@ -371,3 +371,26 @@ html {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ==========================================================================
+   Host dashboard animations — from design/Salda_Host.dc.html.
+
+   Five, all tied to a session actually being live:
+     h-live   the pulsing dot on the LIVE clock and the "Sedang live" status
+     h-bar    the three-bar equaliser on the live card
+     h-heart  a heart floating up off the viewer count
+     h-in     a row entering the list
+     h-grow   a bar chart column growing from its baseline
+
+   h-in and h-grow are the two to be careful with: both START at a hidden or
+   zero state. They are ENTRANCE animations, not loops, so anything using them
+   must be visible without them — `animation-fill-mode` must not leave an
+   element at opacity 0 if the animation never runs. Prefer them on decoration
+   (a chart column) over content (a row of text).
+   ========================================================================== */
+
+@keyframes h-live{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes h-bar{0%,100%{transform:scaleY(.3)}50%{transform:scaleY(1)}}
+@keyframes h-in{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes h-grow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes h-heart{0%{transform:translateY(0) scale(.6);opacity:0}15%{opacity:1}100%{transform:translateY(-58px) scale(1);opacity:0}}
