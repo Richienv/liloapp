@@ -4,28 +4,28 @@ import { Button } from "./ui/button";
 
 export function EnvVarWarning() {
   return (
-    <div className="flex gap-4 items-center">
-      <Badge variant={"outline"} className="font-normal">
-        Supabase environment variables required
+    <div className="flex flex-nowrap items-center gap-4">
+      <Badge className="border-caution-line bg-caution-tint font-normal text-caution">
+        Environment variable Supabase belum diisi
       </Badge>
-      <div className="flex gap-2">
+      <div className="flex flex-nowrap gap-2">
         <Button
           asChild
-          size="sm"
-          variant={"outline"}
+          variant="quiet"
+          size="action-compact"
           disabled
-          className="opacity-75 cursor-none pointer-events-none"
+          className="pointer-events-none opacity-75"
         >
-          <Link href="/sign-in">Sign in</Link>
+          <Link href="/sign-in">Masuk</Link>
         </Button>
         <Button
           asChild
-          size="sm"
-          variant={"default"}
+          variant="brand"
+          size="action-compact"
           disabled
-          className="opacity-75 cursor-none pointer-events-none"
+          className="pointer-events-none opacity-75"
         >
-          <Link href="/sign-up">Sign up</Link>
+          <Link href="/sign-up">Daftar</Link>
         </Button>
       </div>
     </div>

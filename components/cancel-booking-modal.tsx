@@ -1,6 +1,12 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
@@ -35,8 +41,8 @@ export default function CancelBookingModal({
     if (!reason.trim()) {
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Mohon berikan alasan",
+        title: "Alasan belum diisi",
+        description: "Tulis dulu alasan kamu sebelum melanjutkan.",
       });
       return;
     }
@@ -94,10 +100,10 @@ export default function CancelBookingModal({
       }
 
       toast({
-        title: isReschedule ? "Pengajuan Reschedule Berhasil" : "Pembatalan Berhasil",
-        description: isReschedule 
-          ? "Permintaan reschedule kamu telah dikirim ke streamer" 
-          : "Booking kamu telah dibatalkan",
+        title: isReschedule ? "Pengajuan reschedule terkirim" : "Booking dibatalkan",
+        description: isReschedule
+          ? "Permintaan reschedule kamu sudah dikirim ke host."
+          : "Booking kamu sudah dibatalkan.",
       });
 
       // Add a small delay before redirecting
@@ -110,8 +116,8 @@ export default function CancelBookingModal({
       console.error('Error processing request:', error);
       toast({
         variant: "destructive",
-        title: "Error",
-        description: "Gagal memproses permintaan kamu. Silakan coba lagi.",
+        title: "Permintaan gagal diproses",
+        description: "Coba lagi sebentar lagi.",
       });
     } finally {
       setIsSubmitting(false);
@@ -120,56 +126,89 @@ export default function CancelBookingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>
-            {isReschedule ? 'Pengajuan Reschedule' : 'Pembatalan Booking'}
-          </DialogTitle>
-        </DialogHeader>
-        
-        <div className="mt-4">
-          <div className="mb-6 text-sm">
-            <h4 className="font-semibold mb-2">Kebijakan Pembatalan & Pengembalian Dana:</h4>
-            <ul className="list-disc pl-5 space-y-1 text-gray-600">
-              <li>Pembatalan 24 jam sebelum jadwal akan mendapatkan pengembalian dana penuh (100%)</li>
-              <li>Pembatalan kurang dari 24 jam akan dikenakan biaya pembatalan sebesar 50%</li>
-              <li>Pembatalan kurang dari 3 jam sebelum jadwal tidak mendapatkan pengembalian dana</li>
-              <li>Pengajuan reschedule hanya dapat dilakukan 1x dan minimal 6 jam sebelum jadwal</li>
+      <DialogContent className="gap-0 overflow-hidden rounded-frame border border-hairline bg-surface p-0 sm:max-w-[460px]">
+        <div className="space-y-5 p-5 sm:p-6">
+          <DialogHeader className="space-y-1.5 text-left">
+            <DialogTitle className="font-serif text-title font-semibold text-ink">
+              {isReschedule ? 'Pengajuan reschedule' : 'Pembatalan booking'}
+            </DialogTitle>
+            <DialogDescription className="text-meta text-ink-soft">
+              {isReschedule
+                ? 'Host akan melihat alasan ini sebelum menyetujui jadwal baru.'
+                : 'Host akan melihat alasan ini. Baca dulu ketentuan di bawah.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {/*
+            The policy was a bare bulleted list in body ink, which made four
+            rules that cost real money read like fine print. It is a bordered
+            block now, each rule on its own hairline-separated row, with the
+            money figure in the mono face so the three refund tiers line up
+            and can be compared at a glance.
+          */}
+          <div className="overflow-hidden rounded-panel border border-hairline">
+            <p className="border-b border-hairline-soft bg-surface-tint px-4 py-2 font-mono text-tiny uppercase text-ink-ghost">
+              Kebijakan pembatalan &amp; pengembalian dana
+            </p>
+            <ul className="text-copy text-ink-body">
+              <li className="border-b border-hairline-soft px-4 py-2.5">
+                Pembatalan <span className="numeric">24</span> jam sebelum jadwal: dana kembali penuh (<span className="numeric">100%</span>)
+              </li>
+              <li className="border-b border-hairline-soft px-4 py-2.5">
+                Kurang dari <span className="numeric">24</span> jam: dikenakan biaya pembatalan <span className="numeric">50%</span>
+              </li>
+              <li className="border-b border-hairline-soft px-4 py-2.5">
+                Kurang dari <span className="numeric">3</span> jam sebelum jadwal: tidak ada pengembalian dana
+              </li>
+              <li className="px-4 py-2.5">
+                Reschedule hanya bisa <span className="numeric">1×</span> dan minimal <span className="numeric">6</span> jam sebelum jadwal
+              </li>
             </ul>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              {isReschedule 
-                ? 'Mohon berikan alasan pengajuan reschedule:' 
-                : 'Mohon berikan alasan pembatalan:'}
+            <label htmlFor="cancel-reason" className="block text-copy font-medium text-ink">
+              {isReschedule
+                ? 'Alasan pengajuan reschedule'
+                : 'Alasan pembatalan'}
             </label>
             <Textarea
+              id="cancel-reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Tuliskan alasan kamu di sini..."
-              className="h-24"
+              placeholder="Tulis alasan kamu di sini…"
+              className="h-24 resize-none rounded-field border-hairline-input bg-surface text-copy text-ink placeholder:text-ink-faint focus-visible:border-hairline-strong focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
+        </div>
 
-          <div className="mt-6 flex justify-end space-x-2">
-            <Button
-              variant="outline"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Kembali
-            </Button>
-            <Button
-              onClick={handleSubmit}
-              disabled={isSubmitting}
-              className={isReschedule 
-                ? "bg-orange-500 hover:bg-orange-600" 
-                : "bg-red-500 hover:bg-red-600"}
-            >
-              {isSubmitting ? 'Memproses...' : 'Lanjutkan'}
-            </Button>
-          </div>
+        {/*
+          The pair never stacks. `flex-nowrap` here rather than the default
+          wrap, because "Kembali" landing under "Lanjutkan" would put the way
+          out below the irreversible action.
+        */}
+        <div className="flex flex-nowrap items-center justify-end gap-3 border-t border-hairline-soft bg-surface-tint p-5 sm:p-6">
+          <Button
+            variant="quiet"
+            size="action-secondary"
+            onClick={onClose}
+            disabled={isSubmitting}
+          >
+            Kembali
+          </Button>
+          {/*
+            Text on a tint, not a solid red block. Cancelling is never the
+            primary action of a screen, and a filled red button reads exactly
+            like one.
+          */}
+          <Button
+            variant={isReschedule ? 'brand' : 'danger'}
+            size="action"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Memproses…' : 'Lanjutkan'}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

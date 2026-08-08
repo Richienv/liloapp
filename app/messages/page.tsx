@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChevronLeft, Send, AlertTriangle, XCircle, MapPin, Copy, FileText, Check, CheckCheck } from "lucide-react";
+import { ChevronLeft, Send, AlertTriangle, X, Copy, Check, CheckCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from 'next/image';
 import { createClient } from "@/utils/supabase/client";
@@ -56,6 +56,27 @@ interface Conversation {
 const formatName = (firstName: string, lastName: string): string => {
   return `${firstName} ${lastName.charAt(0)}.`;
 };
+
+/**
+ * The composer field, and the one place a message is typed.
+ *
+ * The shadcn `Input` is still written against Tailwind's own scale; `cn` knows
+ * both scales, so this className replaces `text-sm`/`rounded-md`/`border-input`
+ * rather than racing them in the stylesheet.
+ */
+const COMPOSER_FIELD =
+  "h-11 min-w-0 flex-1 rounded-field border-hairline-input bg-surface text-ui text-ink placeholder:text-ink-ghost";
+
+/**
+ * A modal shell: hairline frame on the surface, over an ink scrim.
+ *
+ * The scrim is `bg-ink/45` rather than `black/70` + `backdrop-blur` — the blur
+ * was doing the work a frame and a radius should do, and pure black over a warm
+ * canvas goes visibly cold at the edges of the card.
+ */
+const SCRIM = "fixed inset-0 z-[var(--z-modal)] bg-ink/45";
+const MODAL_FRAME =
+  "w-full overflow-hidden rounded-frame border border-hairline bg-surface";
 
 export default function MessagesPage() {
   const router = useRouter();
@@ -162,7 +183,7 @@ export default function MessagesPage() {
         }
       } catch (error) {
         console.error('Error fetching conversations:', error);
-        toast.error('Failed to load conversations');
+        toast.error('Gagal memuat percakapan');
       }
     };
 
@@ -174,53 +195,50 @@ export default function MessagesPage() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  /**
+   * The block on sharing personal details.
+   *
+   * It was a red circle over a red panel over a red button — three weights of
+   * the same alarm, so none of them ranked. One caution-toned line carries the
+   * consequence and the dismiss button stays quiet: the reader is not being
+   * asked to choose anything, only to have read it.
+   */
   const WarningModal = () => {
     return (
-      <div className="fixed inset-90 z-[10] flex items-center justify-center">
-        {/* Dimmed background with blur */}
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
-        
-        {/* Modal content - Added min-w-[500px] for desktop */}
-        <div className="relative w-[95%] sm:w-[20%] min-w-[300px] md:min-w-[600px] bg-white rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 mx-auto">
-          <div className="p-4 sm:p-8">
-            {/* Warning Icon Header - Made smaller */}
-            <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-red-100 rounded-full flex items-center justify-center mb-4 sm:mb-6">
-              <AlertTriangle className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
-            </div>
+      <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
+        <div className={SCRIM} />
 
-            {/* Content - Adjusted text sizes */}
-            <div className="text-center space-y-4 sm:space-y-6">
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
-                Peringatan Keamanan
-              </h3>
-              <div className="space-y-3 sm:space-y-4 max-w-[95%] mx-auto">
-                <p className="text-sm sm:text-base text-gray-600">
-                  Untuk melindungi pengguna dan streamer dari penipuan, kamu tidak dapat membagikan informasi pribadi di platform Salda.
-                </p>
-                <div className="bg-red-50 p-3 sm:p-4 rounded-lg border border-red-100">
-                  <p className="text-sm sm:text-base font-medium text-red-600 whitespace-normal">
-                    ⚠️ Pelanggaran berulang terhadap kebijakan ini dapat mengakibatkan pemblokiran akun secara permanen.
-                  </p>
-                </div>
-                <p className="text-sm sm:text-base text-gray-600">
-                  Silakan hubungi{" "}
-                  <a href="mailto:admin@trollife.id" className="text-blue-600 hover:text-blue-700 font-medium">
-                    admin@trollife.id
-                  </a>
-                  {" "}untuk bantuan lebih lanjut.
-                </p>
-              </div>
-            </div>
+        <div className={`${MODAL_FRAME} relative max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300`}>
+          <div className="flex items-start gap-3 border-b border-hairline-soft px-5 py-4 sm:px-6">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-caution" />
+            <h3 className="min-w-0 font-serif text-title font-semibold text-ink">
+              Peringatan keamanan
+            </h3>
+          </div>
 
-            {/* Action Button - Adjusted padding */}
-            <div className="mt-6 sm:mt-8">
-              <Button
-                onClick={() => toast.dismiss()}
-                className="w-full bg-red-600 hover:bg-red-700 text-white py-2 sm:py-3 rounded-lg font-medium transition-colors duration-200"
+          <div className="space-y-4 px-5 py-5 sm:px-6">
+            <p className="text-copy text-ink-body">
+              Untuk melindungi kamu dan host dari penipuan, informasi pribadi tidak bisa dibagikan di platform Salda.
+            </p>
+            <p className="rounded-panel border border-caution-line bg-caution-tint px-4 py-3 text-meta text-caution">
+              Pelanggaran berulang terhadap kebijakan ini dapat mengakibatkan pemblokiran akun secara permanen.
+            </p>
+            <p className="text-meta text-ink-soft">
+              Butuh bantuan? Hubungi{" "}
+              <a
+                href="mailto:admin@trollife.id"
+                className="font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
               >
-                Saya Mengerti
-              </Button>
-            </div>
+                admin@trollife.id
+              </a>
+              .
+            </p>
+          </div>
+
+          <div className="border-t border-hairline-soft bg-surface-tint px-5 py-4 sm:px-6">
+            <Button variant="quiet" size="action-full" onClick={() => toast.dismiss()}>
+              Saya mengerti
+            </Button>
           </div>
         </div>
       </div>
@@ -229,38 +247,34 @@ export default function MessagesPage() {
 
   const ShippingInquiryModal = () => {
     return (
-      <div className="fixed inset-90 z-[10] flex items-center justify-center">
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" />
-        
-        <div className="relative w-[95%] sm:w-[20%] min-w-[300px] md:min-w-[600px] bg-white rounded-xl shadow-2xl animate-in slide-in-from-bottom-4 duration-300 mx-auto">
-          <div className="p-4 sm:p-8">
-            <div className="text-center space-y-4">
-              <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                Pengiriman Barang
-              </h3>
-              <p className="text-sm sm:text-base text-gray-600">
-                Kamu ingin mengirim barang ke livestreamer? Silakan hubungi admin Salda untuk membantu mengatur pengiriman product yang ingin di review oleh streamer kami.
-              </p>
-              <div className="mt-4">
-                <a
-                  href="https://wa.me/62895700120901"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-600 hover:text-blue-700 hover:underline font-medium"
-                >
-                  Klik di sini
-                </a>
-              </div>
-              <div className="mt-6">
-                <Button
-                  onClick={() => toast.dismiss()}
-                  variant="outline"
-                  className="w-full"
-                >
-                  Tutup
-                </Button>
-              </div>
-            </div>
+      <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
+        <div className={SCRIM} />
+
+        <div className={`${MODAL_FRAME} relative max-w-lg animate-in fade-in slide-in-from-bottom-4 duration-300`}>
+          <div className="border-b border-hairline-soft px-5 py-4 sm:px-6">
+            <h3 className="font-serif text-title font-semibold text-ink">
+              Pengiriman barang
+            </h3>
+          </div>
+
+          <div className="space-y-3 px-5 py-5 sm:px-6">
+            <p className="text-copy text-ink-body">
+              Kamu ingin mengirim barang ke host? Hubungi admin Salda untuk mengatur pengiriman produk yang mau kamu tampilkan.
+            </p>
+            <a
+              href="https://wa.me/62895700120901"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block text-copy font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
+            >
+              Hubungi admin
+            </a>
+          </div>
+
+          <div className="border-t border-hairline-soft bg-surface-tint px-5 py-4 sm:px-6">
+            <Button variant="quiet" size="action-full" onClick={() => toast.dismiss()}>
+              Tutup
+            </Button>
           </div>
         </div>
       </div>
@@ -269,21 +283,19 @@ export default function MessagesPage() {
 
   const InlineNotification = () => {
     return (
-      <div className="flex justify-center mb-3">
-        <div className="bg-gray-50/90 rounded-lg p-4 max-w-[90%] border border-gray-200 shadow-sm">
-          <p className="text-sm text-gray-700 mb-1">
-            Kamu ingin mengirim barang ke livestreamer? Silakan hubungi admin kami.{" "}
-            <a
-              href="https://wa.me/62895700120901"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:text-blue-700 hover:underline"
-            >
-              Klik di sini
-            </a>
-            .
-          </p>
-        </div>
+      <div className="mb-3 flex justify-center">
+        <p className="max-w-[90%] rounded-panel border border-hairline bg-surface px-4 py-3 text-meta text-ink-muted">
+          Kamu ingin mengirim barang ke host? Hubungi admin kami.{" "}
+          <a
+            href="https://wa.me/62895700120901"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
+          >
+            Klik di sini
+          </a>
+          .
+        </p>
       </div>
     );
   };
@@ -382,33 +394,34 @@ export default function MessagesPage() {
       return (
         <div key={message.id}>
           {showDateSeparator && (
-            <div className="flex justify-center my-4">
-              <div className="bg-gray-100 rounded-full px-4 py-1 text-sm text-gray-600">
+            <div className="my-4 flex justify-center">
+              <span className="rounded-chip border border-hairline bg-surface px-2.5 py-1 font-mono text-tiny uppercase text-ink-ghost">
                 {messageDate}
-              </div>
+              </span>
             </div>
           )}
-          <div 
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'} mb-3`}
-          >
-            <div 
-              className={`rounded-lg p-3 max-w-[70%] relative ${
-                isCurrentUser 
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-800'
+          {/*
+            Two quiet fills, not one saturated one. A solid blue bubble made the
+            reader's own messages the loudest thing on a screen whose one accent
+            belongs to the send button; the tint separates the two speakers just
+            as well and leaves the text at full ink contrast.
+          */}
+          <div className={`mb-2.5 flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}>
+            <div
+              className={`max-w-[80%] rounded-panel px-3.5 py-2.5 sm:max-w-[70%] ${
+                isCurrentUser ? 'bg-brand-tint text-ink' : 'bg-surface-tint text-ink-body'
               }`}
             >
-              <p className="text-sm">{message.content}</p>
-              <div className="flex items-center justify-end gap-1">
-                <p className={`text-xs ${
-                  isCurrentUser ? 'text-blue-100' : 'text-gray-500'
-                }`}>
+              <p className="whitespace-pre-line break-words text-copy">{message.content}</p>
+              <div className="mt-1 flex items-center justify-end gap-1">
+                <time className="numeric text-mini text-ink-faint">
                   {formatMessageTime(message.created_at)}
-                </p>
+                </time>
                 {isCurrentUser && (
-                  <span className={`ml-1 ${
-                    message.is_read ? 'text-blue-100' : 'text-blue-200'
-                  }`}>
+                  <span
+                    aria-label={message.is_read ? 'Sudah dibaca' : 'Terkirim'}
+                    className={message.is_read ? 'text-ink-soft' : 'text-ink-ghost'}
+                  >
                     {message.is_read ? (
                       <CheckCheck className="h-3 w-3" />
                     ) : (
@@ -466,18 +479,26 @@ export default function MessagesPage() {
     };
   }, [selectedConversation, currentUser]);
 
+  /**
+   * One conversation, one line.
+   *
+   * The name block is `min-w-0` + `truncate` and the timestamp is `shrink-0`,
+   * so a long name shortens itself instead of pushing the time onto a second
+   * row. A list where some rows are two lines tall and some are three is a list
+   * you cannot scan.
+   */
   const renderConversationList = () => (
     conversations.map((conversation) => (
-      <div 
-        key={conversation.id} 
-        className={`flex items-center p-4 cursor-pointer hover:bg-gray-50 ${
-          selectedConversation?.id === conversation.id ? 'bg-gray-100' : ''
+      <div
+        key={conversation.id}
+        className={`flex min-w-0 cursor-pointer items-center gap-3 border-b border-hairline-soft px-4 py-3.5 transition-colors hover:bg-surface-raised ${
+          selectedConversation?.id === conversation.id ? 'bg-surface-tint' : ''
         }`}
         onClick={() => handleConversationSelect(conversation)}
       >
-        <div className="relative w-12 h-12 rounded-full overflow-hidden border border-gray-200">
+        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-hairline bg-surface-tint">
           <Image
-            src={userType === 'client' 
+            src={userType === 'client'
               ? (conversation.streamer?.image_url || '/default-avatar.png')
               : (conversation.client?.profile_picture_url || '/default-avatar.png')
             }
@@ -486,25 +507,26 @@ export default function MessagesPage() {
               : formatName(conversation.client?.first_name || '', conversation.client?.last_name || '')
             }
             fill
+            sizes="40px"
             className="object-cover"
           />
         </div>
-        <div className="flex-1 ml-4">
-          <div className="flex justify-between items-start">
-            <h3 className="font-semibold text-base">
+        <div className="min-w-0 flex-1">
+          <div className="flex min-w-0 items-baseline gap-3">
+            <h3 className="min-w-0 flex-1 truncate text-ui font-medium text-ink">
               {userType === 'client'
                 ? formatName(conversation.streamer?.first_name || '', conversation.streamer?.last_name || '')
                 : formatName(conversation.client?.first_name || '', conversation.client?.last_name || '')
               }
             </h3>
             {conversation.lastMessage && (
-              <span className="text-xs text-gray-500">
+              <span className="numeric shrink-0 text-mini text-ink-faint">
                 {formatLastMessageTime(conversation.lastMessage.created_at)}
               </span>
             )}
           </div>
-          <p className="text-sm text-gray-500 truncate">
-            {conversation.lastMessage?.content || 'No messages yet'}
+          <p className="truncate text-meta text-ink-soft">
+            {conversation.lastMessage?.content || 'Belum ada pesan'}
           </p>
         </div>
       </div>
@@ -538,95 +560,87 @@ export default function MessagesPage() {
     }
   };
 
+  /**
+   * The host's shipping address.
+   *
+   * The address is the whole point of the card, so it is a hairline definition
+   * list rather than three tinted wells — and the copy button is the one accent
+   * in here. The copied state was a green fill; it is now the quiet half of the
+   * pair, because "already done" is not an action to press again.
+   */
   const DeliveryInfoCard = () => {
+    const address = selectedConversation?.streamer?.full_address;
+
     return (
       <>
-        {/* Dark overlay backdrop */}
-        <div 
-          className="fixed inset-0 bg-black/50 transition-opacity z-40"
-          onClick={() => setShowDeliveryInfo(false)}
-        />
-        
-        {/* Centered card */}
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200">
-            <div className="p-4">
-              {/* Header with close button */}
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-10 h-10 rounded-lg overflow-hidden">
-                    <Image
-                      src={selectedConversation?.streamer?.image_url || '/default-avatar.png'}
-                      alt="Streamer"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900">
-                      {selectedConversation?.streamer?.first_name} {selectedConversation?.streamer?.last_name?.charAt(0)}.
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Rp {selectedConversation?.streamer?.price?.toLocaleString('id-ID')}/jam
-                    </p>
-                  </div>
-                </div>
-                <button 
-                  onClick={() => setShowDeliveryInfo(false)}
-                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-                >
-                  <XCircle className="h-5 w-5 text-gray-400" />
-                </button>
-              </div>
+        <div className={SCRIM} onClick={() => setShowDeliveryInfo(false)} />
 
-              {/* Booking ID */}
-              <div className="flex items-center gap-2 mb-4 bg-blue-50 p-2 rounded-lg">
-                <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-3.5 w-3.5 text-blue-600" />
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-600">Streamer ID:</span>
-                  <span className="text-sm font-medium text-gray-900">#{selectedConversation?.streamer?.id}</span>
-                </div>
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
+          <div className={`${MODAL_FRAME} max-w-md animate-in fade-in slide-in-from-bottom-4 duration-200`}>
+            <div className="flex min-w-0 items-center gap-3 border-b border-hairline-soft px-5 py-4">
+              <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-panel border border-hairline bg-surface-tint">
+                <Image
+                  src={selectedConversation?.streamer?.image_url || '/default-avatar.png'}
+                  alt="Host"
+                  fill
+                  sizes="40px"
+                  className="object-cover"
+                />
               </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate font-serif text-title font-semibold text-ink">
+                  {selectedConversation?.streamer?.first_name} {selectedConversation?.streamer?.last_name?.charAt(0)}.
+                </h3>
+                <p className="numeric truncate text-meta text-ink-soft">
+                  Rp {selectedConversation?.streamer?.price?.toLocaleString('id-ID')} / jam
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowDeliveryInfo(false)}
+                aria-label="Tutup"
+                className="-mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-field text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
-              {/* Address section with improved styling */}
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 text-blue-600">
-                  <MapPin className="h-4 w-4" />
-                  <h4 className="font-medium">Alamat Pengiriman</h4>
+            <div className="space-y-4 p-5">
+              <dl className="overflow-hidden rounded-panel border border-hairline">
+                <div className="flex min-w-0 items-baseline gap-4 border-b border-hairline-soft px-4 py-3">
+                  <dt className="shrink-0 text-meta text-ink-soft">ID host</dt>
+                  <dd className="numeric min-w-0 flex-1 truncate text-right text-copy text-ink">
+                    #{selectedConversation?.streamer?.id}
+                  </dd>
                 </div>
-                <div className="bg-gray-50 p-3 rounded-lg space-y-2">
-                  {selectedConversation?.streamer?.full_address ? (
-                    <div className="text-gray-600 text-sm whitespace-pre-line">
-                      {selectedConversation.streamer.full_address}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500 text-sm italic">Alamat tidak tersedia</p>
-                  )}
+                <div className="px-4 py-3">
+                  <dt className="text-meta text-ink-soft">Alamat pengiriman</dt>
+                  <dd className="mt-1 whitespace-pre-line text-copy text-ink-body">
+                    {address || (
+                      <span className="text-ink-ghost">Alamat tidak tersedia</span>
+                    )}
+                  </dd>
                 </div>
-                <button
-                  onClick={handleCopyAddress}
-                  disabled={!selectedConversation?.streamer?.full_address || isCopied}
-                  className={`w-full mt-4 py-2.5 px-4 rounded-lg flex items-center justify-center gap-2 font-medium transition-all duration-300 ${
-                    isCopied 
-                      ? 'bg-green-500 hover:bg-green-600 text-white'
-                      : 'bg-blue-600 hover:bg-blue-700 text-white'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isCopied ? (
-                    <>
-                      <Check className="h-4 w-4" />
-                      Alamat sudah disalin
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-4 w-4" />
-                      Salin Alamat
-                    </>
-                  )}
-                </button>
-              </div>
+              </dl>
+
+              <Button
+                variant={isCopied ? 'quiet' : 'brand'}
+                size="action-full"
+                onClick={handleCopyAddress}
+                disabled={!address || isCopied}
+              >
+                {isCopied ? (
+                  <>
+                    <Check className="mr-2 h-4 w-4" />
+                    Alamat sudah disalin
+                  </>
+                ) : (
+                  <>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Salin alamat
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </div>
@@ -635,112 +649,125 @@ export default function MessagesPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-[#faf9f6]">
+    <div className="flex h-screen w-full flex-col bg-canvas">
       <Toaster richColors position="top-center" />
 
-      {/* Header */}
-      <div className="w-full bg-[#faf9f6] border-b border-gray-200 flex-shrink-0">
-        <div className="w-full px-4">
-          <div className="flex items-center h-16">
-            <Button 
-              onClick={handleBackNavigation}
-              variant="ghost" 
-              size="sm" 
-              className="mr-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
-            </Button>
-            <h1 className="text-xl flex items-center gap-2">
-              Messages
-            </h1>
-          </div>
+      {/*
+        The bar is `bg-canvas`, not white. A white bar over a warm canvas draws a
+        second horizontal edge under the hairline and reads as two headers.
+      */}
+      <header className="w-full shrink-0 border-b border-hairline bg-canvas">
+        <div className="flex h-14 items-center gap-3 px-4 sm:px-5">
+          <button
+            type="button"
+            onClick={handleBackNavigation}
+            className="-ml-1 inline-flex shrink-0 items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Kembali
+          </button>
+          <h1 className="min-w-0 truncate font-serif text-title font-semibold text-ink">
+            Pesan
+          </h1>
         </div>
-      </div>
+      </header>
 
       {/* Chat Container */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex flex-1 overflow-hidden">
         {/* Chat List */}
-        <div className={`w-full md:w-[350px] lg:w-[400px] bg-[#faf9f6] border-r border-gray-200 
-          overflow-y-auto flex-shrink-0 ${isMobileChat ? 'hidden md:block' : 'block'}`}>
+        <div className={`w-full shrink-0 overflow-y-auto border-r border-hairline bg-canvas md:w-[320px] lg:w-[380px] ${isMobileChat ? 'hidden md:block' : 'block'}`}>
           {conversations.length > 0 ? renderConversationList() : (
-            <div className="p-4 text-center text-gray-500">
-              <p>No conversations yet</p>
-              <p className="text-sm mt-2">Your chat history will appear here</p>
+            <div className="px-5 py-16 text-center">
+              <p className="font-serif text-title font-semibold text-ink">
+                Belum ada percakapan
+              </p>
+              <p className="mx-auto mt-2 max-w-xs text-meta text-ink-soft">
+                Chat kamu dengan host akan muncul di sini setelah booking pertama.
+              </p>
             </div>
           )}
         </div>
 
         {/* Message Thread */}
-        <div className={`flex-1 flex-col bg-[#faf9f6] min-w-0 
-          ${isMobileChat ? 'flex' : 'hidden md:flex'}`}>
+        <div className={`min-w-0 flex-1 flex-col bg-canvas ${isMobileChat ? 'flex' : 'hidden md:flex'}`}>
           {selectedConversation ? (
             <>
               {/* Header */}
-              <div className="bg-[#faf9f6] p-4 border-b border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="relative w-10 h-10 rounded-full overflow-hidden border border-gray-200">
-                      <Image
-                        src={userType === 'client'
-                          ? (selectedConversation.streamer?.image_url || '/default-avatar.png')
-                          : (selectedConversation.client?.profile_picture_url || '/default-avatar.png')
-                        }
-                        alt="Profile"
-                        fill
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="ml-3">
-                      <span className="font-semibold text-base block">
-                        {userType === 'client'
-                          ? formatName(selectedConversation.streamer?.first_name || '', selectedConversation.streamer?.last_name || '')
-                          : formatName(selectedConversation.client?.first_name || '', selectedConversation.client?.last_name || '')
-                        }
-                      </span>
-                    </div>
+              <div className="shrink-0 border-b border-hairline bg-canvas px-4 py-3 sm:px-5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full border border-hairline bg-surface-tint">
+                    <Image
+                      src={userType === 'client'
+                        ? (selectedConversation.streamer?.image_url || '/default-avatar.png')
+                        : (selectedConversation.client?.profile_picture_url || '/default-avatar.png')
+                      }
+                      alt="Foto profil"
+                      fill
+                      sizes="40px"
+                      className="object-cover"
+                    />
                   </div>
+                  <span className="min-w-0 flex-1 truncate text-ui font-medium text-ink">
+                    {userType === 'client'
+                      ? formatName(selectedConversation.streamer?.first_name || '', selectedConversation.streamer?.last_name || '')
+                      : formatName(selectedConversation.client?.first_name || '', selectedConversation.client?.last_name || '')
+                    }
+                  </span>
+                  {/*
+                    `shrink-0` and nothing else — the button lives in
+                    components/ui/address-button.tsx and is not this page's to
+                    restyle. Without it the name beside it wins the space and
+                    the label wraps onto a second line.
+                  */}
                   {selectedConversation?.streamer && userType === 'client' && (
                     <AddressButton
                       streamerId={selectedConversation.streamer.id}
                       clientId={selectedConversation.client_id}
                       onShowAddress={() => setShowDeliveryInfo(true)}
+                      className="shrink-0"
                     />
                   )}
                 </div>
               </div>
 
-              {/* Warning Banner */}
-              <div className="bg-blue-50 p-3 text-sm text-blue-800 flex items-start border-b border-blue-100">
-                <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="flex-1">
-                  Hati-hati penipuan! Mohon tidak memberikan data pribadi kepada streamer.
+              {/*
+                A caution strip, not a blue one. Blue on this screen means "the
+                thing to press"; a standing warning that is never pressed and
+                never goes away should not wear the same colour as the send
+                button.
+              */}
+              <div className="flex shrink-0 items-start gap-2 border-b border-caution-line bg-caution-tint px-4 py-2.5 text-meta text-caution sm:px-5">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <p className="min-w-0 flex-1">
+                  Hati-hati penipuan. Jangan memberikan data pribadi kamu kepada host.
                 </p>
               </div>
 
               {/* Messages */}
-              <div className="flex-1 p-4 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
                 {renderMessages()}
                 <div ref={messagesEndRef} />
               </div>
 
               {/* Input */}
-              <div className="bg-white p-4 border-t border-gray-200 relative">
+              <div className="relative shrink-0 border-t border-hairline bg-surface px-4 py-3 sm:px-5">
                 {showDeliveryInfo && <DeliveryInfoCard />}
-                
-                <div className="flex items-center gap-3">
+
+                <div className="flex min-w-0 items-center gap-2.5">
                   <Input
                     type="text"
-                    placeholder="Type a message..."
+                    placeholder="Tulis pesan…"
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    className="flex-1 text-sm"
+                    className={COMPOSER_FIELD}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   />
-                  <Button 
-                    onClick={handleSendMessage} 
-                    size="default" 
-                    className="bg-gradient-to-r from-[#1e40af] to-[#6b21a8] hover:from-[#1e3a8a] hover:to-[#581c87] flex-shrink-0"
+                  <Button
+                    onClick={handleSendMessage}
+                    variant="brand"
+                    size="icon"
+                    aria-label="Kirim pesan"
+                    className="h-11 w-11 shrink-0 rounded-field"
                   >
                     <Send className="h-4 w-4" />
                   </Button>
@@ -748,15 +775,17 @@ export default function MessagesPage() {
               </div>
             </>
           ) : (
-            <div className="h-full flex flex-col">
-              <div className="bg-blue-600 p-3 text-sm text-white flex items-start border-b border-blue-700">
-                <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0 mt-0.5" />
-                <p className="flex-1">
-                  Hati-hati penipuan! Mohon tidak bertransaksi di luar Salda dan tidak memberikan data pribadi kepada streamer, seperti nomor HP dan alamat. Tetap berinteraksi melalui aplikasi Salda, ya.
+            <div className="flex h-full flex-col">
+              <div className="flex shrink-0 items-start gap-2 border-b border-caution-line bg-caution-tint px-4 py-2.5 text-meta text-caution sm:px-5">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <p className="min-w-0 flex-1">
+                  Hati-hati penipuan. Jangan bertransaksi di luar Salda dan jangan memberikan data pribadi kamu — nomor HP atau alamat — kepada host. Tetap berinteraksi lewat aplikasi Salda, ya.
                 </p>
               </div>
-              <div className="flex-1 flex items-center justify-center p-4 text-center text-gray-500">
-                <p>Select a conversation to start chatting</p>
+              <div className="flex flex-1 items-center justify-center px-5 py-16 text-center">
+                <p className="text-copy text-ink-soft">
+                  Pilih percakapan untuk mulai chat.
+                </p>
               </div>
             </div>
           )}

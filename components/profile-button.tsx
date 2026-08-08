@@ -76,10 +76,14 @@ export function ProfileButton({ user, showNameOnMobile = true, className }: Prof
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
+          aria-label="Menu akun"
           className={cn(
-            "relative h-9 w-9 rounded-full overflow-hidden p-0 border border-gray-200 hover:shadow-md transition-shadow",
+            // `transition-shadow` with no shadow to transition to was left over
+            // from the lifted-card era; the ring the redesign uses is a
+            // hairline that darkens on hover.
+            "relative h-9 w-9 overflow-hidden rounded-full border border-hairline-input p-0 transition-colors hover:border-hairline-strong",
             className
           )}
         >
@@ -99,12 +103,17 @@ export function ProfileButton({ user, showNameOnMobile = true, className }: Prof
                   e.currentTarget.parentElement?.querySelector('.fallback')?.classList.remove('hidden');
                 }}
               />
-              <span className="fallback hidden h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+              {/*
+                `hidden` still wins over `grid` in Tailwind's display ordering,
+                so the fallback stays invisible until the image's error handler
+                strips the class — same mechanism as before, one utility fewer.
+              */}
+              <span className="fallback hidden grid h-9 w-9 place-items-center rounded-full bg-surface-tint text-ui font-medium text-ink-muted">
                 {user.first_name.charAt(0) || 'U'}
               </span>
             </>
           ) : (
-            <span className="h-9 w-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-surface-tint text-ui font-medium text-ink-muted">
               {user.first_name.charAt(0) || 'U'}
             </span>
           )}
@@ -118,39 +127,43 @@ export function ProfileButton({ user, showNameOnMobile = true, className }: Prof
         forceMount
         style={{ '--radix-dropdown-menu-content-transform-origin': 'var(--radix-popper-transform-origin)' } as React.CSSProperties}
       >
-        {/* Mobile-only menu items */}
+        {/*
+          One language. This menu was the last English surface a signed-in
+          brand met — "Messages / Dashboard / My Bookings / Settings / Log out"
+          sitting directly under a bar that says "Cari host di Salda". Labels
+          are Bahasa Indonesia in sentence case, and "Booking saya" is the same
+          words the /client-bookings screen it opens uses for itself.
+        */}
         <div className="block sm:hidden">
-          <DropdownMenuItem onClick={() => router.push('/messages')} className="cursor-pointer">
-            <MessageSquare className="mr-2 h-4 w-4" />
-            <span>Messages</span>
+          <DropdownMenuItem onClick={() => router.push('/messages')} className="cursor-pointer text-copy">
+            <MessageSquare className="mr-2 h-4 w-4 text-ink-soft" />
+            <span>Pesan</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
         </div>
 
-        {/* Common menu items */}
-        <DropdownMenuItem onClick={() => router.push(getDashboardLink())} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => router.push(getDashboardLink())} className="cursor-pointer text-copy">
           {user.user_type === 'streamer' ? (
             <>
-              <LayoutDashboard className="mr-2 h-4 w-4" />
-              <span>Dashboard</span>
+              <LayoutDashboard className="mr-2 h-4 w-4 text-ink-soft" />
+              <span>Dasbor host</span>
             </>
           ) : (
             <>
-              <Clock className="mr-2 h-4 w-4" />
-              <span>My Bookings</span>
+              <Clock className="mr-2 h-4 w-4 text-ink-soft" />
+              <span>Booking saya</span>
             </>
           )}
         </DropdownMenuItem>
-        {/* Only show Settings option if not on streamer dashboard */}
         {!isStreamerDashboard && (
-          <DropdownMenuItem onClick={() => router.push(getSettingsLink())} className="cursor-pointer">
-            <Settings className="mr-2 h-4 w-4" />
-            <span>Settings</span>
+          <DropdownMenuItem onClick={() => router.push(getSettingsLink())} className="cursor-pointer text-copy">
+            <Settings className="mr-2 h-4 w-4 text-ink-soft" />
+            <span>Pengaturan</span>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer">
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Log out</span>
+        <DropdownMenuItem onClick={handleSignOut} className="cursor-pointer text-copy">
+          <LogOut className="mr-2 h-4 w-4 text-ink-soft" />
+          <span>Keluar</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

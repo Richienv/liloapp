@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { absoluteUrl } from "@/lib/site";
 
 // Server component so the route can declare its own canonical. As a client
@@ -16,123 +16,182 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * One numbered clause — the same mono index + serif title pair the booking list
+ * uses for its sections, and the same construction as `/terms`. The two legal
+ * pages are read back to back by anyone signing up; if they were set
+ * differently one of them would look like it belonged to another product.
+ */
+function Clause({
+  index,
+  title,
+  children,
+}: {
+  index: number;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-t border-hairline-soft pt-8 first:border-t-0 first:pt-0">
+      <div className="flex items-baseline gap-3">
+        <span className="numeric font-mono text-mini text-ink-ghost">
+          {String(index).padStart(2, "0")}
+        </span>
+        <h2 className="font-serif text-title font-semibold text-ink">{title}</h2>
+      </div>
+      <div className="mt-3.5 text-lede text-ink-body">{children}</div>
+    </section>
+  );
+}
+
+/**
+ * A bullet is a 4px ink dot parked on the first line, not a `list-disc`.
+ * `items-center` would float it to the middle of a wrapped two-line item.
+ */
+function Point({ children }: { children: ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span
+        aria-hidden="true"
+        className="mt-[10px] h-1 w-1 shrink-0 rounded-full bg-ink-ghost"
+      />
+      <span className="min-w-0">{children}</span>
+    </li>
+  );
+}
+
 export default function PrivacyNoticePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4">
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <Link href="/sign-up">
-                <ChevronLeft className="h-4 w-4 mr-1" />
-                Kembali
-              </Link>
-            </Button>
-            <h1 className="text-xl font-semibold">Kebijakan Privasi</h1>
-          </div>
+    <div className="min-h-screen bg-canvas">
+      {/*
+        `bg-canvas`, not white — a white bar over the warm canvas reads as a
+        second header. The running head is a mono eyebrow, so the page keeps one
+        heading at heading size.
+      */}
+      <header className="sticky top-0 z-[var(--z-navbar)] border-b border-hairline bg-canvas">
+        <div className="mx-auto flex h-14 max-w-[68ch] items-center gap-3 px-5 sm:px-6">
+          <Link
+            href="/sign-up"
+            className="-ml-1 inline-flex shrink-0 items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Kembali
+          </Link>
+          <span className="ml-auto truncate font-mono text-tiny uppercase text-ink-ghost">
+            Kebijakan privasi
+          </span>
         </div>
-      </div>
+      </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <div className="bg-white rounded-xl shadow-sm p-6 sm:p-8">
-          <div className="prose max-w-none">
-            <h2 className="text-2xl font-semibold mb-6">Kebijakan Privasi Salda</h2>
-            
-            <div className="space-y-8">
-              <section>
-                <h3 className="text-xl font-semibold mb-4">1. Pendahuluan</h3>
-                <p className="text-gray-600 mb-4">
-                  Salda berkomitmen untuk melindungi privasi Anda. Kebijakan Privasi ini menjelaskan bagaimana kami mengumpulkan, menggunakan, mengungkapkan, memproses dan melindungi informasi pribadi yang Anda berikan.
-                </p>
-              </section>
+      {/*
+        68ch measure at 15px/1.6. The old `max-w-4xl` put ~120 characters on a
+        line, which is roughly twice what a reader can track back to the start
+        of the next one — the single worst thing you can do to a page that is
+        entirely prose.
+      */}
+      <article className="mx-auto w-full max-w-[68ch] px-5 pb-24 pt-10 sm:px-6 sm:pt-14">
+        <h1 className="font-serif text-section font-semibold text-ink sm:text-display">
+          Kebijakan privasi Salda
+        </h1>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">2. Informasi yang Kami Kumpulkan</h3>
-                <ul className="list-disc pl-5 space-y-2 text-gray-600">
-                  <li>Informasi yang Anda berikan (nama, email, nomor telepon)</li>
-                  <li>Informasi profil (foto profil, bio)</li>
-                  <li>Informasi transaksi</li>
-                  <li>Informasi perangkat dan penggunaan</li>
-                  <li>Konten yang Anda unggah (dokumen, gambar)</li>
-                </ul>
-              </section>
+        <div className="mt-10 space-y-8">
+          <Clause index={1} title="Pendahuluan">
+            <p>
+              Salda berkomitmen untuk melindungi privasi kamu. Kebijakan Privasi
+              ini menjelaskan bagaimana kami mengumpulkan, menggunakan,
+              mengungkapkan, memproses dan melindungi informasi pribadi yang kamu
+              berikan.
+            </p>
+          </Clause>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">3. Bagaimana Kami Menggunakan Informasi Anda</h3>
-                <ul className="list-disc pl-5 space-y-2 text-gray-600">
-                  <li>Menyediakan layanan streaming dan booking</li>
-                  <li>Memproses transaksi dan pembayaran</li>
-                  <li>Mengirim pemberitahuan terkait layanan</li>
-                  <li>Meningkatkan layanan kami</li>
-                  <li>Menjaga keamanan platform</li>
-                </ul>
-              </section>
+          <Clause index={2} title="Informasi yang kami kumpulkan">
+            <ul className="space-y-2.5">
+              <Point>
+                Informasi yang kamu berikan (nama, email, nomor telepon)
+              </Point>
+              <Point>Informasi profil (foto profil, bio)</Point>
+              <Point>Informasi transaksi</Point>
+              <Point>Informasi perangkat dan penggunaan</Point>
+              <Point>Konten yang kamu unggah (dokumen, gambar)</Point>
+            </ul>
+          </Clause>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">4. Berbagi Informasi</h3>
-                <p className="text-gray-600 mb-4">
-                  Kami dapat membagikan informasi Anda dengan:
-                </p>
-                <ul className="list-disc pl-5 space-y-2 text-gray-600">
-                  <li>Streamer (untuk keperluan booking)</li>
-                  <li>Penyedia layanan pembayaran</li>
-                  <li>Pihak berwenang (sesuai hukum yang berlaku)</li>
-                </ul>
-              </section>
+          <Clause index={3} title="Bagaimana kami menggunakan informasi kamu">
+            <ul className="space-y-2.5">
+              <Point>Menyediakan layanan streaming dan booking</Point>
+              <Point>Memproses transaksi dan pembayaran</Point>
+              <Point>Mengirim pemberitahuan terkait layanan</Point>
+              <Point>Meningkatkan layanan kami</Point>
+              <Point>Menjaga keamanan platform</Point>
+            </ul>
+          </Clause>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">5. Keamanan Data</h3>
-                <p className="text-gray-600 mb-4">
-                  Kami menerapkan langkah-langkah keamanan yang sesuai untuk melindungi informasi Anda dari akses, pengungkapan, perubahan, atau penghancuran yang tidak sah.
-                </p>
-              </section>
+          <Clause index={4} title="Berbagi informasi">
+            <p>Kami dapat membagikan informasi kamu dengan:</p>
+            <ul className="mt-3 space-y-2.5">
+              <Point>Streamer (untuk keperluan booking)</Point>
+              <Point>Penyedia layanan pembayaran</Point>
+              <Point>Pihak berwenang (sesuai hukum yang berlaku)</Point>
+            </ul>
+          </Clause>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">6. Hak Anda</h3>
-                <ul className="list-disc pl-5 space-y-2 text-gray-600">
-                  <li>Mengakses informasi pribadi Anda</li>
-                  <li>Memperbarui atau mengoreksi informasi</li>
-                  <li>Meminta penghapusan data</li>
-                  <li>Menolak pemrosesan data</li>
-                  <li>Menarik persetujuan</li>
-                </ul>
-              </section>
+          <Clause index={5} title="Keamanan data">
+            <p>
+              Kami menerapkan langkah-langkah keamanan yang sesuai untuk
+              melindungi informasi kamu dari akses, pengungkapan, perubahan, atau
+              penghancuran yang tidak sah.
+            </p>
+          </Clause>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">7. Perubahan Kebijakan</h3>
-                <p className="text-gray-600 mb-4">
-                  Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Perubahan akan diumumkan melalui platform kami dengan tanggal efektif yang diperbarui.
-                </p>
-              </section>
+          <Clause index={6} title="Hak kamu">
+            <ul className="space-y-2.5">
+              <Point>Mengakses informasi pribadi kamu</Point>
+              <Point>Memperbarui atau mengoreksi informasi</Point>
+              <Point>Meminta penghapusan data</Point>
+              <Point>Menolak pemrosesan data</Point>
+              <Point>Menarik persetujuan</Point>
+            </ul>
+          </Clause>
 
-              <section>
-                <h3 className="text-xl font-semibold mb-4">8. Hubungi Kami</h3>
-                <p className="text-gray-600 mb-4">
-                  Jika Anda memiliki pertanyaan tentang Kebijakan Privasi ini, silakan hubungi kami di:{" "}
-                  <a href="mailto:privacy@salda.com" className="text-blue-600 hover:text-blue-700">
-                    privacy@salda.com
-                  </a>
-                </p>
-              </section>
-            </div>
+          <Clause index={7} title="Perubahan kebijakan">
+            <p>
+              Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu.
+              Perubahan akan diumumkan melalui platform kami dengan tanggal
+              efektif yang diperbarui.
+            </p>
+          </Clause>
 
-            <div className="mt-8 pt-8 border-t border-gray-200">
-              <p className="text-sm text-gray-500">
-                Terakhir diperbarui: {new Date().toLocaleDateString('id-ID', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric' 
-                })}
-              </p>
-            </div>
-          </div>
+          <Clause index={8} title="Hubungi kami">
+            <p>
+              Jika kamu memiliki pertanyaan tentang Kebijakan Privasi ini,
+              silakan hubungi kami di:{" "}
+              {/*
+                Underlined ink, not a blue link. This page spends no accent at
+                all — a lone blue mailto in ten sections of grey would be the
+                loudest thing on a document nobody is meant to be steered
+                through.
+              */}
+              <a
+                href="mailto:privacy@salda.com"
+                className="break-all font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
+              >
+                privacy@salda.com
+              </a>
+            </p>
+          </Clause>
         </div>
-      </div>
+
+        <p className="mt-12 border-t border-hairline pt-6 text-meta text-ink-faint">
+          Terakhir diperbarui:{" "}
+          <span className="numeric">
+            {new Date().toLocaleDateString("id-ID", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+            })}
+          </span>
+        </p>
+      </article>
     </div>
   );
-} 
+}

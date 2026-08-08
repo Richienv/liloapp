@@ -9,6 +9,15 @@ import { FormMessage } from "@/components/form-message";
 import { cn } from "@/lib/utils";
 
 /**
+ * design-lint-allow: raw-hex
+ *
+ * The four hex values below are Google's own brand colours inside their
+ * logo SVG. Google's branding guidelines require the mark be reproduced
+ * exactly; recolouring it to our tokens would be a trademark problem, not
+ * a design improvement.
+ */
+
+/**
  * "Lanjutkan dengan Google" — the one-tap way into Salda.
  *
  * Deliberately a plain <button type="button"> rather than its own <form>: this
@@ -178,17 +187,25 @@ export function GoogleButton({
         onClick={handleClick}
         disabled={busy || disabled}
         aria-busy={busy}
+        /*
+          The mark stays — those four hex values are Google's, and a recoloured
+          Google logo is worse than an off-palette one. Everything around it is
+          the quiet button: a hairline that darkens on hover instead of a shadow
+          that lifts, and a focus ring in the accent rather than in raw
+          `blue-100` / `blue-600`, which were a different blue from the one this
+          design uses.
+        */
         className={cn(
-          "flex h-11 w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white",
-          "text-base font-medium text-gray-700 shadow-sm transition-all duration-200",
-          "hover:border-gray-300 hover:bg-gray-50 hover:shadow",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-100 focus-visible:border-blue-600",
+          "flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-hairline-input bg-surface",
+          "text-ui font-medium text-ink-body transition-colors",
+          "hover:border-hairline-strong hover:bg-surface-raised hover:text-ink",
+          "focus-visible:outline-none focus-visible:border-brand focus-visible:ring-2 focus-visible:ring-brand-line",
           "disabled:cursor-not-allowed disabled:opacity-70",
           className,
         )}
       >
         {busy ? (
-          <Loader2 className="h-5 w-5 animate-spin text-gray-500" />
+          <Loader2 className="h-5 w-5 animate-spin text-ink-soft" />
         ) : (
           <GoogleMark />
         )}

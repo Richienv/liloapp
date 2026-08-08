@@ -5,9 +5,11 @@ import { createClient } from '@/utils/supabase/server'
 import { defaultMetadata } from '../metadata'
 import { StreamerRichStructuredData } from '@/components/structured-data/streamer-rich-data'
 import { notFound } from 'next/navigation'
-import { MapPin, Star, Tag } from 'lucide-react'
+import { format } from 'date-fns'
+import { id as idLocale } from 'date-fns/locale'
+import { BadgeCheck, ChevronLeft, MapPin, Star } from 'lucide-react'
 import { subtotalWithPlatformFee } from '@/lib/pricing'
-import { VerificationBadge } from '@/components/ui/verification-badge'
+import { Button } from '@/components/ui/button'
 
 // Define the interface for testimonials
 interface Testimonial {
@@ -128,18 +130,58 @@ export async function generateMetadata({ params }: { params: { username: string 
   }
 }
 
-function Stars({ rating }: { rating: number }) {
-  const rounded = Math.round(rating)
+/**
+ * Rating as one mark and one number, not five glyphs.
+ *
+ * A five-star row spends five icons saying what `4,8` says in three characters,
+ * and at profile scale it reads as decoration rather than as a value. The
+ * single amber star is the same mark the marketplace card uses, so a brand that
+ * scanned the grid recognises it here without relearning anything. The number
+ * carries `.numeric` because it is a figure you compare between hosts.
+ */
+function RatingMark({ rating }: { rating: number }) {
+  const capped = Math.min(Math.max(rating, 0), 5)
   return (
-    <span className="inline-flex items-center" aria-label={`Rating ${rating.toFixed(1)} dari 5`}>
-      {[1, 2, 3, 4, 5].map((i) => (
-        <Star
-          key={i}
-          className={`h-4 w-4 ${i <= rounded ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
-        />
-      ))}
+    <span
+      className="inline-flex shrink-0 items-center gap-1.5"
+      aria-label={`Rating ${capped.toFixed(1)} dari 5`}
+    >
+      <Star className="h-3.5 w-3.5 shrink-0 fill-caution-dot text-caution-dot" aria-hidden="true" />
+      <span className="numeric text-meta text-ink-body">{capped.toFixed(1)}</span>
     </span>
   )
+}
+
+/** Section heading: mono index, serif title, hairline under both. */
+function ProfileSection({
+  index,
+  title,
+  children,
+}: {
+  index: number
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <section className="mt-10">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline-soft pb-2.5">
+        <span className="numeric font-mono text-tiny text-ink-ghost">
+          {String(index).padStart(2, '0')}
+        </span>
+        <h2 className="font-serif text-title font-semibold text-ink">{title}</h2>
+      </div>
+      <div className="mt-4">{children}</div>
+    </section>
+  )
+}
+
+/** `created_at` is free-form text as far as this page is concerned; a bad value
+ *  drops the date rather than throwing the whole profile away. */
+function formatDay(value?: string | null): string | null {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return format(date, 'd MMM yyyy', { locale: idLocale })
 }
 
 export default async function StreamerPage({ params }: { params: { username: string } }) {
@@ -153,100 +195,160 @@ export default async function StreamerPage({ params }: { params: { username: str
   const displayPrice = Math.round(subtotalWithPlatformFee(streamer.price))
   const testimonials = streamer.testimonials ?? []
 
+  /*
+    Sections are collected rather than written inline so the mono index stays
+    contiguous. A host with no bio would otherwise open at `02`, which reads as
+    a section that failed to load.
+
+    `Jadwal minggu ini` from the reference is deliberately absent: this page
+    loads no availability, and a schedule strip is exactly the kind of thing
+    that gets filled with plausible-looking invented slots.
+  */
+  const sections: Array<{ title: string; body: React.ReactNode }> = []
+
+  if (streamer.bio) {
+    sections.push({
+      title: `Tentang ${streamer.first_name}`,
+      body: (
+        <p className="max-w-[62ch] whitespace-pre-line text-lede text-ink-body">
+          {streamer.bio}
+        </p>
+      ),
+    })
+  }
+
+  if (streamer.category) {
+    sections.push({
+      title: 'Kategori produk',
+      body: (
+        <span className="inline-flex items-center rounded-chip border border-hairline bg-surface-tint px-2.5 py-1 text-meta text-ink-body">
+          {streamer.category}
+        </span>
+      ),
+    })
+  }
+
+  if (testimonials.length > 0) {
+    sections.push({
+      title: 'Kata brand sebelumnya',
+      body: (
+        <ul className="overflow-hidden rounded-frame border border-hairline bg-surface">
+          {testimonials.map((t, i) => {
+            const day = formatDay(t.created_at)
+            return (
+              <li
+                key={i}
+                className="border-b border-hairline-soft px-4 py-4 last:border-b-0 sm:px-5"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <p className="min-w-0 flex-1 truncate text-ui font-medium text-ink">
+                    {t.client_name}
+                  </p>
+                  <RatingMark rating={t.rating} />
+                </div>
+                <p className="mt-1.5 text-copy text-ink-body">{t.comment}</p>
+                {day && <p className="numeric mt-2 text-mini text-ink-faint">{day}</p>}
+              </li>
+            )
+          })}
+        </ul>
+      ),
+    })
+  }
+
   return (
     <>
       <StreamerRichStructuredData streamer={streamer} />
 
-      <main className="mx-auto max-w-4xl px-4 py-10">
-        <nav className="mb-6 text-sm text-gray-500">
-          <Link href="/streamers" className="hover:text-gray-900">
-            &larr; Semua Streamer
+      <main className="mx-auto w-full max-w-[880px] px-4 py-8 sm:px-6 sm:py-12">
+        <nav>
+          <Link
+            href="/streamers"
+            className="-ml-1 inline-flex items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+            Semua host
           </Link>
         </nav>
 
-        {/* Profile header */}
-        <section className="flex flex-col gap-6 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:flex-row sm:items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={streamer.profile_picture_url || '/images/default-avatar.png'}
-            alt={fullName}
-            className="h-28 w-28 flex-shrink-0 rounded-full object-cover ring-2 ring-gray-100"
-          />
-          <div className="flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">{fullName}</h1>
-              {/* getStreamer only returns approved streamers, so this always
+        {/*
+          Identity above, price below a hairline. The price is the fact a brand
+          is here to find, so it gets its own band at 22px in mono instead of
+          being tucked into a right-aligned corner at the same weight as the
+          host's name.
+        */}
+        <section className="mt-5 overflow-hidden rounded-frame border border-hairline bg-surface">
+          <div className="flex items-start gap-4 p-5 sm:gap-5 sm:p-6">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={streamer.profile_picture_url || '/images/default-avatar.png'}
+              alt={fullName}
+              className="h-20 w-20 shrink-0 rounded-full bg-surface-tint object-cover ring-1 ring-hairline sm:h-24 sm:w-24"
+            />
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
+                <h1 className="font-serif text-section font-semibold text-ink sm:text-display">
+                  {fullName}
+                </h1>
+                {/*
+                  getStreamer only returns approved streamers, so the mark always
                   renders here — it is the trust signal brands are looking for
-                  before they ship a product to a stranger. */}
-              <VerificationBadge status="approved" />
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600">
-              <span className="inline-flex items-center gap-1">
-                <MapPin className="h-4 w-4" /> {streamer.location}
-              </span>
-              {streamer.category && (
-                <span className="inline-flex items-center gap-1">
-                  <Tag className="h-4 w-4" /> {streamer.category}
+                  before they ship a product to a stranger. Set as text on the
+                  canvas rather than as a filled green chip: a status that
+                  carries a fill competes with the one action on the page.
+                */}
+                <span className="inline-flex shrink-0 items-center gap-1 text-mini font-medium text-positive">
+                  <BadgeCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  Terverifikasi
                 </span>
-              )}
-              {streamer.rating !== undefined && (
-                <span className="inline-flex items-center gap-1">
-                  <Stars rating={streamer.rating} />
-                  <span className="text-gray-500">{streamer.rating.toFixed(1)}</span>
+              </div>
+
+              <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-meta text-ink-soft">
+                <span className="inline-flex min-w-0 items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+                  <span className="truncate">{streamer.location}</span>
                 </span>
-              )}
+                {streamer.rating !== undefined && <RatingMark rating={streamer.rating} />}
+              </div>
             </div>
           </div>
-          <div className="text-right">
-            <p className="text-xs text-gray-500">Mulai dari</p>
-            <p className="text-2xl font-bold text-gray-900">
-              Rp {displayPrice.toLocaleString('id-ID')}
-              <span className="text-sm font-normal text-gray-500">/jam</span>
-            </p>
-            <p className="text-[11px] text-gray-400">*belum termasuk pajak</p>
+
+          <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-hairline-soft px-5 py-4 sm:px-6">
+            <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <span className="numeric text-price font-semibold text-ink">
+                Rp {displayPrice.toLocaleString('id-ID')}
+              </span>
+              <span className="text-meta text-ink-soft">per jam · minimal 2 jam</span>
+            </div>
+            <p className="text-mini text-ink-faint">Belum termasuk pajak</p>
           </div>
         </section>
 
-        {/* Bio */}
-        {streamer.bio && (
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold text-gray-900">Tentang {streamer.first_name}</h2>
-            <p className="mt-2 whitespace-pre-line leading-relaxed text-gray-700">{streamer.bio}</p>
-          </section>
-        )}
+        {sections.map((section, index) => (
+          <ProfileSection key={section.title} index={index + 1} title={section.title}>
+            {section.body}
+          </ProfileSection>
+        ))}
 
-        {/* Testimonials */}
-        {testimonials.length > 0 && (
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold text-gray-900">
-              Ulasan Klien ({testimonials.length})
-            </h2>
-            <ul className="mt-4 space-y-4">
-              {testimonials.map((t, i) => (
-                <li key={i} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{t.client_name}</span>
-                    <Stars rating={t.rating} />
-                  </div>
-                  <p className="mt-2 text-sm text-gray-700">{t.comment}</p>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
-
-        {/* CTA */}
-        <section className="mt-10 rounded-2xl bg-blue-600 p-6 text-center text-white">
-          <h2 className="text-xl font-semibold">Siap booking {streamer.first_name}?</h2>
-          <p className="mt-1 text-sm text-blue-100">
+        {/*
+          The closing panel is a hairline card, not a blue block. A full-bleed
+          accent fill makes the whole section the accent; here the blue is spent
+          once, on the button, which is the only thing on the page a brand is
+          meant to press.
+        */}
+        <section className="mt-10 rounded-frame border border-hairline bg-surface px-5 py-8 text-center sm:px-8">
+          <h2 className="font-serif text-title font-semibold text-ink">
+            Siap booking {streamer.first_name}?
+          </h2>
+          <p className="mx-auto mt-2 max-w-sm text-meta text-ink-soft">
             Tingkatkan penjualan live streaming kamu bersama host profesional.
           </p>
-          <Link
-            href="/streamers"
-            className="mt-4 inline-block rounded-lg bg-white px-6 py-2.5 font-medium text-blue-600 transition-colors hover:bg-blue-50"
-          >
-            Mulai Booking
-          </Link>
+          <div className="mt-5 flex justify-center">
+            <Button asChild variant="brand" size="action-compact">
+              <Link href="/streamers">Atur sesi</Link>
+            </Button>
+          </div>
         </section>
       </main>
     </>

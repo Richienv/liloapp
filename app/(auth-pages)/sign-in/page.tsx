@@ -7,8 +7,16 @@ import { GoogleButton, isGoogleAuthEnabled } from "@/components/ui/google-button
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
+
+import {
+  AuthShell,
+  SIGN_IN_PANEL,
+  authFieldClass,
+  authLabelClass,
+  authLinkClass,
+} from "../auth-shell";
 import { useState, type FormEvent } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 type SignInSearchParams = {
   error?: string;
@@ -66,21 +74,21 @@ export default function Login({
   };
 
   return (
-    <div className="relative w-full max-w-[420px]">
-      <div className="overflow-hidden rounded-2xl bg-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] border border-gray-100">
-        <div className="p-8">
+    <AuthShell panel={SIGN_IN_PANEL}>
+      <>
           <div className="mb-8">
             <h1 className="font-serif text-section font-medium text-ink">
-              Selamat datang kembali
+              Masuk ke akun kamu
             </h1>
-            <p className="mt-2 text-gray-600">
-              Baru di Salda?{" "}
-              <Link
-                href="/sign-up"
-                className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
-              >
-                Buat akun
-              </Link>
+            {/* The reference's line, and it earns its place: the product used to
+                have two login boxes that signed you out for picking the wrong
+                one, so "satu akun" is the thing a returning user most needs to
+                stop worrying about. */}
+            <p className="mt-2 text-copy text-ink-muted">
+              Satu akun untuk brand dan host. Kami arahkan otomatis sesuai peran kamu.
+            </p>
+            <p className="mt-3 text-copy text-ink-soft">
+              Baru di Salda? <Link href="/sign-up" className={authLinkClass}>Buat akun</Link>
             </p>
           </div>
 
@@ -104,10 +112,10 @@ export default function Login({
 
               <div className="relative my-6">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-hairline" />
                 </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="bg-white px-4 text-gray-500">atau</span>
+                <div className="relative flex justify-center">
+                  <span className="bg-surface px-4 text-copy text-ink-soft">atau</span>
                 </div>
               </div>
             </>
@@ -124,10 +132,7 @@ export default function Login({
             <input type="hidden" name="redirect_to" value={redirectTo} />
 
             <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="text-sm font-medium text-gray-700"
-              >
+              <Label htmlFor="email" className={authLabelClass}>
                 Alamat email
               </Label>
               <Input
@@ -140,24 +145,21 @@ export default function Login({
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-11 pl-4 bg-gray-50/50 border-gray-200 focus:bg-white text-base rounded-xl
-                  focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
-                style={{ fontSize: "16px" }}
+                className={authFieldClass}
               />
             </div>
 
             <div className="space-y-2">
+              {/* One line, never two: the label and the escape hatch share the
+                  row and the row is not allowed to wrap. */}
               <div className="flex items-baseline justify-between gap-3">
-                <Label
-                  htmlFor="password"
-                  className="text-sm font-medium text-gray-700"
-                >
+                <Label htmlFor="password" className={authLabelClass}>
                   Kata sandi
                 </Label>
                 {/* /forgot-password existed but nothing on this page linked to it. */}
                 <Link
                   href="/forgot-password"
-                  className="text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                  className={`shrink-0 text-copy ${authLinkClass}`}
                 >
                   Lupa kata sandi?
                 </Link>
@@ -170,9 +172,7 @@ export default function Login({
                   autoComplete="current-password"
                   placeholder="Masukkan kata sandi"
                   required
-                  className="h-11 pl-4 pr-11 bg-gray-50/50 border-gray-200 focus:bg-white text-base rounded-xl
-                    focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition-all duration-200"
-                  style={{ fontSize: "16px" }}
+                  className={`${authFieldClass} pr-12`}
                 />
                 <button
                   type="button"
@@ -183,7 +183,7 @@ export default function Login({
                       : "Tampilkan kata sandi"
                   }
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-soft hover:text-ink-body transition-colors"
                 >
                   {/* Icon matches the aria-label: it names the action, not the state. */}
                   {showPassword ? (
@@ -203,18 +203,19 @@ export default function Login({
             <FormMessage message={searchParams} />
 
             <div className="space-y-5 pt-1">
+              {/* The screen's one accent. Everything else on it is ink. */}
               <Button
                 type="submit"
+                variant="brand"
+                size="action-full"
                 disabled={isSigningIn}
-                className="w-full h-11 bg-brand hover:bg-brand-hover text-white rounded-xl font-medium transition-all duration-200
-                  shadow-[0_4px_20px_rgba(0,0,0,0.1)] hover:shadow-[0_4px_24px_rgba(0,0,0,0.15)]
-                  disabled:opacity-70 disabled:cursor-not-allowed"
+                className="disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isSigningIn ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                    <span>Memproses…</span>
-                  </div>
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Memproses…
+                  </span>
                 ) : (
                   "Masuk"
                 )}
@@ -226,32 +227,22 @@ export default function Login({
                 same way read as a third way to sign in. What follows is
                 orientation, not a credential choice.
               */}
-              <div className="border-t border-gray-200" />
+              <div className="border-t border-hairline-soft" />
 
               {/*
                 Discreet orientation for streamers, who used to look for a
                 separate portal. It points at sign-up, not at a second login —
                 the form above already handles both account types.
               */}
-              <div className="space-y-2 text-center">
-                <p className="text-sm text-gray-600">
-                  Mau jadi streamer?{" "}
-                  <Link
-                    href="/streamer-sign-up"
-                    className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
-                  >
-                    Daftar sebagai streamer
-                  </Link>
-                </p>
-                <p className="text-xs text-gray-500">
-                  Brand dan streamer masuk lewat form yang sama. Kami arahkan
-                  otomatis ke dashboard-mu.
-                </p>
-              </div>
+              <p className="text-center text-copy text-ink-soft">
+                Mau jadi host?{" "}
+                <Link href="/streamer-sign-up" className={authLinkClass}>
+                  Daftar sebagai host
+                </Link>
+              </p>
             </div>
           </form>
-        </div>
-      </div>
-    </div>
+      </>
+    </AuthShell>
   );
 }

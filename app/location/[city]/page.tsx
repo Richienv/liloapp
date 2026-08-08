@@ -7,6 +7,7 @@ import { MapPin, Tag, ChevronRight } from 'lucide-react'
 import { defaultMetadata } from '../../metadata'
 import { BreadcrumbStructuredData } from '@/components/structured-data/breadcrumb-data'
 import { subtotalWithPlatformFee } from '@/lib/pricing'
+import { Button } from '@/components/ui/button'
 import {
   CITIES,
   getCityBySlug,
@@ -226,71 +227,98 @@ export default async function LocationPage({ params }: LocationPageProps) {
     <>
       <BreadcrumbStructuredData items={breadcrumbItems} />
 
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <main className="mx-auto w-full max-w-[1180px] px-4 py-8 sm:px-6 sm:py-12">
         {/* Visible breadcrumb, mirroring the JSON-LD above. This is also the only
-            way a crawler can walk back up to the city index. */}
-        <nav aria-label="Breadcrumb" className="mb-6">
-          <ol className="flex flex-wrap items-center gap-1 text-sm text-gray-500">
+            way a crawler can walk back up to the city index. The separators are
+            list items rather than bare icons: an <ol> whose children are not
+            <li> is a list a screen reader stops counting. */}
+        <nav aria-label="Breadcrumb">
+          <ol className="flex flex-wrap items-center gap-1.5 text-meta text-ink-soft">
             <li>
-              <Link href="/" className="hover:text-blue-600">
+              <Link href="/" className="transition-colors hover:text-ink">
                 Beranda
               </Link>
             </li>
-            <ChevronRight className="h-3 w-3" aria-hidden="true" />
+            <li aria-hidden="true" className="flex items-center">
+              <ChevronRight className="h-3 w-3 text-ink-ghost" />
+            </li>
             <li>
-              <Link href="/locations" className="hover:text-blue-600">
+              <Link href="/locations" className="transition-colors hover:text-ink">
                 Kota
               </Link>
             </li>
-            <ChevronRight className="h-3 w-3" aria-hidden="true" />
-            <li aria-current="page" className="text-gray-900">
+            <li aria-hidden="true" className="flex items-center">
+              <ChevronRight className="h-3 w-3 text-ink-ghost" />
+            </li>
+            <li aria-current="page" className="text-ink">
               {city.name}
             </li>
           </ol>
         </nav>
 
-        <header className="mb-8">
-          <p className="inline-flex items-center gap-1 text-sm text-gray-500">
-            <MapPin className="h-4 w-4" /> {city.name}, {city.province}
+        <header className="mt-6">
+          {/* Mono eyebrow, ghost ink — the same mark every other section label
+              in the product carries, so the province reads as context and not
+              as a second headline. */}
+          <p className="inline-flex items-center gap-1.5 font-mono text-tiny uppercase text-ink-ghost">
+            <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+            {city.name}, {city.province}
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-gray-900 sm:text-3xl">
-            Live Streamer Profesional di {city.name}
+          <h1 className="mt-2 font-serif text-section font-semibold text-ink sm:text-display">
+            Live streamer profesional di {city.name}
           </h1>
-          <p className="mt-2 text-gray-600">
-            {streamers.length > 0
-              ? `${streamers.length} host live streaming siap membantu meningkatkan penjualan kamu.`
-              : `Belum ada host live streaming terverifikasi di ${city.name} saat ini.`}
+          <p className="mt-3 max-w-[62ch] text-lede text-ink-soft">
+            {streamers.length > 0 ? (
+              <>
+                <span className="numeric text-ink">{streamers.length}</span> host live
+                streaming siap membantu meningkatkan penjualan kamu.
+              </>
+            ) : (
+              `Belum ada host live streaming terverifikasi di ${city.name} saat ini.`
+            )}
           </p>
         </header>
 
         {streamers.length > 0 ? (
-          <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          /*
+            One framed grid, not a scatter of bordered cards. Each cell carries
+            `shadow-cell` instead of a border: two bordered neighbours draw their
+            shared seam twice and it renders 2px, which reads as a bug. The
+            container's own border plus `overflow-hidden` clips the outermost
+            rings, so every line on this grid is exactly 1px.
+          */
+          <ul className="mt-8 grid grid-cols-1 overflow-hidden rounded-frame border border-hairline bg-surface sm:grid-cols-2 lg:grid-cols-3">
             {streamers.map((s) => {
               const displayPrice = Math.round(subtotalWithPlatformFee(s.price))
               const fullName = [s.first_name, s.last_name].filter(Boolean).join(' ').trim()
               return (
-                <li key={s.id}>
+                <li key={s.id} className="shadow-cell">
                   <Link
                     href={`/${s.username}`}
-                    className="group flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+                    className="flex h-full flex-col p-4 transition-colors hover:bg-surface-raised"
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={s.profile_picture_url || '/images/default-avatar.png'}
                       alt={fullName || 'Host live streaming'}
-                      className="mb-3 h-40 w-full rounded-xl object-cover"
+                      className="mb-3.5 h-40 w-full rounded-panel bg-surface-tint object-cover"
                     />
-                    <h2 className="font-semibold text-gray-900 group-hover:text-blue-600">
+                    <h2 className="truncate text-ui font-medium text-ink">
                       {fullName || s.username}
                     </h2>
                     {s.category && (
-                      <p className="mt-1 inline-flex items-center gap-1 text-xs text-gray-500">
-                        <Tag className="h-3 w-3" /> {s.category}
+                      <p className="mt-1 flex min-w-0 items-center gap-1.5 text-meta text-ink-soft">
+                        <Tag className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+                        <span className="truncate">{s.category}</span>
                       </p>
                     )}
-                    <p className="mt-auto pt-3 text-sm font-medium text-gray-900">
-                      Rp {displayPrice.toLocaleString('id-ID')}
-                      <span className="font-normal text-gray-500">/jam</span>
+                    {/* The price is the fact that decides whether the card gets
+                        read at all, so it is the largest thing in the cell. */}
+                    <p className="mt-auto flex flex-wrap items-baseline gap-x-1.5 pt-3.5">
+                      <span className="numeric text-price font-semibold text-ink">
+                        Rp {displayPrice.toLocaleString('id-ID')}
+                      </span>
+                      <span className="text-mini text-ink-soft">/ jam</span>
                     </p>
                   </Link>
                 </li>
@@ -298,23 +326,28 @@ export default async function LocationPage({ params }: LocationPageProps) {
             })}
           </ul>
         ) : (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-white p-8 text-center">
-            <p className="text-gray-600">
+          <div className="mt-8 rounded-frame border border-hairline bg-surface px-5 py-16 text-center">
+            <p className="font-serif text-title font-semibold text-ink">
+              Belum ada host di {city.name}
+            </p>
+            <p className="mx-auto mt-2 max-w-md text-meta text-ink-soft">
               Live streaming berjalan sepenuhnya online, jadi host dari kota lain tetap bisa
               membantu penjualan kamu.
             </p>
-            <Link
-              href="/locations"
-              className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
-            >
-              Lihat host di kota lain <ChevronRight className="h-4 w-4" />
-            </Link>
+            <div className="mt-6 flex justify-center">
+              <Button asChild variant="brand" size="action-compact">
+                <Link href="/locations">Lihat host di kota lain</Link>
+              </Button>
+            </div>
           </div>
         )}
 
-        <p className="mt-10 text-sm text-gray-500">
+        <p className="mt-10 text-meta text-ink-soft">
           Cari di kota lain?{' '}
-          <Link href="/locations" className="font-medium text-blue-600 hover:text-blue-700">
+          <Link
+            href="/locations"
+            className="font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
+          >
             Lihat semua kota
           </Link>
           .

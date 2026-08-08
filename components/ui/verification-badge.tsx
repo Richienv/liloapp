@@ -20,6 +20,16 @@ export function isVerificationApproved(status?: string | null): boolean {
   return status === "approved";
 }
 
+/**
+ * Four states, four token pairs — no raw Tailwind hues.
+ *
+ * `green-50 / yellow-50 / red-50` are the cool palette the rest of the app has
+ * already left behind; on the warm canvas they read as three different
+ * temperatures in the same row. The redesign has exactly one positive pair and
+ * one caution pair, both defined as *text on a tint with a line* rather than a
+ * saturated block, so a verified marker never outweighs the host's own name
+ * next to it.
+ */
 const STATUS_COPY: Record<
   VerificationStatus,
   { label: string; description: string; className: string; Icon: typeof BadgeCheck }
@@ -27,25 +37,26 @@ const STATUS_COPY: Record<
   approved: {
     label: "Terverifikasi",
     description: "Identitas dan akun streaming sudah diverifikasi tim Salda",
-    className: "bg-green-50 text-green-700 border-green-200",
+    className: "border-positive-line bg-positive-tint text-positive",
     Icon: BadgeCheck,
   },
   pending: {
-    label: "Menunggu Verifikasi",
+    label: "Menunggu verifikasi",
     description: "Dokumen sedang ditinjau tim Salda",
-    className: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    className: "border-caution-line bg-caution-tint text-caution",
     Icon: Clock3,
   },
   rejected: {
     label: "Ditolak",
     description: "Pengajuan verifikasi ditolak",
-    className: "bg-red-50 text-red-700 border-red-200",
+    className:
+      "border-destructive-emphasis/20 bg-destructive-subtle text-destructive-emphasis",
     Icon: XCircle,
   },
   suspended: {
     label: "Ditangguhkan",
     description: "Akun ditangguhkan sementara",
-    className: "bg-gray-100 text-gray-600 border-gray-200",
+    className: "border-hairline-input bg-surface-tint text-ink-muted",
     Icon: ShieldOff,
   },
 };
@@ -79,11 +90,11 @@ export function VerificationBadge({
       title={description}
       aria-label={description}
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-700",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-chip border border-positive-line bg-positive-tint px-1.5 py-0.5 text-micro font-medium uppercase text-positive",
         className
       )}
     >
-      <BadgeCheck className="h-3 w-3 flex-shrink-0" aria-hidden="true" />
+      <BadgeCheck className="h-3 w-3 shrink-0" aria-hidden="true" />
       {showLabel && label}
     </span>
   );
@@ -105,12 +116,12 @@ export function VerificationStatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-chip border px-2 py-0.5 text-mini font-medium",
         statusClassName,
         className
       )}
     >
-      <Icon className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
       {label}
     </span>
   );

@@ -104,9 +104,15 @@ export function PaymentModal({
 
   if (isLoading) {
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center">
-        <div className="bg-white p-4 rounded-lg">
-          Loading payment...
+      /*
+        The scrim that waits for Midtrans. It is the last thing a brand sees
+        before handing over money, so it gets the card treatment the rest of
+        checkout uses — a hairline panel on the warm surface — and it says what
+        it is waiting for in the same language as the page behind it.
+      */
+      <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-ink/40 px-4">
+        <div className="rounded-panel border border-hairline bg-surface px-5 py-4 text-copy text-ink-body">
+          Menyiapkan pembayaran…
         </div>
       </div>
     );

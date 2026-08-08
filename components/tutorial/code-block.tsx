@@ -46,7 +46,7 @@ export function CodeBlock({ code }: { code: string }) {
   };
 
   return (
-    <pre className="bg-muted rounded-md p-6 my-6 relative">
+    <pre className="bg-surface-tint rounded-field p-6 my-6 relative">
       <Button
         size="icon"
         onClick={copy}
@@ -55,7 +55,7 @@ export function CodeBlock({ code }: { code: string }) {
       >
         {icon}
       </Button>
-      <code className="text-xs p-3">{code}</code>
+      <code className="text-mini p-3">{code}</code>
     </pre>
   );
 }

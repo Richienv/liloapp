@@ -3,15 +3,18 @@
 import { selectRoleAction } from "@/app/actions";
 import { readAccountState, type AuthActionResponse } from "@/app/types/auth";
 import { FormMessage } from "@/components/form-message";
+import { Button } from "@/components/ui/button";
 import { CityCombobox } from "@/components/ui/city-combobox";
 import { nextPathFor, ROLE_PICKER_PATH, type UserRole } from "@/lib/auth-redirect";
 import { createClient } from "@/utils/supabase/client";
-import { ArrowLeft, ArrowRight, Check, Loader2, Radio, Search } from "lucide-react";
+
+import { type AuthPanel, AuthShell, AuthStepLabel, authLabelClass } from "../auth-shell";
+import { ArrowLeft, ArrowRight, Loader2, Radio, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 /**
- * "Saya ingin…" — the one question signup no longer asks up front.
+ * "Kamu daftar sebagai apa?" — the one question signup no longer asks up front.
  *
  * The account already exists by the time anyone sees this page, which is the
  * whole point: an abandonment here costs us a profile, not a person. The role
@@ -68,14 +71,7 @@ function asRole(value: unknown): UserRole | null {
  * different weight, so switching between them reads as switching sides of a
  * marketplace rather than switching pages.
  */
-const ROLE_PANELS: Record<UserRole, {
-  eyebrow: string;
-  title: string;
-  sub: string;
-  points: string[];
-  stats: { value: string; label: string }[];
-  dark: boolean;
-}> = {
+const ROLE_PANELS: Record<UserRole, AuthPanel> = {
   client: {
     eyebrow: 'Untuk brand',
     title: 'Host yang siap live, tanpa cari sana-sini.',
@@ -84,11 +80,6 @@ const ROLE_PANELS: Record<UserRole, {
       'Semua host sudah diverifikasi dan punya rekam jejak sesi.',
       'Harga dan jadwal terlihat sebelum kamu memesan.',
       'Dana ditahan sampai sesi selesai — aman untuk dua pihak.',
-    ],
-    stats: [
-      { value: '250+', label: 'Host aktif' },
-      { value: '4,9', label: 'Rating rata-rata' },
-      { value: '3 hari', label: 'Rata-rata mulai live' },
     ],
     dark: false,
   },
@@ -101,30 +92,19 @@ const ROLE_PANELS: Record<UserRole, {
       'Bayaran cair tiap Senin, tanpa biaya penarikan.',
       'Tidak ada biaya bergabung — Salda ambil fee dari sisi brand.',
     ],
-    stats: [
-      { value: 'Rp 443rb', label: 'Rata-rata per sesi' },
-      { value: '76 jam', label: 'Siaran per bulan' },
-      { value: '0%', label: 'Potongan dari kamu' },
-    ],
     dark: true,
   },
 };
 
-/**
- * "Langkah 1 dari 2" / "Langkah 2 dari 2".
- *
- * The old screen said "Akun kamu sudah aktif 🎉" and then, one screen later,
- * "Satu langkah lagi" — so the first screen never admitted a second one was
- * coming. Naming both ends of the count up front is what stops the city
- * question feeling like the flow moved the goalposts.
+/*
+ * The stats rows both panels used to carry ("250+ Host aktif", "4,9 Rating
+ * rata-rata", "Rp 443rb Rata-rata per sesi", "76 jam Siaran per bulan") came
+ * from the design file and are computed from nothing this page loads. They are
+ * claims, not data, and design/REFERENCE.md flags them as unconfirmed. They are
+ * out until an aggregate exists behind them; `AuthPanel.stats` is still there
+ * for the day one does. The points that remain are all statements about how the
+ * product works, checkable in the product itself.
  */
-function StepCount({ step }: { step: 1 | 2 }) {
-  return (
-    <p className="text-micro font-semibold tracking-normal text-ink-soft">
-      LANGKAH {step} DARI 2
-    </p>
-  );
-}
 
 export default function RolePicker() {
   const router = useRouter();
@@ -139,6 +119,13 @@ export default function RolePicker() {
    * duplicate the revamp existed to remove.
    */
   const [step, setStep] = useState<"choose" | "client-city">("choose");
+  /**
+   * True when a brand was sent straight to the city question without ever
+   * seeing the two cards. It changes two things: the step label (there is no
+   * step 1 to have completed) and the back button, which would otherwise say
+   * "Kembali" and lead to a screen this person has never laid eyes on.
+   */
+  const [skippedChoice, setSkippedChoice] = useState(false);
   const [citySlug, setCitySlug] = useState("");
   /**
    * Which panel to show. Seeded from the intent the visitor already expressed
@@ -209,19 +196,43 @@ export default function RolePicker() {
     };
   }, [router]);
 
-  // Pre-highlight the card the visitor already implied by clicking "Daftar
-  // sebagai host". Read once the picker is actually on screen.
+  /**
+   * Read the intent the visitor already expressed, and skip the question when
+   * they have effectively answered it.
+   *
+   * BRAND IS THE DEFAULT, AND THE QUESTION IS NOT ASKED.
+   *
+   * Everything that leads here from the public site is a brand action. The
+   * landing page's only call to action is "Mulai cari host"; the marketplace
+   * asks for a sign-in when someone tries to book. By the time an account
+   * exists, that person has already told us what they are — asking again is a
+   * coin toss they can lose, and losing it lands them in host onboarding
+   * (KTP, selfie, platform proof, a listing) to do something a brand does in
+   * one click.
+   *
+   * Becoming a host is the deliberate path, and it has two entrances that both
+   * set this intent: /streamer-sign-up, and "Mau jadi host? Daftar sebagai
+   * host" on the sign-in screen. Only those reach the two-card screen. Anyone
+   * who arrives without that signal goes straight to the brand's one follow-up
+   * question — their city — and the escape hatch on that step covers the rest.
+   */
   useEffect(() => {
     if (status !== "ready") return;
     try {
       const stored = asRole(window.sessionStorage.getItem(ROLE_INTENT_STORAGE_KEY));
       setIntentRole(stored);
-      // Seed the proof panel from the same signal, so someone who arrived via
-      // "Daftar sebagai host" opens on the host panel rather than being shown
-      // the brand pitch they already declined.
       if (stored) setPreviewRole(stored);
+      // No host intent recorded: this is a brand. Skip "choose" entirely.
+      if (stored !== "streamer") {
+        setStep("client-city");
+        setSkippedChoice(true);
+      }
     } catch {
-      // Private mode / storage disabled: no highlight, nothing else changes.
+      // Private mode / storage disabled. sessionStorage is the only place the
+      // host intent lives, so it cannot be read — and defaulting to the brand
+      // path would send a would-be host down the wrong one with no way back
+      // except the escape hatch. Show the choice instead: a question is the
+      // safe answer when the signal is genuinely missing.
     }
   }, [status]);
 
@@ -291,14 +302,12 @@ export default function RolePicker() {
 
   if (status === "checking") {
     return (
-      <div className="w-full max-w-[560px]">
-        <div className="rounded-frame border border-hairline bg-surface p-8">
-          <div className="flex items-center gap-3 text-ink-soft">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <span>Menyiapkan akun kamu…</span>
-          </div>
+      <AuthShell>
+        <div className="flex items-center justify-center gap-3 py-4 text-ink-soft" role="status">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <span className="text-copy">Menyiapkan akun kamu…</span>
         </div>
-      </div>
+      </AuthShell>
     );
   }
 
@@ -307,96 +316,88 @@ export default function RolePicker() {
   // Step two, brands only: one field, then straight into the marketplace.
   if (step === "client-city") {
     return (
-      <div className="w-full max-w-[560px]">
-        <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
-          <div className="p-8">
-            <button
-              type="button"
-              onClick={() => {
-                setError(null);
-                setStep("choose");
-              }}
-              disabled={busy}
-              className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-600
-                transition-colors hover:text-gray-900 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </button>
+      <AuthShell>
+        <button
+          type="button"
+          onClick={() => {
+            setError(null);
+            setStep("choose");
+          }}
+          disabled={busy}
+          className="-ml-1 mb-5 inline-flex items-center gap-1.5 text-meta text-ink-soft
+            transition-colors hover:text-ink disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {skippedChoice ? "Sebenarnya aku mau jadi host" : "Kembali"}
+        </button>
 
-            <div className="mb-6">
-              <StepCount step={2} />
-              <h1 className="mt-2 font-serif text-section font-medium text-ink">
-                Brand kamu ada di kota mana?
-              </h1>
-              <p className="mt-2 text-copy text-ink-soft">
-                Kami pakai ini untuk menghitung perkiraan pengiriman produk ke host.
-                Tanpa kota, setiap pesanan otomatis dihitung kirim luar kota dan kamu
-                harus memesan 3 hari lebih awal — walaupun host-nya satu kota denganmu.
-              </p>
-            </div>
-
-            {/* Above the submit button, like everywhere else in the flow. */}
-            {error && (
-              <div className="mb-5">
-                <FormMessage message={{ error }} className="max-w-none" />
-              </div>
-            )}
-
-            <form onSubmit={(event) => handleSubmit(event, "client")}>
-              <input type="hidden" name="role" value="client" />
-
-              <label
-                htmlFor="client-city"
-                className="mb-2 block text-copy font-medium text-ink"
-              >
-                Kota
-              </label>
-              {/* `name` makes the combobox emit a hidden input, so the slug is in
-                  the FormData this form submits without any manual wiring. */}
-              <CityCombobox
-                id="client-city"
-                name="city_slug"
-                value={citySlug}
-                onChange={(slug) => {
-                  setError(null);
-                  setCitySlug(slug);
-                }}
-                disabled={busy}
-                placeholder="Pilih kota brand kamu"
-                aria-describedby="client-city-help"
-                aria-invalid={Boolean(error) && !citySlug}
-              />
-              <p id="client-city-help" className="mt-2 text-meta text-ink-soft">
-                Bisa diubah kapan saja lewat pengaturan akun.
-              </p>
-
-              <button
-                type="submit"
-                disabled={busy}
-                aria-busy={pendingRole === "client"}
-                className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-lg
-                  bg-brand px-5 text-lede font-semibold text-white transition-colors
-                  hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2
-                  focus-visible:ring-ring focus-visible:ring-offset-2
-                  disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {pendingRole === "client" || status === "leaving" ? (
-                  <>
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    Menyimpan…
-                  </>
-                ) : (
-                  <>
-                    Mulai cari host
-                    <ArrowRight className="h-5 w-5" />
-                  </>
-                )}
-              </button>
-            </form>
-          </div>
+        <div className="mb-6">
+          {!skippedChoice && <AuthStepLabel step={2} />}
+          <h1 className="mt-2 font-serif text-section font-medium text-ink">
+            Brand kamu ada di kota mana?
+          </h1>
+          <p className="mt-2 text-copy text-ink-soft">
+            Kami pakai ini untuk menghitung perkiraan pengiriman produk ke host.
+            Tanpa kota, setiap pesanan otomatis dihitung kirim luar kota dan kamu
+            harus memesan 3 hari lebih awal — walaupun host-nya satu kota denganmu.
+          </p>
         </div>
-      </div>
+
+        {/* Above the submit button, like everywhere else in the flow. */}
+        {error && (
+          <div className="mb-5">
+            <FormMessage message={{ error }} className="max-w-none" />
+          </div>
+        )}
+
+        <form onSubmit={(event) => handleSubmit(event, "client")}>
+          <input type="hidden" name="role" value="client" />
+
+          <label htmlFor="client-city" className={`mb-2 block ${authLabelClass}`}>
+            Kota
+          </label>
+          {/* `name` makes the combobox emit a hidden input, so the slug is in
+              the FormData this form submits without any manual wiring. */}
+          <CityCombobox
+            id="client-city"
+            name="city_slug"
+            value={citySlug}
+            onChange={(slug) => {
+              setError(null);
+              setCitySlug(slug);
+            }}
+            disabled={busy}
+            placeholder="Pilih kota brand kamu"
+            aria-describedby="client-city-help"
+            aria-invalid={Boolean(error) && !citySlug}
+          />
+          <p id="client-city-help" className="mt-2 text-meta text-ink-soft">
+            Bisa diubah kapan saja lewat pengaturan akun.
+          </p>
+
+          {/* The screen's one accent. */}
+          <Button
+            type="submit"
+            variant="brand"
+            size="action-full"
+            disabled={busy}
+            aria-busy={pendingRole === "client"}
+            className="mt-6 gap-2 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {pendingRole === "client" || status === "leaving" ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Menyimpan…
+              </>
+            ) : (
+              <>
+                Mulai cari host
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+        </form>
+      </AuthShell>
     );
   }
 
@@ -426,14 +427,13 @@ export default function RolePicker() {
 
   return (
     // Split layout: the question on the left, the answer to "why should I care"
-    // on the right. The form column is capped at 452px because a two-option
-    // choice set any wider stops reading as a pair. The panel is hidden below
-    // `lg` rather than stacked — on a phone it would push the actual decision
-    // off the first screen, which is the opposite of what it is for.
-    <div className="grid w-full max-w-[1080px] overflow-hidden rounded-frame border border-hairline bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-      <div className="mx-auto w-full max-w-[452px] p-8">
-        <StepCount step={1} />
-        <h1 className="mt-2 font-serif text-section font-medium text-ink">Saya ingin…</h1>
+    // on the right. The shell owns the grid now — this file kept its own copy of
+    // that markup, which is exactly how the auth screens ended up disagreeing
+    // about the card radius and the form column width in the first place.
+    <AuthShell panel={panel}>
+      <>
+        <AuthStepLabel step={1} />
+        <h1 className="mt-2 font-serif text-section font-medium text-ink">Kamu daftar sebagai apa?</h1>
         <p className="mt-2 text-copy text-ink-soft">
           Pilih satu, dan kami siapkan langkah berikutnya sesuai pilihan itu.
         </p>
@@ -487,7 +487,10 @@ export default function RolePicker() {
                 >
                   <span
                     className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-field ${
-                      isSuggested ? "bg-brand text-white" : "bg-surface-tint text-ink-faint"
+                      // Neutral in both states. The suggested card already
+                      // spends the screen's one accent on its border and tint;
+                      // a blue tile inside it spends it a second time.
+                      isSuggested ? "bg-surface-deep text-ink-body" : "bg-surface-tint text-ink-faint"
                     }`}
                   >
                     {isPending ? (
@@ -498,20 +501,22 @@ export default function RolePicker() {
                   </span>
 
                   <span className="min-w-0 flex-1">
-                    <span className="flex flex-wrap items-center gap-2">
+                    <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                       <span className="text-ui font-semibold text-ink">{title}</span>
+                      {/* A marker, not a filled pill — the card's own border
+                          and tint already say "this one". */}
                       {isSuggested && (
-                        <span className="rounded-chip bg-brand px-1.5 py-0.5 text-micro font-semibold tracking-normal text-white">
+                        <span className="font-mono text-tiny uppercase text-ink-faint">
                           Pilihan kamu tadi
                         </span>
                       )}
                     </span>
-                    <span className="mt-1 block text-meta leading-relaxed text-ink-soft">
+                    <span className="mt-1 block text-meta text-ink-soft">
                       {outcome}
                     </span>
                   </span>
 
-                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-ink-ghost transition-colors group-hover:text-brand" />
+                  <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-ink-ghost transition-colors group-hover:text-ink" />
                 </button>
               </form>
             );
@@ -520,68 +525,13 @@ export default function RolePicker() {
 
         {/* Clear about the consequence without making it feel permanent: the
             choice routes the next screen, it is not a contract. */}
-        <p className="mt-6 border-t border-hairline-soft pt-5 text-meta leading-relaxed text-ink-soft">
+        <p className="mt-6 border-t border-hairline-soft pt-5 text-meta text-ink-soft">
           Pilihan ini menentukan tampilan Salda untuk kamu dan langkah setup
           berikutnya. Belum ada yang dikirim ke siapa pun, dan kalau ternyata
           salah pilih, tim Salda bisa memindahkan akun kamu — cukup hubungi
           dukungan lewat WhatsApp.
         </p>
-      </div>
-
-      {/* ------------------------------------------------- the proof panel */}
-      <aside
-        className={`hidden flex-col justify-center p-10 lg:flex ${
-          panel.dark ? "bg-ink text-white" : "bg-surface-tint text-ink"
-        }`}
-      >
-        <p
-          className={`text-micro font-semibold tracking-normal ${
-            // ink-faint (#8a8880) on the #f2f1ee panel is ~3.0:1 — under the
-            // 4.5:1 floor this 10px label needs. ink-muted clears it at ~6.9:1.
-            panel.dark ? "text-white/55" : "text-ink-muted"
-          }`}
-        >
-          {panel.eyebrow.toUpperCase()}
-        </p>
-        <h2 className="mt-3 max-w-[22ch] font-serif text-display font-medium">{panel.title}</h2>
-        <p
-          className={`mt-3 max-w-[38ch] text-lede ${
-            panel.dark ? "text-white/70" : "text-ink-muted"
-          }`}
-        >
-          {panel.sub}
-        </p>
-
-        <ul className="mt-7 flex flex-col gap-3">
-          {panel.points.map((point) => (
-            <li key={point} className="flex items-start gap-2.5">
-              <Check
-                className={`mt-0.5 h-4 w-4 shrink-0 ${
-                  panel.dark ? "text-white/60" : "text-positive"
-                }`}
-              />
-              <span className={`text-copy ${panel.dark ? "text-white/80" : "text-ink-body"}`}>
-                {point}
-              </span>
-            </li>
-          ))}
-        </ul>
-
-        <div
-          className={`mt-8 grid grid-cols-3 gap-4 border-t pt-6 ${
-            panel.dark ? "border-white/15" : "border-hairline"
-          }`}
-        >
-          {panel.stats.map((stat) => (
-            <div key={stat.label}>
-              <p className="numeric text-title font-semibold">{stat.value}</p>
-              <p className={`mt-0.5 text-mini ${panel.dark ? "text-white/55" : "text-ink-soft"}`}>
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </aside>
-    </div>
+      </>
+    </AuthShell>
   );
 }

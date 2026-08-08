@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -14,8 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
-import { Loader2, Plus, Search, Filter, X } from 'lucide-react';
+import { Loader2, Search, X, AlertCircle } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -30,8 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { cn } from "@/lib/utils";
-import { AlertCircle } from 'lucide-react';
 import {
   Form,
   FormControl,
@@ -44,8 +42,6 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { Dialog as HeadlessUIDialog } from '@headlessui/react'
-import { PlusIcon } from '@heroicons/react/24/outline'
 import { createVoucher } from './actions'
 
 interface BaseVoucher {
@@ -122,30 +118,36 @@ interface VoucherWithAnalytics extends BaseVoucher {
   analytics?: VoucherAnalytics;
 }
 
-// Add form validation schema
+/**
+ * Form validation. The RULES are unchanged — they mirror the server's copy in
+ * `./actions.ts`, which is the one that decides. Only the messages changed:
+ * they are strings a person reads under a field, and every other message this
+ * screen can show (including every error the server action returns) is in
+ * Indonesian.
+ */
 const voucherFormSchema = z.object({
   code: z.string()
-    .min(6, "Code must be exactly 6 characters")
-    .max(6, "Code must be exactly 6 characters")
-    .regex(/^[A-Z0-9]+$/, "Only uppercase letters and numbers are allowed"),
+    .min(6, "Kode harus tepat 6 karakter")
+    .max(6, "Kode harus tepat 6 karakter")
+    .regex(/^[A-Z0-9]+$/, "Hanya huruf kapital dan angka"),
   description: z.string()
-    .min(1, "Description is required")
-    .max(100, "Description must be less than 100 characters"),
+    .min(1, "Deskripsi wajib diisi")
+    .max(100, "Deskripsi maksimal 100 karakter"),
   discount_amount: z.coerce.number()
-    .min(1000, "Minimum discount is Rp 1,000")
-    .max(10000000, "Maximum discount is Rp 10,000,000"),
+    .min(1000, "Diskon minimal Rp 1.000")
+    .max(10000000, "Diskon maksimal Rp 10.000.000"),
   total_quantity: z.coerce.number()
-    .min(1, "Minimum quantity is 1")
-    .max(1000, "Maximum quantity is 1,000"),
+    .min(1, "Jumlah minimal 1")
+    .max(1000, "Jumlah maksimal 1.000"),
   expires_at: z.string()
-    .min(1, "Expiry date is required")
+    .min(1, "Tanggal kadaluarsa wajib diisi")
     // The server rejects a non-future date, and today counts as past: a date-only
     // value is midnight UTC, which has already gone by everywhere in Indonesia.
     // Catching it here means the admin sees it under the field instead of as a
     // failed submit.
     .refine(
       (value) => !Number.isNaN(new Date(value).getTime()) && new Date(value).getTime() > Date.now(),
-      "Expiry date must be in the future"
+      "Tanggal kadaluarsa harus di masa depan"
     )
 });
 
@@ -161,193 +163,255 @@ interface FieldRenderProps {
   };
 }
 
-// Add transition styles for hover effects and animations
-const cardHoverStyle = 'transition-all duration-200 hover:shadow-lg hover:border-gray-300'
-const progressBarStyle = 'transition-all duration-300 ease-in-out'
-const badgeStyle = 'transition-colors duration-200'
+/**
+ * A percentage that is safe to render and safe to set a width from.
+ *
+ * `usage_ratio` is `used / total * 100`, and `total` is a sum of quantities
+ * that is legitimately 0 before any voucher exists — which rendered the string
+ * "NaN%" and a bar with `width: NaN%`. Values above 100 are possible too when a
+ * voucher is redeemed more often than its stock; a 140%-wide bar overflows its
+ * track and paints over the next row.
+ */
+function safePercent(value: number): number {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
+}
 
-function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
+/** Rupiah, Indonesian separators, tabular figures at the call site. */
+const formatCurrency = (amount: number | undefined): string => {
+  if (typeof amount !== 'number' || !Number.isFinite(amount)) return 'Rp 0';
+  return `Rp ${Math.round(amount).toLocaleString('id-ID')}`;
+};
+
+/**
+ * A labelled figure. Mono eyebrow, tabular value, one sentence of context —
+ * the same three lines the funnel summary uses, so the two admin screens that
+ * report numbers report them the same way.
+ */
+function StatCell({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
   return (
-    <div className="space-y-6 mb-8 animate-fade-in">
-      {/* Top Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {[
-          {
-            title: 'Operations',
-            value: analytics.total_vouchers_used,
-            label: 'Total vouchers redeemed',
-            color: 'blue'
-          },
-          {
-            title: 'Types',
-            value: analytics.total_vouchers_created,
-            label: 'Total vouchers created',
-            color: 'green'
-          },
-          {
-            title: 'Fields',
-            value: `Rp ${analytics.total_discount_amount.toLocaleString()}`,
-            label: 'Total discount given',
-            color: 'purple'
-          }
-        ].map((stat, index) => (
-          <div 
-            key={stat.title}
-            className={`bg-white rounded-xl border border-gray-200 p-6 ${cardHoverStyle}`}
-          >
-            <div className="space-y-1">
-              <h3 className="text-lg font-semibold text-gray-900">{stat.title}</h3>
-              <div className={`text-3xl font-bold text-${stat.color}-600`}>{stat.value}</div>
-              <p className="text-sm text-gray-500">{stat.label}</p>
-            </div>
-          </div>
-        ))}
+    <div className="p-5 shadow-cell">
+      <p className="font-mono text-tiny uppercase text-ink-ghost">{label}</p>
+      <p className="numeric mt-2 text-price font-semibold text-ink">{value}</p>
+      <p className="mt-1 text-mini text-ink-soft">{hint}</p>
+    </div>
+  );
+}
+
+/** One labelled bar. Ink on a quiet track — a bar is data, not an accent. */
+function MeterRow({
+  label,
+  value,
+  percent,
+}: {
+  label: string;
+  value: string;
+  percent: number;
+}) {
+  return (
+    <div>
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="min-w-0 truncate text-copy text-ink-body">{label}</span>
+        <span className="numeric shrink-0 text-mini text-ink-soft">{value}</span>
+      </div>
+      <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-pill bg-surface-deep">
+        <div
+          className="h-full rounded-pill bg-ink"
+          style={{ width: `${safePercent(percent)}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function PanelHeading({ index, title }: { index: string; title: string }) {
+  return (
+    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-hairline-soft px-5 py-4">
+      <span className="numeric font-mono text-mini font-semibold text-ink-ghost">
+        {index}
+      </span>
+      <h2 className="font-serif text-title font-semibold text-ink">{title}</h2>
+    </div>
+  );
+}
+
+/**
+ * The three headline figures used to be titled "Operations", "Types" and
+ * "Fields" — labels from some other template entirely, sitting over values that
+ * meant redeemed, issued and discounted. Each card also set its colour with
+ * `text-${stat.color}-600`, a class Tailwind cannot see at build time, so the
+ * numbers rendered in inherited black regardless. The labels now say what the
+ * number below them actually counts.
+ */
+function AnalyticsDashboard({ analytics }: { analytics: VoucherAnalytics }) {
+  const monthlyPeak = analytics.monthly_usage.length
+    ? Math.max(...analytics.monthly_usage.map((m) => m.vouchers_used))
+    : 0;
+
+  return (
+    <div className="mb-6 space-y-5">
+      <div className="grid grid-cols-1 overflow-hidden rounded-frame border border-hairline bg-surface md:grid-cols-3">
+        <StatCell
+          label="Voucher terpakai"
+          value={analytics.total_vouchers_used.toLocaleString('id-ID')}
+          hint="Sudah ditukar di checkout"
+        />
+        <StatCell
+          label="Voucher diterbitkan"
+          value={analytics.total_vouchers_created.toLocaleString('id-ID')}
+          hint="Total kuota semua kode"
+        />
+        <StatCell
+          label="Total diskon"
+          value={formatCurrency(analytics.total_discount_amount)}
+          hint="Nilai yang sudah dipotong dari brand"
+        />
       </div>
 
-      {/* Usage Stats and Top Streamers */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column - Usage Stats */}
-        <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${cardHoverStyle}`}>
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Usage Statistics</h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-6">
-              {/* Usage Ratio */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Usage Ratio</span>
-                  <span className="text-sm text-gray-500">{Math.round(analytics.usage_ratio)}%</span>
-                </div>
-                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                  <div 
-                    className={`h-full bg-blue-600 rounded-full ${progressBarStyle}`}
-                    style={{ width: `${analytics.usage_ratio}%` }}
-                  />
-                </div>
-              </div>
+      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+        <section className="overflow-hidden rounded-frame border border-hairline bg-surface">
+          <PanelHeading index="01" title="Statistik pemakaian" />
+          <div className="space-y-6 px-5 py-5">
+            <MeterRow
+              label="Rasio pemakaian"
+              value={`${Math.round(safePercent(analytics.usage_ratio))}%`}
+              percent={analytics.usage_ratio}
+            />
 
-              {/* Status Distribution */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-4">Status Distribution</h4>
-                <div className="space-y-3">
-                  {analytics.usage_by_status.map((status) => (
-                    <div key={status.status} className="group">
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-sm text-gray-600 capitalize group-hover:text-gray-900 transition-colors">
-                          {status.status}
-                        </span>
-                        <span className="text-sm text-gray-500 group-hover:text-gray-900 transition-colors">
-                          {Math.round(status.percentage)}%
-                        </span>
+            <div>
+              <h3 className="font-mono text-tiny uppercase text-ink-ghost">
+                Sebaran status booking
+              </h3>
+              <div className="mt-3 space-y-3">
+                {analytics.usage_by_status.length === 0 ? (
+                  <p className="text-copy text-ink-soft">Belum ada pemakaian.</p>
+                ) : (
+                  analytics.usage_by_status.map((status) => (
+                    <MeterRow
+                      key={status.status}
+                      label={status.status}
+                      value={`${Math.round(safePercent(status.percentage))}%`}
+                      percent={status.percentage}
+                    />
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-mono text-tiny uppercase text-ink-ghost">
+                Pemakaian per bulan
+              </h3>
+              <div className="mt-3 space-y-2.5">
+                {analytics.monthly_usage.length === 0 ? (
+                  <p className="text-copy text-ink-soft">Belum ada pemakaian.</p>
+                ) : (
+                  analytics.monthly_usage.slice(0, 6).map((month) => (
+                    <div key={month.month} className="flex items-center gap-3">
+                      <div className="w-24 shrink-0 truncate text-mini text-ink-soft">
+                        {month.month}
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div 
-                          className={`h-full bg-blue-600 rounded-full group-hover:bg-blue-700 ${progressBarStyle}`}
-                          style={{ width: `${status.percentage}%` }}
+                      <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-pill bg-surface-deep">
+                        <div
+                          className="h-full rounded-pill bg-ink"
+                          style={{
+                            width: `${safePercent(
+                              monthlyPeak ? (month.vouchers_used / monthlyPeak) * 100 : 0,
+                            )}%`,
+                          }}
                         />
                       </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Monthly Usage Chart */}
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 mb-4">Monthly Usage Trend</h4>
-                <div className="space-y-2">
-                  {analytics.monthly_usage.slice(0, 6).map((month) => (
-                    <div key={month.month} className="group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-24 text-xs text-gray-500 group-hover:text-gray-900 transition-colors">
-                          {month.month}
-                        </div>
-                        <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full bg-blue-600 rounded-full group-hover:bg-blue-700 ${progressBarStyle}`}
-                            style={{ 
-                              width: `${(month.vouchers_used / Math.max(...analytics.monthly_usage.map(m => m.vouchers_used))) * 100}%` 
-                            }}
-                          />
-                        </div>
-                        <div className="w-20 text-xs text-gray-500 text-right group-hover:text-gray-900 transition-colors">
-                          {month.vouchers_used} used
-                        </div>
+                      <div className="numeric w-16 shrink-0 text-right text-mini text-ink-soft">
+                        {month.vouchers_used.toLocaleString('id-ID')}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Right Column - Top Streamers */}
-        <div className={`bg-white rounded-xl border border-gray-200 overflow-hidden ${cardHoverStyle}`}>
-          <div className="p-6 border-b border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-900">Top Streamers by Usage</h3>
-          </div>
-          <div className="p-6">
-            <div className="space-y-6">
-              {analytics.top_streamers.slice(0, 5).map((streamer, index) => (
-                <div 
-                  key={streamer.streamer_id} 
-                  className="flex items-center gap-4 p-3 rounded-lg hover:bg-gray-50 transition-colors group"
-                >
-                  <div className="w-10 h-10 flex-shrink-0 relative">
-                    {streamer.image_url ? (
-                      <img 
-                        src={streamer.image_url} 
-                        alt={`${streamer.first_name} ${streamer.last_name}`}
-                        className="w-full h-full rounded-full object-cover ring-2 ring-white"
-                      />
-                    ) : (
-                      <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center ring-2 ring-white">
-                        <span className="text-gray-500 text-sm font-medium">
-                          {streamer.first_name[0]}
+        <section className="overflow-hidden rounded-frame border border-hairline bg-surface">
+          <PanelHeading index="02" title="Streamer dengan pemakaian terbanyak" />
+          <div>
+            {analytics.top_streamers.length === 0 ? (
+              <p className="px-5 py-5 text-copy text-ink-soft">
+                Belum ada voucher yang dipakai di sesi mana pun.
+              </p>
+            ) : (
+              <ul>
+                {analytics.top_streamers.slice(0, 5).map((streamer, index) => (
+                  <li
+                    key={streamer.streamer_id}
+                    className="flex min-w-0 items-center gap-3 border-b border-hairline-soft px-5 py-3.5 transition-colors last:border-b-0 hover:bg-surface-raised"
+                  >
+                    {/*
+                      A rank, not a medal. The first three rows used to carry
+                      gold, silver and bronze discs — three more colours on a
+                      screen whose rule is one accent, for information a mono
+                      index carries on its own.
+                    */}
+                    <span className="numeric w-5 shrink-0 font-mono text-mini text-ink-ghost">
+                      {String(index + 1).padStart(2, '0')}
+                    </span>
+
+                    <span className="h-9 w-9 shrink-0 overflow-hidden rounded-full bg-surface-tint">
+                      {streamer.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={streamer.image_url}
+                          alt={`${streamer.first_name} ${streamer.last_name}`}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="grid h-full w-full place-items-center text-copy font-medium text-ink-soft">
+                          {streamer.first_name?.[0] ?? '?'}
                         </span>
-                      </div>
-                    )}
-                    {index < 3 && (
-                      <div 
-                        className={`absolute -top-1 -right-1 w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold border-2 border-white ${
-                          index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                          index === 1 ? 'bg-gray-300 text-gray-900' :
-                          'bg-orange-400 text-orange-900'
-                        }`}
-                      >
-                        {index + 1}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
+                      )}
+                    </span>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-ui font-medium text-ink">
                         {streamer.first_name} {streamer.last_name}
-                      </span>
+                      </p>
+                      <p className="truncate text-meta text-ink-soft">
+                        <span className="numeric">{streamer.usage_count}</span>{' '}
+                        voucher
+                        <span className="text-ink-ghost"> · </span>
+                        <span className="numeric">
+                          {formatCurrency(streamer.total_discount_amount)}
+                        </span>
+                      </p>
                     </div>
-                    <div className="flex items-center gap-4 mt-1">
-                      <span className="text-sm text-gray-500 group-hover:text-gray-700 transition-colors">
-                        {streamer.usage_count} vouchers used
-                      </span>
-                      <span className="text-sm font-medium text-blue-600 group-hover:text-blue-700 transition-colors">
-                        Rp {streamer.total_discount_amount.toLocaleString()}
-                      </span>
+
+                    <div className="shrink-0 text-right">
+                      <p className="numeric text-copy font-medium text-ink">
+                        {Math.round(
+                          safePercent(
+                            analytics.total_vouchers_used
+                              ? (streamer.usage_count / analytics.total_vouchers_used) * 100
+                              : 0,
+                          ),
+                        )}
+                        %
+                      </p>
+                      <p className="text-mini text-ink-ghost">dari total</p>
                     </div>
-                  </div>
-                  <div className="w-24 text-right">
-                    <div className="text-sm font-medium text-gray-900">
-                      {Math.round((streamer.usage_count / analytics.total_vouchers_used) * 100)}%
-                    </div>
-                    <div className="text-xs text-gray-500 group-hover:text-gray-700 transition-colors">
-                      of total
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-        </div>
+        </section>
       </div>
     </div>
   );
@@ -380,12 +444,6 @@ const isVoucherWithAnalytics = (voucher: any): voucher is VoucherWithAnalytics =
   );
 };
 
-// Add safe formatting helper
-const formatCurrency = (amount: number | undefined): string => {
-  if (typeof amount !== 'number') return 'Rp 0';
-  return `Rp ${amount.toLocaleString()}`;
-};
-
 export default function VouchersPage() {
   const [vouchers, setVouchers] = useState<(Voucher | VoucherWithAnalytics)[]>([]);
   const [filteredVouchers, setFilteredVouchers] = useState<(Voucher | VoucherWithAnalytics)[]>([]);
@@ -397,7 +455,6 @@ export default function VouchersPage() {
   const [selectedVoucher, setSelectedVoucher] = useState<VoucherWithAnalytics | null>(null);
   const [isAnalyticsModalOpen, setIsAnalyticsModalOpen] = useState(false);
   const [globalAnalytics, setGlobalAnalytics] = useState<VoucherAnalytics | null>(null);
-  const [selectedTimeRange, setSelectedTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
 
   const form = useForm<FormData>({
     resolver: zodResolver(voucherFormSchema),
@@ -422,7 +479,7 @@ export default function VouchersPage() {
     setIsLoading(true);
     setError(null);
     const supabase = createClient();
-    
+
     try {
       // First get all vouchers
       const { data: vouchersData, error: vouchersError } = await supabase
@@ -431,7 +488,7 @@ export default function VouchersPage() {
         .order('created_at', { ascending: false });
 
       if (vouchersError) throw vouchersError;
-      
+
       if (!vouchersData) {
         throw new Error('No data returned from Supabase');
       }
@@ -520,12 +577,12 @@ export default function VouchersPage() {
             total_discount_amount: totalDiscount,
             usage_ratio: (usage.length / voucher.total_quantity) * 100,
             top_streamers: Object.values(streamerUsage).sort((a, b) => b.total_discount_amount - a.total_discount_amount),
-            monthly_usage: Object.values(monthlyUsage).sort((a, b) => 
+            monthly_usage: Object.values(monthlyUsage).sort((a, b) =>
               new Date(b.month).getTime() - new Date(a.month).getTime()
             ),
             usage_by_status: statusUsage
           };
-          
+
           return {
             ...voucher,
             total_discount_amount: totalDiscount,
@@ -541,7 +598,7 @@ export default function VouchersPage() {
         total_vouchers_created: vouchersWithAnalytics.reduce((sum, v) => sum + v.total_quantity, 0),
         total_vouchers_used: vouchersWithAnalytics.reduce((sum, v) => sum + v.usage_count, 0),
         total_discount_amount: vouchersWithAnalytics.reduce((sum, v) => sum + v.total_discount_amount, 0),
-        usage_ratio: vouchersWithAnalytics.reduce((sum, v) => sum + v.usage_count, 0) / 
+        usage_ratio: vouchersWithAnalytics.reduce((sum, v) => sum + v.usage_count, 0) /
                     vouchersWithAnalytics.reduce((sum, v) => sum + v.total_quantity, 0) * 100,
         top_streamers: calculateGlobalTopStreamers(vouchersWithAnalytics),
         monthly_usage: calculateGlobalMonthlyUsage(vouchersWithAnalytics),
@@ -553,8 +610,8 @@ export default function VouchersPage() {
       setGlobalAnalytics(globalAnalytics);
     } catch (error) {
       console.error('Error fetching vouchers:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load vouchers');
-      toast.error('Failed to load vouchers');
+      setError(error instanceof Error ? error.message : 'Gagal memuat voucher');
+      toast.error('Gagal memuat voucher');
     } finally {
       setIsLoading(false);
     }
@@ -601,7 +658,7 @@ export default function VouchersPage() {
       });
 
       if (!result.success || !result.voucher) {
-        const message = result.error || 'Failed to create voucher';
+        const message = result.error || 'Gagal membuat voucher';
         setError(message);
         toast.error(message);
         return;
@@ -610,12 +667,12 @@ export default function VouchersPage() {
       // Initialize the new voucher with analytics
       const newVoucherWithAnalytics = createDefaultVoucherWithAnalytics(result.voucher);
       setVouchers(prev => [newVoucherWithAnalytics, ...prev]);
-      toast.success('Voucher created successfully');
+      toast.success('Voucher berhasil dibuat');
       form.reset();
     } catch (error) {
       console.error('Error creating voucher:', error);
-      setError(error instanceof Error ? error.message : 'Failed to create voucher');
-      toast.error('Failed to create voucher');
+      setError(error instanceof Error ? error.message : 'Gagal membuat voucher');
+      toast.error('Gagal membuat voucher');
     } finally {
       setIsCreating(false);
     }
@@ -625,13 +682,13 @@ export default function VouchersPage() {
     fetchVouchers();
   };
 
-  function VoucherAnalyticsModal({ 
-    voucher, 
-    isOpen, 
-    onClose 
-  }: { 
-    voucher: VoucherWithAnalytics; 
-    isOpen: boolean; 
+  function VoucherAnalyticsModal({
+    voucher,
+    isOpen,
+    onClose
+  }: {
+    voucher: VoucherWithAnalytics;
+    isOpen: boolean;
     onClose: () => void;
   }) {
     if (!isOpen) return null;
@@ -647,111 +704,121 @@ export default function VouchersPage() {
     };
 
     return (
-      <div 
-        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-4"
         onClick={onClose}
       >
-        <div 
-          className="bg-white rounded-xl w-full max-w-4xl overflow-hidden shadow-xl"
+        <div
+          className="max-h-[85vh] w-full max-w-4xl overflow-y-auto rounded-frame border border-hairline bg-surface"
           onClick={e => e.stopPropagation()}
         >
           {/* Header */}
-          <div className="px-6 py-4 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">
-                  Voucher Analytics: {voucher.code}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  Detailed usage statistics and performance metrics
-                </p>
-              </div>
-              <button 
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
+          <div className="flex items-start justify-between gap-4 border-b border-hairline px-5 py-4">
+            <div className="min-w-0">
+              <p className="font-mono text-tiny uppercase text-ink-ghost">
+                Detail voucher
+              </p>
+              <h2 className="mt-1 truncate font-serif text-title font-semibold text-ink">
+                <span className="numeric font-mono">{voucher.code}</span>
+              </h2>
+              <p className="mt-1 truncate text-meta text-ink-soft">
+                {voucher.description}
+              </p>
             </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Tutup"
+              className="-mr-1 grid h-8 w-8 shrink-0 place-items-center rounded-field text-ink-ghost transition-colors hover:bg-surface-tint hover:text-ink"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
 
           {/* Content */}
-          <div className="p-6">
-            {/* Summary Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <div className="bg-blue-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Total Usage</p>
-                <p className="text-2xl font-semibold text-blue-600">
-                  {getUsageCount()}/{getTotalQuantity()}
-                </p>
-              </div>
-              <div className="bg-green-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Total Discount Given</p>
-                <p className="text-2xl font-semibold text-green-600">
-                  {formatCurrency(getTotalDiscount())}
-                </p>
-              </div>
-              <div className="bg-purple-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Average Discount</p>
-                <p className="text-2xl font-semibold text-purple-600">
-                  {formatCurrency(getUsageCount() ? Math.round(getTotalDiscount() / getUsageCount()) : 0)}
-                </p>
-              </div>
-              <div className="bg-orange-50 rounded-xl p-4">
-                <p className="text-sm text-gray-600 mb-1">Usage Rate</p>
-                <p className="text-2xl font-semibold text-orange-600">
-                  {getUsageRatio()}%
-                </p>
-              </div>
+          <div className="p-5">
+            {/* Summary */}
+            <div className="grid grid-cols-1 overflow-hidden rounded-frame border border-hairline bg-surface sm:grid-cols-2 lg:grid-cols-4">
+              <StatCell
+                label="Terpakai"
+                value={`${getUsageCount().toLocaleString('id-ID')}/${getTotalQuantity().toLocaleString('id-ID')}`}
+                hint="Dari kuota yang diterbitkan"
+              />
+              <StatCell
+                label="Total diskon"
+                value={formatCurrency(getTotalDiscount())}
+                hint="Sudah dipotong dari brand"
+              />
+              <StatCell
+                label="Rata-rata diskon"
+                value={formatCurrency(
+                  getUsageCount() ? Math.round(getTotalDiscount() / getUsageCount()) : 0,
+                )}
+                hint="Per sekali pakai"
+              />
+              <StatCell
+                label="Rasio pemakaian"
+                value={`${getUsageRatio()}%`}
+                hint="Terpakai dibagi kuota"
+              />
             </div>
 
             {/* Usage History */}
-            <div className="bg-white rounded-xl border border-gray-200">
-              <div className="px-6 py-4 border-b border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-900">Usage History</h3>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="bg-gray-50">
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Original Price</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Final Price</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {voucher.usage_details && voucher.usage_details.length > 0 ? (
-                      voucher.usage_details.map((usage) => (
-                        <tr key={usage.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {usage.client ? `${usage.client.first_name} ${usage.client.last_name}` : 'Unknown User'}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {format(new Date(usage.used_at), 'dd MMM yyyy HH:mm')}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(usage.original_price)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600">
-                            {formatCurrency(usage.discount_applied)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {formatCurrency(usage.final_price)}
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
-                          No usage history available
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+            <div className="mt-5 overflow-hidden rounded-frame border border-hairline bg-surface">
+              <PanelHeading index="01" title="Riwayat pemakaian" />
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-hairline hover:bg-transparent">
+                    <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                      Pengguna
+                    </TableHead>
+                    <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                      Tanggal
+                    </TableHead>
+                    <TableHead className="h-10 text-right font-mono text-tiny uppercase text-ink-ghost">
+                      Harga awal
+                    </TableHead>
+                    <TableHead className="h-10 text-right font-mono text-tiny uppercase text-ink-ghost">
+                      Diskon
+                    </TableHead>
+                    <TableHead className="h-10 text-right font-mono text-tiny uppercase text-ink-ghost">
+                      Harga akhir
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {voucher.usage_details && voucher.usage_details.length > 0 ? (
+                    voucher.usage_details.map((usage) => (
+                      <TableRow
+                        key={usage.id}
+                        className="border-hairline-soft transition-colors hover:bg-surface-raised"
+                      >
+                        <TableCell className="whitespace-nowrap px-4 py-3 text-copy text-ink">
+                          {usage.client ? `${usage.client.first_name} ${usage.client.last_name}` : 'Pengguna tidak diketahui'}
+                        </TableCell>
+                        <TableCell className="numeric whitespace-nowrap px-4 py-3 text-copy text-ink-soft">
+                          {format(new Date(usage.used_at), 'dd MMM yyyy HH:mm', { locale: idLocale })}
+                        </TableCell>
+                        <TableCell className="numeric whitespace-nowrap px-4 py-3 text-right text-copy text-ink-soft">
+                          {formatCurrency(usage.original_price)}
+                        </TableCell>
+                        <TableCell className="numeric whitespace-nowrap px-4 py-3 text-right text-copy text-ink-body">
+                          −{formatCurrency(usage.discount_applied)}
+                        </TableCell>
+                        <TableCell className="numeric whitespace-nowrap px-4 py-3 text-right text-copy font-medium text-ink">
+                          {formatCurrency(usage.final_price)}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow className="border-hairline-soft hover:bg-transparent">
+                      <TableCell colSpan={5} className="px-4 py-10 text-center text-copy text-ink-soft">
+                        Voucher ini belum pernah dipakai.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
             </div>
           </div>
         </div>
@@ -762,7 +829,7 @@ export default function VouchersPage() {
   // Helper functions for global analytics
   const calculateGlobalTopStreamers = (vouchers: VoucherWithAnalytics[]): StreamerVoucherUsage[] => {
     const streamerMap = new Map<number, StreamerVoucherUsage>();
-    
+
     vouchers.forEach(voucher => {
       voucher.analytics?.top_streamers.forEach(streamer => {
         const existing = streamerMap.get(streamer.streamer_id);
@@ -782,7 +849,7 @@ export default function VouchersPage() {
 
   const calculateGlobalMonthlyUsage = (vouchers: VoucherWithAnalytics[]): MonthlyUsage[] => {
     const monthlyMap = new Map<string, MonthlyUsage>();
-    
+
     vouchers.forEach(voucher => {
       voucher.analytics?.monthly_usage.forEach(monthly => {
         const existing = monthlyMap.get(monthly.month);
@@ -818,331 +885,384 @@ export default function VouchersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
-      <div className="p-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Vouchers</h1>
-            <p className="mt-1 text-sm text-gray-500">
-              Manage your vouchers and view their usage performance
-            </p>
-          </div>
-          
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-[#0066FF] hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Voucher
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <div className="px-6 py-6">
-                <DialogHeader className="mb-8">
-                  <DialogTitle className="text-xl font-semibold">Create New Voucher</DialogTitle>
-                  <p className="text-sm text-gray-500 mt-1.5">
-                    Add a new voucher code for your customers
-                  </p>
-                </DialogHeader>
-                
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(handleCreateVoucher)} className="space-y-8">
-                    <FormField
-                      control={form.control}
-                      name="code"
-                      render={({ field }: FieldRenderProps) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Voucher Code</FormLabel>
-                          <FormControl>
-                            <div className="relative">
-                              <Input
-                                {...field}
-                                maxLength={6}
-                                className="uppercase bg-gray-50 font-mono text-lg tracking-wider pl-3 pr-10 h-12"
-                                placeholder="SUMMER"
-                              />
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                                {field.value.length}/6
-                              </div>
-                            </div>
-                          </FormControl>
-                          <FormDescription className="text-xs text-gray-500">
-                            6 characters, uppercase letters and numbers only
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+    <div className="px-8 py-8">
+      {/* Header */}
+      <div className="mb-7 flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
+        <div className="min-w-0 max-w-[560px]">
+          <h1 className="font-serif text-section font-semibold text-ink">
+            Voucher
+          </h1>
+          <p className="mt-2 text-lede text-ink-soft">
+            Kelola kode voucher dan lihat seberapa sering kode itu dipakai.
+          </p>
+        </div>
 
-                    <FormField
-                      control={form.control}
-                      name="description"
-                      render={({ field }: FieldRenderProps) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Description</FormLabel>
-                          <FormControl>
+        <Dialog>
+          <DialogTrigger asChild>
+            {/* The single accent on this screen. Everything else is ink. */}
+            <Button variant="brand" size="action-compact" className="shrink-0">
+              Buat voucher
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-h-[88vh] overflow-y-auto rounded-frame border border-hairline bg-surface p-0 sm:max-w-[520px] sm:rounded-frame">
+            <div className="px-6 py-6">
+              <DialogHeader className="mb-6 space-y-1.5 text-left">
+                <DialogTitle className="font-serif text-title font-semibold text-ink">
+                  Buat voucher baru
+                </DialogTitle>
+                <p className="text-meta text-ink-soft">
+                  Kode berlaku sampai tanggal kadaluarsa atau sampai kuotanya habis.
+                </p>
+              </DialogHeader>
+
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(handleCreateVoucher)} className="space-y-6">
+                  <FormField
+                    control={form.control}
+                    name="code"
+                    render={({ field }: FieldRenderProps) => (
+                      <FormItem>
+                        <FormLabel className="text-copy font-medium text-ink-body">
+                          Kode voucher
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
                             <Input
                               {...field}
-                              placeholder="Summer sale discount"
-                              className="bg-gray-50 h-12"
+                              maxLength={6}
+                              className="h-11 rounded-field border-hairline-input bg-surface pl-3 pr-12 font-mono text-title uppercase tracking-wider text-ink"
+                              placeholder="SUMMER"
                             />
-                          </FormControl>
-                          <FormDescription className="text-xs text-gray-500">
-                            Brief description of the voucher's purpose
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                            <div className="numeric absolute right-3 top-1/2 -translate-y-1/2 text-mini text-ink-ghost">
+                              {field.value.length}/6
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormDescription className="text-mini text-ink-soft">
+                          6 karakter, hanya huruf kapital dan angka.
+                        </FormDescription>
+                        <FormMessage className="text-mini" />
+                      </FormItem>
+                    )}
+                  />
 
-                    <div className="grid grid-cols-2 gap-6">
-                      <FormField
-                        control={form.control}
-                        name="discount_amount"
-                        render={({ field }: FieldRenderProps) => (
-                          <FormItem>
-                            <FormLabel className="text-sm font-medium">Discount Amount</FormLabel>
-                            <FormControl>
-                              <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">Rp</span>
-                                <Input
-                                  type="number"
-                                  {...field}
-                                  onChange={e => {
-                                    const value = e.target.value.replace(/^0+/, '');
-                                    field.onChange(value ? parseInt(value) : '');
-                                  }}
-                                  className="pl-9 bg-gray-50 h-12"
-                                  placeholder="50000"
-                                />
-                              </div>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                  <FormField
+                    control={form.control}
+                    name="description"
+                    render={({ field }: FieldRenderProps) => (
+                      <FormItem>
+                        <FormLabel className="text-copy font-medium text-ink-body">
+                          Deskripsi
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            placeholder="Diskon promo Juni"
+                            className="h-11 rounded-field border-hairline-input bg-surface text-copy text-ink placeholder:text-ink-ghost"
+                          />
+                        </FormControl>
+                        <FormDescription className="text-mini text-ink-soft">
+                          Keterangan singkat, untuk kamu sendiri.
+                        </FormDescription>
+                        <FormMessage className="text-mini" />
+                      </FormItem>
+                    )}
+                  />
 
-                      <FormField
-                        control={form.control}
-                        name="total_quantity"
-                        render={({ field }: FieldRenderProps) => (
-                          <FormItem>
-                            <FormLabel className="text-sm font-medium">Quantity</FormLabel>
-                            <FormControl>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="discount_amount"
+                      render={({ field }: FieldRenderProps) => (
+                        <FormItem>
+                          <FormLabel className="text-copy font-medium text-ink-body">
+                            Nominal diskon
+                          </FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-copy text-ink-soft">
+                                Rp
+                              </span>
                               <Input
                                 type="number"
                                 {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                                className="bg-gray-50 h-12"
-                                placeholder="100"
+                                onChange={e => {
+                                  const value = e.target.value.replace(/^0+/, '');
+                                  field.onChange(value ? parseInt(value) : '');
+                                }}
+                                className="numeric h-11 rounded-field border-hairline-input bg-surface pl-9 text-copy text-ink"
+                                placeholder="50000"
                               />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="expires_at"
-                      render={({ field }: FieldRenderProps) => (
-                        <FormItem>
-                          <FormLabel className="text-sm font-medium">Expiry Date</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="date"
-                              {...field}
-                              min={new Date().toISOString().split('T')[0]}
-                              className="bg-gray-50 h-12"
-                            />
+                            </div>
                           </FormControl>
-                          <FormDescription className="text-xs text-gray-500">
-                            When this voucher will expire
-                          </FormDescription>
-                          <FormMessage />
+                          <FormMessage className="text-mini" />
                         </FormItem>
                       )}
                     />
 
-                    {/* Preview Card */}
-                    <div className="p-5 border border-gray-200 rounded-lg bg-gray-50">
-                      <div className="text-sm font-medium text-gray-600 mb-4">Preview</div>
-                      <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-lg bg-[#0066FF] flex items-center justify-center">
-                          <span className="text-white text-xl font-bold">%</span>
+                    <FormField
+                      control={form.control}
+                      name="total_quantity"
+                      render={({ field }: FieldRenderProps) => (
+                        <FormItem>
+                          <FormLabel className="text-copy font-medium text-ink-body">
+                            Jumlah
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={e => field.onChange(Number(e.target.value))}
+                              className="numeric h-11 rounded-field border-hairline-input bg-surface text-copy text-ink"
+                              placeholder="100"
+                            />
+                          </FormControl>
+                          <FormMessage className="text-mini" />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <FormField
+                    control={form.control}
+                    name="expires_at"
+                    render={({ field }: FieldRenderProps) => (
+                      <FormItem>
+                        <FormLabel className="text-copy font-medium text-ink-body">
+                          Tanggal kadaluarsa
+                        </FormLabel>
+                        <FormControl>
+                          <Input
+                            type="date"
+                            {...field}
+                            min={new Date().toISOString().split('T')[0]}
+                            className="numeric h-11 rounded-field border-hairline-input bg-surface text-copy text-ink"
+                          />
+                        </FormControl>
+                        <FormDescription className="text-mini text-ink-soft">
+                          Setelah tanggal ini kode berhenti berlaku.
+                        </FormDescription>
+                        <FormMessage className="text-mini" />
+                      </FormItem>
+                    )}
+                  />
+
+                  {/* Preview */}
+                  <div className="rounded-panel border border-hairline bg-surface-tint p-4">
+                    <div className="font-mono text-tiny uppercase text-ink-ghost">
+                      Pratinjau
+                    </div>
+                    <div className="mt-3 flex min-w-0 items-start gap-3">
+                      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-field border border-hairline-input bg-surface font-mono text-lede text-ink-soft">
+                        %
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate font-mono text-title font-semibold tracking-wider text-ink">
+                          {form.watch("code") || "SUMMER"}
                         </div>
-                        <div className="flex-1">
-                          <div className="font-mono text-lg font-semibold tracking-wider">
-                            {form.watch("code") || "SUMMER"}
-                          </div>
-                          <div className="text-sm text-gray-600 mt-1">
-                            {form.watch("description") || "Summer sale discount"}
-                          </div>
-                          <div className="flex items-center gap-3 mt-2">
-                            <span className="text-sm font-medium">
-                              Rp {form.watch("discount_amount")?.toLocaleString() || "0"}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {form.watch("total_quantity") || "0"} vouchers
-                            </span>
-                          </div>
+                        <div className="truncate text-meta text-ink-muted">
+                          {form.watch("description") || "Diskon promo Juni"}
+                        </div>
+                        <div className="mt-1.5 flex items-baseline gap-3 whitespace-nowrap">
+                          <span className="numeric text-copy font-medium text-ink">
+                            Rp {form.watch("discount_amount")?.toLocaleString('id-ID') || "0"}
+                          </span>
+                          <span className="numeric text-mini text-ink-soft">
+                            {form.watch("total_quantity") || "0"} kode
+                          </span>
                         </div>
                       </div>
                     </div>
+                  </div>
 
-                    <Button
-                      type="submit"
-                      disabled={isCreating}
-                      className={cn(
-                        "w-full h-12 text-base font-medium",
-                        "bg-[#0066FF] hover:bg-blue-700",
-                        "disabled:opacity-50 disabled:cursor-not-allowed"
-                      )}
-                    >
-                      {isCreating ? (
-                        <div className="flex items-center justify-center gap-2">
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Creating...</span>
-                        </div>
-                      ) : (
-                        'Create Voucher'
-                      )}
-                    </Button>
-                  </form>
-                </Form>
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Analytics Dashboard */}
-        {globalAnalytics && <AnalyticsDashboard analytics={globalAnalytics} />}
-
-        {/* Filters */}
-        <div className="mb-6 flex gap-4">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              placeholder="Search vouchers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-          <Select
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="active">Active</SelectItem>
-              <SelectItem value="inactive">Inactive</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-gray-400 mb-4" />
-              <p className="text-sm text-gray-500">Loading vouchers...</p>
+                  <Button
+                    type="submit"
+                    variant="brand"
+                    size="action-full"
+                    disabled={isCreating}
+                  >
+                    {isCreating ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Memproses…
+                      </>
+                    ) : (
+                      'Buat voucher'
+                    )}
+                  </Button>
+                </form>
+              </Form>
             </div>
-          ) : error ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <div className="flex items-center gap-2 text-red-600 mb-4">
-                <AlertCircle className="h-5 w-5" />
-                <span className="font-medium">Error loading vouchers</span>
-              </div>
-              <p className="text-sm text-gray-500 mb-4">{error}</p>
-              <Button
-                variant="outline"
-                onClick={handleRetry}
-                className="flex items-center gap-2"
-              >
-                Try Again
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      {/* Analytics Dashboard */}
+      {globalAnalytics && <AnalyticsDashboard analytics={globalAnalytics} />}
+
+      {/* Filters */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[240px] max-w-md flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-ghost" />
+          <Input
+            placeholder="Cari kode atau deskripsi…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-10 rounded-field border-hairline-input bg-surface pl-9 text-copy text-ink placeholder:text-ink-ghost"
+          />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="h-10 w-[190px] shrink-0 rounded-field border-hairline-input bg-surface text-copy text-ink-body">
+            <SelectValue placeholder="Saring berdasarkan status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Semua status</SelectItem>
+            <SelectItem value="active">Aktif</SelectItem>
+            <SelectItem value="inactive">Nonaktif</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      {/* Table */}
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center px-5 py-16">
+            <Loader2 className="h-5 w-5 animate-spin text-ink-ghost" />
+            <p className="mt-3 text-copy text-ink-soft">Memuat voucher…</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
+            <AlertCircle className="h-5 w-5 text-ink-ghost" />
+            <p className="mt-3 font-serif text-title font-semibold text-ink">
+              Gagal memuat voucher
+            </p>
+            <p className="mx-auto mt-1.5 max-w-sm text-meta text-ink-soft">{error}</p>
+            <div className="mt-5">
+              <Button variant="quiet" size="action-compact" onClick={handleRetry}>
+                Coba lagi
               </Button>
             </div>
-          ) : filteredVouchers.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
-              <p className="text-sm text-gray-500 mb-4">No vouchers found</p>
-              {searchQuery || statusFilter !== 'all' ? (
+          </div>
+        ) : filteredVouchers.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-5 py-16 text-center">
+            <p className="font-serif text-title font-semibold text-ink">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Tidak ada voucher yang cocok'
+                : 'Belum ada voucher'}
+            </p>
+            <p className="mx-auto mt-1.5 max-w-sm text-meta text-ink-soft">
+              {searchQuery || statusFilter !== 'all'
+                ? 'Coba longgarkan kata kunci atau saringan statusnya.'
+                : 'Buat kode pertama kamu lewat tombol di kanan atas.'}
+            </p>
+            {searchQuery || statusFilter !== 'all' ? (
+              <div className="mt-5">
                 <Button
-                  variant="outline"
+                  variant="quiet"
+                  size="action-compact"
                   onClick={() => {
                     setSearchQuery('');
                     setStatusFilter('all');
                   }}
-                  className="flex items-center gap-2"
                 >
-                  <X className="h-4 w-4" />
-                  Clear Filters
+                  <X className="mr-2 h-4 w-4" />
+                  Bersihkan filter
                 </Button>
-              ) : null}
-            </div>
-          ) : (
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50/50">
-                  <TableHead className="font-medium">Code</TableHead>
-                  <TableHead className="font-medium">Description</TableHead>
-                  <TableHead className="font-medium">Discount</TableHead>
-                  <TableHead className="font-medium">Usage</TableHead>
-                  <TableHead className="font-medium">Total Discount Given</TableHead>
-                  <TableHead className="font-medium">Status</TableHead>
-                  <TableHead className="font-medium">Expires At</TableHead>
-                  <TableHead className="font-medium">Actions</TableHead>
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow className="border-hairline hover:bg-transparent">
+                <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                  Kode
+                </TableHead>
+                <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                  Deskripsi
+                </TableHead>
+                <TableHead className="h-10 text-right font-mono text-tiny uppercase text-ink-ghost">
+                  Diskon
+                </TableHead>
+                <TableHead className="h-10 text-right font-mono text-tiny uppercase text-ink-ghost">
+                  Terpakai
+                </TableHead>
+                <TableHead className="h-10 text-right font-mono text-tiny uppercase text-ink-ghost">
+                  Total diskon
+                </TableHead>
+                <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                  Status
+                </TableHead>
+                <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                  Berlaku sampai
+                </TableHead>
+                <TableHead className="h-10 w-[120px]" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredVouchers.map((voucher: Voucher | VoucherWithAnalytics) => (
+                <TableRow
+                  key={voucher.id}
+                  className="border-hairline-soft transition-colors hover:bg-surface-raised"
+                >
+                  <TableCell className="numeric whitespace-nowrap px-4 py-3 font-mono text-ui font-medium text-ink">
+                    {voucher.code}
+                  </TableCell>
+                  <TableCell className="max-w-[260px] truncate px-4 py-3 text-copy text-ink-muted">
+                    {voucher.description}
+                  </TableCell>
+                  <TableCell className="numeric whitespace-nowrap px-4 py-3 text-right text-copy text-ink">
+                    {formatCurrency(voucher.discount_amount)}
+                  </TableCell>
+                  <TableCell className="numeric whitespace-nowrap px-4 py-3 text-right text-copy text-ink-muted">
+                    {isVoucherWithAnalytics(voucher)
+                      ? `${voucher.usage_count}/${voucher.total_quantity}`
+                      : `0/${voucher.total_quantity}`}
+                  </TableCell>
+                  <TableCell className="numeric whitespace-nowrap px-4 py-3 text-right text-copy text-ink">
+                    {isVoucherWithAnalytics(voucher)
+                      ? formatCurrency(voucher.total_discount_amount)
+                      : 'Rp 0'}
+                  </TableCell>
+                  {/*
+                    Status is a word, not a filled capsule. A green chip in every
+                    row of a table makes the column the loudest thing on screen
+                    for information that is binary and rarely surprising.
+                  */}
+                  <TableCell className="whitespace-nowrap px-4 py-3">
+                    <span
+                      className={
+                        voucher.is_active
+                          ? 'text-copy font-medium text-positive'
+                          : 'text-copy text-ink-ghost'
+                      }
+                    >
+                      {voucher.is_active ? 'Aktif' : 'Nonaktif'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="numeric whitespace-nowrap px-4 py-3 text-copy text-ink-muted">
+                    {format(new Date(voucher.expires_at), 'dd MMM yyyy', { locale: idLocale })}
+                  </TableCell>
+                  <TableCell className="px-4 py-3 text-right">
+                    <Button
+                      variant="quiet"
+                      size="sm"
+                      className="h-8 px-3 text-mini"
+                      onClick={() => {
+                        if (isVoucherWithAnalytics(voucher)) {
+                          setSelectedVoucher(voucher);
+                          setIsAnalyticsModalOpen(true);
+                        }
+                      }}
+                    >
+                      Lihat detail
+                    </Button>
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVouchers.map((voucher: Voucher | VoucherWithAnalytics) => (
-                  <TableRow key={voucher.id} className="hover:bg-gray-50/50">
-                    <TableCell className="font-medium">{voucher.code}</TableCell>
-                    <TableCell className="text-gray-600">{voucher.description}</TableCell>
-                    <TableCell>{formatCurrency(voucher.discount_amount)}</TableCell>
-                    <TableCell className="text-gray-600">
-                      {isVoucherWithAnalytics(voucher) ? `${voucher.usage_count}/${voucher.total_quantity}` : `0/${voucher.total_quantity}`}
-                    </TableCell>
-                    <TableCell className="text-green-600">
-                      {isVoucherWithAnalytics(voucher) ? formatCurrency(voucher.total_discount_amount) : 'Rp 0'}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        voucher.is_active 
-                          ? 'bg-green-50 text-green-700' 
-                          : 'bg-gray-100 text-gray-700'
-                      }`}>
-                        {voucher.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-gray-600">
-                      {format(new Date(voucher.expires_at), 'dd MMM yyyy')}
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          if (isVoucherWithAnalytics(voucher)) {
-                            setSelectedVoucher(voucher);
-                            setIsAnalyticsModalOpen(true);
-                          }
-                        }}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        View Analytics
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-        </div>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </div>
 
       {/* Analytics Modal */}
@@ -1158,4 +1278,4 @@ export default function VouchersPage() {
       )}
     </div>
   );
-} 
+}

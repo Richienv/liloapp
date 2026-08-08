@@ -105,6 +105,25 @@ const config = {
           soft: "#737373",
           faint: "#8a8880",
           ghost: "#a3a19a",
+
+          /*
+           * The dark surface, named the same way the light one is.
+           *
+           * The host dashboard's live card inverts — bg-ink with light text —
+           * and design/Salda_Host.dc.html gives that inversion its own ramp.
+           * Without these it was six arbitrary hex values scattered through one
+           * component, which is how a surface drifts: each `#2e2e2e` is a
+           * separate decision nobody can grep for.
+           *
+           * `raised` sits ON bg-ink (a bar inside the card), `line` and
+           * `line-strong` are its hairlines, and `inverse` / `inverse-soft` are
+           * the text ramp — the dark side's answer to ink and ink-soft.
+           */
+          raised: "#1f1f1f",
+          line: "#2e2e2e",
+          "line-strong": "#3a3a3a",
+          inverse: "#fafafa",
+          "inverse-soft": "#6b6b66",
         },
 
         /** Hairlines. `1px solid`, never a shadow. */

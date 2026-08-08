@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { ArrowLeft, Video, Sun, Mic, Upload, Star } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import type { ReactNode } from "react";
 import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 import { absoluteUrl } from "@/lib/site";
 
 // Nothing here was ever interactive — the "use client" directive only meant the
@@ -16,188 +16,182 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * One numbered step — the mono index + serif title pair used by every section
+ * heading in the product, and by the two legal pages this guide sits next to in
+ * the sign-up flow.
+ *
+ * The four steps used to be four bordered cards, each with its own coloured
+ * icon tile: purple, blue, green, orange. That is four accents in one column on
+ * a page whose budget is one, and the hues carried no meaning — nothing about
+ * "Teknis perekaman" is green. The index carries the sequence instead, and it
+ * carries it better, because a number is what the reader is actually looking
+ * for when they come back to find where they left off.
+ */
+function Step({
+  index,
+  title,
+  children,
+}: {
+  index: number;
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="border-t border-hairline-soft pt-8 first:border-t-0 first:pt-0">
+      <div className="flex items-baseline gap-3">
+        <span className="numeric font-mono text-mini text-ink-ghost">
+          {String(index).padStart(2, "0")}
+        </span>
+        <h3 className="font-serif text-title font-semibold text-ink">{title}</h3>
+      </div>
+      <div className="mt-3.5 text-lede text-ink-body">{children}</div>
+    </section>
+  );
+}
+
+/** Unordered item: a 4px ink dot parked on the first line, never a coloured one. */
+function Point({ children }: { children: ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span
+        aria-hidden="true"
+        className="mt-[10px] h-1 w-1 shrink-0 rounded-full bg-ink-ghost"
+      />
+      <span className="min-w-0">{children}</span>
+    </li>
+  );
+}
+
+/**
+ * Ordered item. The upload steps have to be done in order, so the marker is a
+ * real number — set in the mono face, the same one the step indices use, so the
+ * two levels of numbering read as one system rather than two lists that happen
+ * to be numbered.
+ */
+function Instruction({ index, children }: { index: number; children: ReactNode }) {
+  return (
+    <li className="flex gap-3">
+      <span
+        aria-hidden="true"
+        className="numeric mt-[3px] w-3 shrink-0 font-mono text-mini text-ink-ghost"
+      >
+        {index}
+      </span>
+      <span className="min-w-0">{children}</span>
+    </li>
+  );
+}
+
 export default function VideoGuide() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container max-w-3xl mx-auto px-4 py-8">
-        {/* Navigation */}
-        <Link href="/streamer-sign-up">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mb-6 border-blue-600 text-blue-600 hover:bg-blue-50"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1" />
-            Kembali ke Pendaftaran
-          </Button>
+    <div className="min-h-screen bg-canvas">
+      {/*
+        68ch measure at 15px/1.6. This is a document, not a dashboard: the old
+        `max-w-3xl` of stacked cards set the instructions at 16px across 768px
+        and broke them into four boxed islands, which is why it read as a form
+        to fill in rather than something to read.
+      */}
+      <article className="mx-auto w-full max-w-[68ch] px-5 pb-24 pt-8 sm:px-6 sm:pt-12">
+        <Link
+          href="/streamer-sign-up"
+          className="-ml-1 inline-flex items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+        >
+          <ChevronLeft className="h-4 w-4" />
+          Kembali ke pendaftaran
         </Link>
 
-        {/* Main Content */}
-        <div className="space-y-8 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          {/* Header */}
-          <div className="text-center pb-6 border-b border-gray-100">
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              Cara Membuat Video Perkenalan yang Menarik
-            </h1>
-            <p className="text-gray-600">
-              Panduan lengkap membuat video yang profesional
-            </p>
-          </div>
+        <h1 className="mt-4 font-serif text-section font-semibold text-ink sm:text-display">
+          Cara membuat video perkenalan yang menarik
+        </h1>
+        <p className="mt-2.5 text-lede text-ink-soft">
+          Panduan lengkap membuat video yang profesional
+        </p>
 
-          {/* Why Important Section */}
-          <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
-            <h2 className="text-xl font-semibold text-blue-800 mb-3">
-              Mengapa Video Perkenalan Penting?
-            </h2>
-            <p className="text-blue-700">
-              Video perkenalan adalah kesempatan pertama kamu untuk menunjukkan profesionalisme dan 
-              kemampuan kamu kepada brand. Video yang berkualitas akan meningkatkan peluang kamu 
-              untuk dipilih oleh brand.
-            </p>
-          </div>
+        {/*
+          Was a blue card with blue text on a blue border. It says nothing
+          urgent and asks for nothing, so it gets the quiet fill — the same one
+          the closing tips block gets, which turns the two into a matched pair
+          bracketing the steps instead of two unrelated coloured boxes.
+        */}
+        <section className="mt-9 rounded-panel border border-hairline bg-surface-tint px-5 py-5 sm:px-6 sm:py-6">
+          <h2 className="font-serif text-title font-semibold text-ink">
+            Mengapa video perkenalan penting?
+          </h2>
+          <p className="mt-2.5 text-lede text-ink-body">
+            Video perkenalan adalah kesempatan pertama kamu untuk menunjukkan
+            profesionalisme dan kemampuan kamu kepada brand. Video yang
+            berkualitas akan meningkatkan peluang kamu untuk dipilih oleh brand.
+          </p>
+        </section>
 
-          {/* Steps Section */}
-          <div className="grid gap-6">
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold text-gray-900">
-                Langkah-langkah Membuat Video
-              </h2>
+        {/*
+          An eyebrow rather than a heading. It labels the four steps below it;
+          set at title size it would compete with the four titles it introduces.
+        */}
+        <h2 className="mt-12 font-mono text-tiny uppercase text-ink-ghost">
+          Langkah-langkah membuat video
+        </h2>
 
-              {/* Step Cards */}
-              <div className="grid gap-4">
-                {/* Preparation */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-purple-50 rounded-lg">
-                      <Video className="h-5 w-5 text-purple-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900">1. Persiapan</h3>
-                  </div>
-                  <ul className="space-y-2 text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full"></span>
-                      Siapkan script atau poin-poin yang ingin disampaikan
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full"></span>
-                      Pilih lokasi dengan pencahayaan yang baik
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full"></span>
-                      Gunakan smartphone/kamera dengan kualitas HD
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-purple-600 rounded-full"></span>
-                      Pastikan audio jernih dan tidak berisik
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Content */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-blue-50 rounded-lg">
-                      <Sun className="h-5 w-5 text-blue-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900">2. Konten Video</h3>
-                  </div>
-                  <ul className="space-y-2 text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Perkenalkan diri kamu dengan singkat
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Jelaskan pengalaman live streaming kamu
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Tunjukkan contoh cara kamu mempromosikan produk
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-blue-600 rounded-full"></span>
-                      Sebutkan kategori produk yang kamu kuasai
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Technical */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-green-50 rounded-lg">
-                      <Mic className="h-5 w-5 text-green-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900">3. Teknis Perekaman</h3>
-                  </div>
-                  <ul className="space-y-2 text-gray-600">
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                      Gunakan orientasi landscape (16:9)
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                      Rekam dalam resolusi minimal 1080p
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                      Durasi optimal: 2-3 menit
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-green-600 rounded-full"></span>
-                      Pastikan frame stabil (gunakan tripod jika perlu)
-                    </li>
-                  </ul>
-                </div>
-
-                {/* Upload */}
-                <div className="p-4 rounded-lg border border-gray-200 bg-white">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-orange-50 rounded-lg">
-                      <Upload className="h-5 w-5 text-orange-600" />
-                    </div>
-                    <h3 className="font-semibold text-gray-900">4. Upload ke YouTube</h3>
-                  </div>
-                  <ol className="space-y-2 text-gray-600 list-decimal list-inside">
-                    <li>Login ke akun YouTube kamu</li>
-                    <li>Klik tombol Upload (ikon kamera dengan tanda +)</li>
-                    <li>Pilih "Unlisted" pada pengaturan privasi</li>
-                    <li>Isi judul: "Video Perkenalan [Nama kamu] - Lilo Host"</li>
-                    <li>Setelah selesai upload, klik "SHARE" dan copy link-nya</li>
-                  </ol>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Tips Section */}
-          <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <Star className="h-5 w-5 text-yellow-600" />
-              </div>
-              <h3 className="font-semibold text-yellow-800">Tips Tambahan</h3>
-            </div>
-            <ul className="space-y-2 text-yellow-800">
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>
-                Gunakan pakaian yang rapi dan profesional
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>
-                Bicara dengan jelas dan penuh semangat
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>
-                Tunjukkan kepribadian kamu yang natural
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-yellow-600 rounded-full"></span>
-                Edit video untuk menghilangkan bagian yang tidak perlu
-              </li>
+        <div className="mt-6 space-y-8">
+          <Step index={1} title="Persiapan">
+            <ul className="space-y-2.5">
+              <Point>Siapkan naskah atau poin-poin yang ingin disampaikan</Point>
+              <Point>Pilih lokasi dengan pencahayaan yang baik</Point>
+              <Point>Gunakan smartphone/kamera dengan kualitas HD</Point>
+              <Point>Pastikan audio jernih dan tidak berisik</Point>
             </ul>
-          </div>
+          </Step>
+
+          <Step index={2} title="Konten video">
+            <ul className="space-y-2.5">
+              <Point>Perkenalkan diri kamu dengan singkat</Point>
+              <Point>Jelaskan pengalaman live streaming kamu</Point>
+              <Point>Tunjukkan contoh cara kamu mempromosikan produk</Point>
+              <Point>Sebutkan kategori produk yang kamu kuasai</Point>
+            </ul>
+          </Step>
+
+          <Step index={3} title="Teknis perekaman">
+            <ul className="space-y-2.5">
+              <Point>Gunakan orientasi landscape (16:9)</Point>
+              <Point>Rekam dalam resolusi minimal 1080p</Point>
+              <Point>Durasi optimal: 2-3 menit</Point>
+              <Point>Pastikan frame stabil (gunakan tripod jika perlu)</Point>
+            </ul>
+          </Step>
+
+          <Step index={4} title="Unggah ke YouTube">
+            <ol className="space-y-2.5">
+              <Instruction index={1}>Masuk ke akun YouTube kamu</Instruction>
+              <Instruction index={2}>
+                Klik tombol Upload (ikon kamera dengan tanda +)
+              </Instruction>
+              <Instruction index={3}>
+                Pilih "Unlisted" pada pengaturan privasi
+              </Instruction>
+              <Instruction index={4}>
+                Isi judul: "Video Perkenalan [Nama kamu] - Lilo Host"
+              </Instruction>
+              <Instruction index={5}>
+                Setelah proses unggah selesai, klik "SHARE" lalu salin tautannya
+              </Instruction>
+            </ol>
+          </Step>
         </div>
-      </div>
+
+        <section className="mt-12 rounded-panel border border-hairline bg-surface-tint px-5 py-5 sm:px-6 sm:py-6">
+          <h2 className="font-serif text-title font-semibold text-ink">
+            Tips tambahan
+          </h2>
+          <ul className="mt-3 space-y-2.5 text-lede text-ink-body">
+            <Point>Gunakan pakaian yang rapi dan profesional</Point>
+            <Point>Bicara dengan jelas dan penuh semangat</Point>
+            <Point>Tunjukkan kepribadian kamu yang natural</Point>
+            <Point>Edit video untuk menghilangkan bagian yang tidak perlu</Point>
+          </ul>
+        </section>
+      </article>
     </div>
   );
-} 
+}

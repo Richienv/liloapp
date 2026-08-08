@@ -1,11 +1,28 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Star } from 'lucide-react';
 import Image from 'next/image';
 import { format } from 'date-fns';
+import { id as idLocale } from 'date-fns/locale';
+import { cn } from "@/lib/utils";
 import { createClient } from "@/utils/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+
+/** What each star means, said out loud. The number alone is not a scale. */
+const RATING_LABEL: Record<number, string> = {
+  1: 'Sangat kurang',
+  2: 'Kurang',
+  3: 'Cukup',
+  4: 'Bagus',
+  5: 'Sangat bagus',
+};
 
 interface RatingModalProps {
   isOpen: boolean;
@@ -39,7 +56,7 @@ export default function RatingModal({
 
   const handleSubmit = async () => {
     if (rating === 0) {
-      setError("Please select a rating before submitting.");
+      setError("Pilih bintang dulu sebelum mengirim.");
       return;
     }
 
@@ -100,8 +117,8 @@ export default function RatingModal({
 
       console.log('Booking status updated to completed');
       toast({
-        title: "Rating Submitted",
-        description: "Thank you for your feedback!"
+        title: "Penilaian terkirim",
+        description: "Terima kasih, masukan kamu membantu host lain juga."
       });
       onSubmit();
       onClose();
@@ -114,11 +131,13 @@ export default function RatingModal({
         console.error('Error details:', (error as any).details);
       }
       toast({
-        title: "Error",
-        description: "Failed to submit rating. Please try again.",
-        className: "bg-destructive"
+        // This hook's props carry no `variant`, so the failure tone is the
+        // destructive text-on-tint pair rather than a solid red block.
+        className: "border-destructive-emphasis/20 bg-destructive-subtle text-destructive-emphasis",
+        title: "Penilaian gagal dikirim",
+        description: "Coba lagi sebentar lagi."
       });
-      setError("Failed to submit rating. Please try again.");
+      setError("Penilaian gagal dikirim. Coba lagi sebentar lagi.");
     } finally {
       setIsSubmitting(false);
     }
@@ -126,52 +145,108 @@ export default function RatingModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle className="text-left text-lg">Rate Your Experience</DialogTitle>
-        </DialogHeader>
-        <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-4 text-xs text-blue-700">
-          Your rating would help the streamer to enhance their services in the future.
-        </div>
-        <div className="flex flex-col items-start space-y-3 text-sm">
-          <div className="flex items-center space-x-3">
-            <Image
-              src={streamerImage || '/default-avatar.png'}
-              alt={streamerName}
-              width={50}
-              height={50}
-              className="rounded-full"
-            />
-            <h3 className="font-semibold">{streamerName}</h3>
-          </div>
-          <div className="text-xs text-gray-500">
-            {format(new Date(startDate), "MMM d yyyy")} ({format(new Date(startDate), "HH:mm")}-{format(new Date(endDate), "HH:mm")})
-          </div>
-          <div className="flex space-x-1">
-            {[1, 2, 3, 4, 5].map((star) => (
-              <Star
-                key={star}
-                className={`cursor-pointer w-5 h-5 ${
-                  star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
-                }`}
-                onClick={() => setRating(star)}
+      <DialogContent className="gap-0 overflow-hidden rounded-frame border border-hairline bg-surface p-0 sm:max-w-[440px]">
+        <div className="space-y-5 p-5 sm:p-6">
+          <DialogHeader className="space-y-1.5 text-left">
+            <DialogTitle className="font-serif text-title font-semibold text-ink">
+              Beri penilaian
+            </DialogTitle>
+            {/*
+              The blue notice box is gone. It was a filled tint carrying a
+              sentence, which put a second accent above a form whose only
+              accent should be the button that ends it — and the sentence is
+              the subtitle anyway.
+            */}
+            <DialogDescription className="text-meta text-ink-soft">
+              Penilaian kamu membantu host memperbaiki sesi berikutnya.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* The session being rated, as one row that cannot wrap. */}
+          <div className="flex min-w-0 items-center gap-3 rounded-panel border border-hairline px-4 py-3">
+            <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-surface-tint">
+              <Image
+                src={streamerImage || '/default-avatar.png'}
+                alt={streamerName}
+                fill
+                sizes="40px"
+                className="object-cover"
               />
-            ))}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-ui font-medium text-ink">{streamerName}</p>
+              <p className="numeric truncate text-meta text-ink-soft">
+                {format(new Date(startDate), "d MMM yyyy", { locale: idLocale })}
+                <span className="text-ink-ghost"> · </span>
+                {format(new Date(startDate), "HH:mm")}–{format(new Date(endDate), "HH:mm")}
+              </p>
+            </div>
           </div>
-          <textarea
-            className="w-full p-2 border rounded-md text-xs"
-            rows={3}
-            placeholder="Leave a comment (optional)"
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-          />
-          {error && <p className="text-red-500 text-xs">{error}</p>}
-          <Button 
-            onClick={handleSubmit} 
-            className="w-full text-xs" 
+
+          <div className="space-y-2">
+            {/*
+              Ink stars, not gold ones. Gold is a fifth hue on a screen with a
+              two-colour budget, and a filled dark star against an empty ghost
+              one is a stronger read at 20px than amber against grey.
+            */}
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1" role="radiogroup" aria-label="Nilai sesi ini">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    type="button"
+                    role="radio"
+                    aria-checked={rating === star}
+                    aria-label={`${star} — ${RATING_LABEL[star]}`}
+                    onClick={() => setRating(star)}
+                    className="grid h-8 w-8 place-items-center rounded-chip transition-colors hover:bg-surface-tint"
+                  >
+                    <Star
+                      className={cn(
+                        "h-5 w-5 transition-colors",
+                        star <= rating ? "fill-ink text-ink" : "fill-none text-ink-ghost"
+                      )}
+                    />
+                  </button>
+                ))}
+              </div>
+              {rating > 0 && (
+                <span className="text-copy text-ink-body">{RATING_LABEL[rating]}</span>
+              )}
+            </div>
+
+            <textarea
+              className="w-full resize-none rounded-field border border-hairline-input bg-surface px-3 py-2.5 text-copy text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-hairline-strong"
+              rows={3}
+              placeholder="Tulis komentar (opsional)"
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+            />
+
+            {error && (
+              <p role="alert" className="text-meta text-destructive-emphasis">
+                {error}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-nowrap items-center justify-end gap-3 border-t border-hairline-soft bg-surface-tint p-5 sm:p-6">
+          <Button
+            variant="quiet"
+            size="action-secondary"
+            onClick={onClose}
             disabled={isSubmitting}
           >
-            {isSubmitting ? 'Submitting...' : 'Submit Rating'}
+            Nanti saja
+          </Button>
+          <Button
+            variant="brand"
+            size="action"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Mengirim…' : 'Kirim penilaian'}
           </Button>
         </div>
       </DialogContent>

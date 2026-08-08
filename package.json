@@ -3,9 +3,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:check": "node scripts/build-check.mjs",
     "start": "next start",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "design:lint": "node scripts/design-lint.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.0",

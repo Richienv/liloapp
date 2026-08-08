@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { VerificationStatusBadge } from "@/components/ui/verification-badge";
 import { createAdminClient } from "@/utils/supabase/admin";
 import { getAdmin } from "@/lib/admin";
 import {
@@ -54,11 +53,26 @@ const ID_MATCH_CAP = 500;
 type SubmissionStatus = "pending" | "approved" | "rejected";
 
 const STATUS_TABS: { value: SubmissionStatus | "all"; label: string }[] = [
-  { value: "pending", label: "Menunggu Review" },
+  { value: "pending", label: "Menunggu review" },
   { value: "approved", label: "Disetujui" },
   { value: "rejected", label: "Ditolak" },
   { value: "all", label: "Semua" },
 ];
+
+/**
+ * Status as words, not as a filled pill.
+ *
+ * The shared `VerificationStatusBadge` renders `bg-green-50` / `bg-yellow-50`
+ * capsules — a colour block per row, in a table whose job is to be read down a
+ * column. A tone on the text carries the same three states without turning the
+ * status column into the loudest thing on the screen, and it leaves the only
+ * accent on the page to the one button an admin is here to press.
+ */
+const STATUS_TEXT: Record<SubmissionStatus, { label: string; tone: string }> = {
+  pending: { label: "Menunggu review", tone: "text-caution" },
+  approved: { label: "Disetujui", tone: "text-positive" },
+  rejected: { label: "Ditolak", tone: "text-ink-ghost" },
+};
 
 const VALID_STATUSES = STATUS_TABS.map((tab) => tab.value);
 
@@ -243,8 +257,8 @@ function viewableUrl(
 function DocumentLink({ href, label }: { href: string | null; label: string }) {
   if (!href) {
     return (
-      <span className="inline-flex items-center gap-1 text-xs text-gray-400">
-        <FileWarning className="h-3.5 w-3.5" />
+      <span className="inline-flex items-center gap-1.5 whitespace-nowrap text-mini text-ink-ghost">
+        <FileWarning className="h-3.5 w-3.5 shrink-0" />
         {label}
       </span>
     );
@@ -255,9 +269,9 @@ function DocumentLink({ href, label }: { href: string | null; label: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
+      className="inline-flex items-center gap-1.5 whitespace-nowrap text-mini font-medium text-ink underline decoration-hairline-strong underline-offset-2 transition-colors hover:decoration-ink"
     >
-      <ExternalLink className="h-3.5 w-3.5" />
+      <ExternalLink className="h-3.5 w-3.5 shrink-0" />
       {label}
     </a>
   );
@@ -396,64 +410,67 @@ export default async function StreamerVerificationPage({
   const rangeEnd = from + submissions.length;
 
   return (
-    <div className="p-8">
+    <div className="px-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
-            Verifikasi Streamer
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Tinjau dokumen identitas dan bukti kepemilikan akun sebelum streamer
-            bisa dibooking dan menerima kiriman produk.
-          </p>
-        </div>
-      </div>
+      <header className="mb-7 max-w-[620px]">
+        <h1 className="font-serif text-section font-semibold text-ink">
+          Verifikasi streamer
+        </h1>
+        <p className="mt-2 text-lede text-ink-soft">
+          Tinjau dokumen identitas dan bukti kepemilikan akun sebelum streamer
+          bisa dibooking dan menerima kiriman produk.
+        </p>
+      </header>
 
       {/* Action feedback */}
       {searchParams.success && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
-          <p className="text-sm text-green-800">{searchParams.success}</p>
+        <div className="mb-5 flex items-start gap-2.5 rounded-panel border border-positive-line bg-positive-tint px-4 py-3">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-positive" />
+          <p className="text-copy text-positive">{searchParams.success}</p>
         </div>
       )}
       {searchParams.error && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
-          <p className="text-sm text-red-800">{searchParams.error}</p>
+        <div className="mb-5 flex items-start gap-2.5 rounded-panel border border-destructive-emphasis/20 bg-destructive-subtle px-4 py-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive-emphasis" />
+          <p className="text-copy text-destructive-emphasis">{searchParams.error}</p>
         </div>
       )}
       {error && (
-        <div className="mb-6 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3">
-          <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-red-600" />
-          <p className="text-sm text-red-800">
+        <div className="mb-5 flex items-start gap-2.5 rounded-panel border border-destructive-emphasis/20 bg-destructive-subtle px-4 py-3">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive-emphasis" />
+          <p className="text-copy text-destructive-emphasis">
             Gagal memuat antrean verifikasi: {error.message}
           </p>
         </div>
       )}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <form className="relative flex-1 min-w-[240px] max-w-md" method="GET">
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <form className="relative min-w-[240px] max-w-md flex-1" method="GET">
           {/* No `page` field: a new search always starts on page 1. */}
           <input type="hidden" name="status" value={status} />
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-ghost" />
           <Input
             name="q"
             defaultValue={query}
-            placeholder="Cari nama, username, email, atau handle..."
-            className="pl-10"
+            placeholder="Cari nama, username, email, atau handle…"
+            className="h-10 rounded-field border-hairline-input bg-surface pl-9 text-copy text-ink placeholder:text-ink-ghost"
           />
         </form>
-        <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+        {/*
+          Segmented control, deliberately neutral. The queue's single accent
+          belongs to "Setujui" — the one irreversible thing on the screen — not
+          to a filter that only changes which rows are listed.
+        */}
+        <div className="flex shrink-0 items-center gap-0.5 rounded-field border border-hairline-input bg-surface p-0.5">
           {STATUS_TABS.map((tab) => (
             <Link
               key={tab.value}
               href={queueHref({ status: tab.value, q: query, page: 1 })}
               className={
                 tab.value === status
-                  ? "rounded-md bg-[#0066FF] px-3 py-1.5 text-sm font-medium text-white"
-                  : "rounded-md px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50"
+                  ? "whitespace-nowrap rounded-chip bg-surface-deep px-3 py-1.5 text-ui font-medium text-ink"
+                  : "whitespace-nowrap rounded-chip px-3 py-1.5 text-ui text-ink-soft transition-colors hover:text-ink"
               }
             >
               {tab.label}
@@ -463,22 +480,37 @@ export default async function StreamerVerificationPage({
       </div>
 
       {/* Verification Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50">
-              <TableHead className="font-medium w-[260px]">Streamer</TableHead>
-              <TableHead className="font-medium">Akun Platform</TableHead>
-              <TableHead className="font-medium">Dokumen</TableHead>
-              <TableHead className="font-medium">Status</TableHead>
-              <TableHead className="font-medium">Diajukan</TableHead>
-              <TableHead className="font-medium w-[320px]">Aksi</TableHead>
+            <TableRow className="border-hairline hover:bg-transparent">
+              <TableHead className="h-10 w-[260px] font-mono text-tiny uppercase text-ink-ghost">
+                Streamer
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Akun platform
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Dokumen
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Status
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Diajukan
+              </TableHead>
+              <TableHead className="h-10 w-[260px] font-mono text-tiny uppercase text-ink-ghost">
+                Aksi
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {submissions.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={6} className="py-10 text-center text-sm text-gray-500">
+              <TableRow className="border-hairline-soft hover:bg-transparent">
+                <TableCell
+                  colSpan={6}
+                  className="px-4 py-12 text-center text-copy text-ink-soft"
+                >
                   Tidak ada pengajuan verifikasi pada filter ini.
                 </TableCell>
               </TableRow>
@@ -486,28 +518,32 @@ export default async function StreamerVerificationPage({
             {submissions.map((submission) => {
               const streamer = submission.streamer;
               const isDecided = submission.status !== "pending";
+              const statusText = STATUS_TEXT[submission.status];
 
               return (
-                <TableRow key={submission.id} className="align-top hover:bg-gray-50/50">
-                  <TableCell>
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gray-100">
-                        <User className="h-5 w-5 text-gray-500" />
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">
+                <TableRow
+                  key={submission.id}
+                  className="border-hairline-soft align-top transition-colors hover:bg-surface-raised"
+                >
+                  <TableCell className="px-4 py-3.5">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-surface-tint text-ink-soft">
+                        <User className="h-4 w-4" />
+                      </span>
+                      <div className="min-w-0">
+                        <div className="truncate text-ui font-medium text-ink">
                           {fullName(streamer)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className="truncate text-meta text-ink-soft">
                           {submission.user?.email || "Email tidak tersedia"}
                         </div>
-                        <div className="mt-0.5 text-xs text-gray-400">
+                        <div className="mt-0.5 truncate text-mini text-ink-faint">
                           {streamer?.username ? `@${streamer.username}` : "Belum punya username"}
                           {" · "}
                           {streamer?.city_slug || streamer?.location || "Kota tidak diisi"}
                         </div>
                         {submission.user?.phone && (
-                          <div className="text-xs text-gray-400">
+                          <div className="numeric truncate text-mini text-ink-faint">
                             {submission.user.phone}
                           </div>
                         )}
@@ -515,17 +551,17 @@ export default async function StreamerVerificationPage({
                     </div>
                   </TableCell>
 
-                  <TableCell>
-                    <div className="text-sm font-medium text-gray-900">
-                      {submission.platform_handle || "-"}
+                  <TableCell className="px-4 py-3.5">
+                    <div className="text-copy font-medium text-ink">
+                      {submission.platform_handle || "—"}
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-mini text-ink-soft">
                       {streamer?.platform || "Platform tidak diisi"}
                     </div>
                   </TableCell>
 
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
+                  <TableCell className="px-4 py-3.5">
+                    <div className="flex flex-col items-start gap-1">
                       <DocumentLink
                         href={viewableUrl(submission.id_card_url, signedDocuments)}
                         label="KTP"
@@ -544,29 +580,31 @@ export default async function StreamerVerificationPage({
                     </div>
                   </TableCell>
 
-                  <TableCell>
-                    <div className="flex flex-col gap-1.5">
-                      <VerificationStatusBadge status={submission.status} />
+                  <TableCell className="px-4 py-3.5">
+                    <div className="flex flex-col gap-1">
+                      <span className={`text-copy font-medium ${statusText.tone}`}>
+                        {statusText.label}
+                      </span>
                       {streamer?.is_active === false && (
-                        <span className="text-[11px] text-gray-500">
+                        <span className="text-mini text-ink-soft">
                           Akun nonaktif
                         </span>
                       )}
                       {submission.notes && (
-                        <span className="text-[11px] text-gray-500">
+                        <span className="text-mini text-ink-soft">
                           Catatan: {submission.notes}
                         </span>
                       )}
                     </div>
                   </TableCell>
 
-                  <TableCell className="text-sm text-gray-500">
+                  <TableCell className="numeric whitespace-nowrap px-4 py-3.5 text-copy text-ink-soft">
                     {formatDate(submission.created_at)}
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell className="px-4 py-3.5">
                     {isDecided ? (
-                      <p className="text-xs text-gray-500">
+                      <p className="text-mini text-ink-soft">
                         Sudah diproses. Status streamer saat ini:{" "}
                         {streamer?.verification_status || "tidak diketahui"}.
                       </p>
@@ -580,15 +618,21 @@ export default async function StreamerVerificationPage({
                           />
                           <Button
                             type="submit"
+                            variant="brand"
                             size="sm"
-                            className="w-full bg-green-600 text-white hover:bg-green-700"
+                            className="w-full"
                           >
                             <CheckCircle2 className="mr-1.5 h-4 w-4" />
                             Setujui
                           </Button>
                         </form>
 
-                        <form action={rejectStreamerVerification} className="space-y-2">
+                        {/*
+                          Reject stays its own form under its own reason field:
+                          the reason is required and is sent to the streamer, so
+                          the button has to live with the textarea it validates.
+                        */}
+                        <form action={rejectStreamerVerification} className="space-y-1.5">
                           <input
                             type="hidden"
                             name="submissionId"
@@ -598,14 +642,14 @@ export default async function StreamerVerificationPage({
                             name="rejectionReason"
                             required
                             rows={2}
-                            placeholder="Alasan penolakan (wajib, dikirim ke streamer)"
-                            className="w-full rounded-md border border-gray-200 px-2.5 py-1.5 text-xs text-gray-700 placeholder:text-gray-400 focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-200"
+                            placeholder="Alasan penolakan, wajib dan dikirim ke streamer"
+                            className="w-full rounded-field border border-hairline-input bg-surface px-2.5 py-1.5 text-mini text-ink-body placeholder:text-ink-ghost focus:border-hairline-strong focus:outline-none focus:ring-1 focus:ring-hairline-strong"
                           />
                           <Button
                             type="submit"
+                            variant="danger"
                             size="sm"
-                            variant="outline"
-                            className="w-full border-red-200 text-red-600 hover:bg-red-50"
+                            className="w-full"
                           >
                             <XCircle className="mr-1.5 h-4 w-4" />
                             Tolak
@@ -621,33 +665,33 @@ export default async function StreamerVerificationPage({
         </Table>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-4">
-          <div className="text-sm text-gray-500">
-            Menampilkan {rangeStart}-{rangeEnd} dari {total} pengajuan
+        <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2 border-t border-hairline px-4 py-3">
+          <div className="numeric text-mini text-ink-soft">
+            Menampilkan {rangeStart}–{rangeEnd} dari {total} pengajuan
             {totalPages > 1 && ` · halaman ${page} dari ${totalPages}`}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             {page > 1 ? (
               <Link
                 href={queueHref({ status, q: query, page: page - 1 })}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-field border border-hairline-input bg-surface px-3 py-1.5 text-copy text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
               >
                 Sebelumnya
               </Link>
             ) : (
-              <span className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+              <span className="rounded-field border border-hairline-soft px-3 py-1.5 text-copy text-ink-ghost">
                 Sebelumnya
               </span>
             )}
             {page < totalPages ? (
               <Link
                 href={queueHref({ status, q: query, page: page + 1 })}
-                className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                className="rounded-field border border-hairline-input bg-surface px-3 py-1.5 text-copy text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink"
               >
                 Berikutnya
               </Link>
             ) : (
-              <span className="rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300">
+              <span className="rounded-field border border-hairline-soft px-3 py-1.5 text-copy text-ink-ghost">
                 Berikutnya
               </span>
             )}

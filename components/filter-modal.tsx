@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Star, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -106,83 +106,110 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
     return count;
   };
 
+  /*
+    Every facet used to be blue: a blue close icon, a blue tint on each selected
+    chip, a blue hover on each unselected one, blue stars, a blue "clear" link
+    and a blue apply button. That is seven accents on one panel, and the only
+    one that means "press this to continue" is the last.
+
+    Selection is now stated the way the rest of the redesign states it — a
+    darker edge and a quiet fill on the chip you chose — so the single blue
+    thing on the screen is the button that closes the modal.
+
+    Section headings pair a mono index with a serif title, matching every other
+    section in the product.
+  */
+  const sections = [
+    { index: '01', title: 'Harga per jam' },
+    { index: '02', title: 'Kota' },
+    { index: '03', title: 'Platform' },
+    { index: '04', title: 'Rating' },
+  ];
+
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
-      <DialogContent className="sm:max-w-[600px] p-0">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b">
+      <DialogContent className="gap-0 overflow-hidden rounded-frame border border-hairline bg-surface p-0 sm:max-w-[600px]">
+        <div className="flex items-center gap-3 border-b border-hairline px-5 py-4">
+          <DialogTitle className="min-w-0 flex-1 font-serif text-title font-semibold text-ink">
+            Filter
+          </DialogTitle>
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-full p-2 hover:bg-blue-50 transition-colors"
+            aria-label="Tutup"
+            className="-mr-1.5 grid h-8 w-8 shrink-0 place-items-center rounded-field text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink"
           >
-            <X className="h-4 w-4 text-blue-600" />
+            <X className="h-4 w-4" />
           </button>
-          <h2 className="text-base font-semibold">Filter</h2>
-          <div className="w-8" />
         </div>
 
-        {/* Content */}
-        <div className="px-6 py-6 max-h-[calc(100vh-180px)] overflow-y-auto">
-          {/* Price Range */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">Price Range</h3>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <label className="block text-sm text-gray-600 mb-2">minimum price</label>
-                <div className="flex items-center h-10 px-3 border rounded-lg">
-                  <span className="text-gray-500">Rp</span>
+        <div className="max-h-[calc(100vh-220px)] overflow-y-auto px-5 py-5 sm:px-6">
+          <div className="mb-7">
+            <h3 className="mb-3 flex items-baseline gap-2.5">
+              <span className="numeric text-mini font-semibold text-ink-ghost">{sections[0].index}</span>
+              <span className="font-serif text-lede font-semibold text-ink">{sections[0].title}</span>
+            </h3>
+            <div className="flex items-end gap-3">
+              <div className="min-w-0 flex-1">
+                <label className="mb-1.5 block text-meta text-ink-soft">Terendah</label>
+                <div className="flex h-11 items-center rounded-field border border-hairline-input bg-surface px-3 focus-within:border-brand">
+                  <span className="shrink-0 text-copy text-ink-faint">Rp</span>
                   <input
                     type="number"
                     value={filters.priceRange[0] || ''}
                     onChange={(e) => handlePriceChange('min', e.target.value)}
-                    className="w-full ml-1 focus:outline-none"
-                    placeholder="50,000"
+                    className="numeric ml-1.5 w-full min-w-0 bg-transparent text-ui text-ink outline-none placeholder:text-ink-faint"
+                    placeholder="50.000"
                   />
                 </div>
               </div>
-              <div className="flex items-center pt-8">
-                <div className="w-4 h-[1px] bg-gray-300" />
-              </div>
-              <div className="flex-1">
-                <label className="block text-sm text-gray-600 mb-2">maximum price</label>
-                <div className="flex items-center h-10 px-3 border rounded-lg">
-                  <span className="text-gray-500">Rp</span>
+              <div className="mb-5 h-px w-3 shrink-0 bg-hairline-strong" />
+              <div className="min-w-0 flex-1">
+                <label className="mb-1.5 block text-meta text-ink-soft">Tertinggi</label>
+                <div className="flex h-11 items-center rounded-field border border-hairline-input bg-surface px-3 focus-within:border-brand">
+                  <span className="shrink-0 text-copy text-ink-faint">Rp</span>
                   <input
                     type="number"
                     value={filters.priceRange[1] || ''}
                     onChange={(e) => handlePriceChange('max', e.target.value)}
-                    className="w-full ml-1 focus:outline-none"
-                    placeholder="1,000,000"
+                    className="numeric ml-1.5 w-full min-w-0 bg-transparent text-ui text-ink outline-none placeholder:text-ink-faint"
+                    placeholder="1.000.000"
                   />
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Location */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">Location</h3>
+          <div className="mb-7">
+            <h3 className="mb-3 flex items-baseline gap-2.5">
+              <span className="numeric text-mini font-semibold text-ink-ghost">{sections[1].index}</span>
+              <span className="font-serif text-lede font-semibold text-ink">{sections[1].title}</span>
+            </h3>
             <Input
               value={filters.location}
               onChange={(e) => handleLocationChange(e.target.value)}
-              placeholder="Enter city name"
-              className="h-10"
+              placeholder="Tulis nama kota"
+              className="h-11 rounded-field border-hairline-input bg-surface text-ui text-ink placeholder:text-ink-faint focus-visible:border-brand focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>
 
-          {/* Platforms */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-4">Platform</h3>
+          <div className="mb-7">
+            <h3 className="mb-3 flex items-baseline gap-2.5">
+              <span className="numeric text-mini font-semibold text-ink-ghost">{sections[2].index}</span>
+              <span className="font-serif text-lede font-semibold text-ink">{sections[2].title}</span>
+            </h3>
             <div className="flex flex-wrap gap-2">
               {PLATFORMS.map((platform) => (
                 <button
                   key={platform.id}
+                  type="button"
+                  aria-pressed={isPlatformSelected(platform.id)}
                   onClick={() => togglePlatform(platform.id)}
                   className={cn(
-                    "h-10 px-6 rounded-lg border text-sm font-medium transition-all duration-200",
+                    "h-10 rounded-pill border px-5 text-copy font-medium transition-colors",
                     isPlatformSelected(platform.id)
-                      ? "border-blue-600 bg-blue-50 text-blue-600"
-                      : "border-gray-200 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
+                      ? "border-ink bg-surface-deep text-ink"
+                      : "border-hairline-input bg-surface text-ink-muted hover:border-hairline-strong hover:text-ink"
                   )}
                 >
                   {platform.label}
@@ -191,42 +218,57 @@ export function FilterModal({ isOpen, onClose, onApplyFilters, initialFilters }:
             </div>
           </div>
 
-          {/* Rating */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Minimum Rating</h3>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((rating) => (
-                <button
-                  key={rating}
-                  onClick={() => handleRatingChange(rating)}
-                  className={cn(
-                    "flex items-center gap-1.5 h-10 px-4 rounded-lg border text-sm font-medium transition-all duration-200",
-                    filters.minRating === rating
-                      ? "border-blue-600 bg-blue-50 text-blue-600"
-                      : "border-gray-200 hover:bg-blue-50 hover:border-blue-600 hover:text-blue-600"
-                  )}
-                >
-                  {rating} <Star className={cn("w-4 h-4", filters.minRating === rating ? "fill-blue-600" : "fill-none stroke-blue-600")} />
-                </button>
-              ))}
+            <h3 className="mb-3 flex items-baseline gap-2.5">
+              <span className="numeric text-mini font-semibold text-ink-ghost">{sections[3].index}</span>
+              <span className="font-serif text-lede font-semibold text-ink">{sections[3].title}</span>
+              <span className="text-meta text-ink-soft">minimal</span>
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5].map((rating) => {
+                const active = filters.minRating === rating;
+                return (
+                  <button
+                    key={rating}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => handleRatingChange(rating)}
+                    className={cn(
+                      "flex h-10 items-center gap-1.5 rounded-pill border px-4 text-copy font-medium transition-colors",
+                      active
+                        ? "border-ink bg-surface-deep text-ink"
+                        : "border-hairline-input bg-surface text-ink-muted hover:border-hairline-strong hover:text-ink"
+                    )}
+                  >
+                    <span className="numeric">{rating}</span>
+                    <Star
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        active ? "fill-ink text-ink" : "fill-none text-ink-ghost"
+                      )}
+                    />
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t bg-white">
-          <Button
-            variant="link"
+        <div className="flex flex-nowrap items-center gap-3 border-t border-hairline bg-surface-tint px-5 py-4 sm:px-6">
+          <button
+            type="button"
             onClick={handleClear}
-            className="text-sm font-medium text-blue-600 hover:text-blue-700 underline decoration-1 underline-offset-4 hover:decoration-2"
+            className="min-w-0 shrink text-copy font-medium text-ink-muted underline decoration-hairline-strong underline-offset-4 transition-colors hover:text-ink hover:decoration-ink"
           >
-            Clear all
-          </Button>
+            Bersihkan semua filter
+          </button>
           <Button
+            variant="brand"
+            size="action"
             onClick={handleApply}
-            className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium h-10 px-6 rounded-lg"
+            className="ml-auto shrink-0"
           >
-            Show results
+            Lihat hasil
           </Button>
         </div>
       </DialogContent>

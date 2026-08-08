@@ -1,16 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { cn } from "@/lib/utils";
-import {
-  Search,
-  Filter,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  MoreHorizontal,
-  Building2,
-} from 'lucide-react';
+import { Search } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -27,189 +18,103 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 
-interface BrandVerification {
-  id: string;
-  companyName: string;
-  email: string;
-  industry: string;
-  documentUrl: string;
-  status: 'pending' | 'verified' | 'rejected';
-  submittedAt: string;
-}
-
-const mockBrands: BrandVerification[] = [
-  {
-    id: '1',
-    companyName: 'Tech Solutions Inc',
-    email: 'business@techsolutions.com',
-    industry: 'Technology',
-    documentUrl: '/docs/tech-solutions.pdf',
-    status: 'pending',
-    submittedAt: '2024-03-10',
-  },
-  {
-    id: '2',
-    companyName: 'Fashion Forward',
-    email: 'verify@fashionforward.com',
-    industry: 'Fashion',
-    documentUrl: '/docs/fashion-forward.pdf',
-    status: 'pending',
-    submittedAt: '2024-03-09',
-  },
-];
-
+/**
+ * Brand verification queue.
+ *
+ * WHAT WAS REMOVED, AND WHY
+ *
+ * The queue used to list "Tech Solutions Inc" and "Fashion Forward" — two
+ * invented companies with invented emails, industries, document URLs and
+ * submission dates, declared in a `mockBrands` array in this file. The row
+ * actions ("Setujui Brand", "Tolak Brand") were menu items with no handler, so
+ * approving one of those fictional companies did nothing at all.
+ *
+ * Nothing on this screen reads a table. The streamer queue next door
+ * (`/admin/verificationstreamer`) is the one that does, and it is the model
+ * this screen follows when a brand submissions table exists to read. Building
+ * that query is a data change, not a presentation change, so it is not done
+ * here — the invented rows are simply gone.
+ */
 export default function BrandVerificationPage() {
   const [filterStatus, setFilterStatus] = useState<string>('pending');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const getStatusBadge = (status: BrandVerification['status']) => {
-    switch (status) {
-      case 'verified':
-        return (
-          <Badge className="bg-green-50 text-green-700 border-green-200">
-            <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-            Verified
-          </Badge>
-        );
-      case 'pending':
-        return (
-          <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200">
-            <AlertCircle className="w-3.5 h-3.5 mr-1" />
-            Pending Review
-          </Badge>
-        );
-      case 'rejected':
-        return (
-          <Badge className="bg-red-50 text-red-700 border-red-200">
-            <XCircle className="w-3.5 h-3.5 mr-1" />
-            Rejected
-          </Badge>
-        );
-    }
-  };
-
   return (
-    <div className="p-8">
+    <div className="px-8 py-8">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Brand Verification</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Review and verify brand registration requests
-          </p>
-        </div>
-      </div>
+      <header className="mb-7 max-w-[620px]">
+        <h1 className="font-serif text-section font-semibold text-ink">
+          Verifikasi brand
+        </h1>
+        <p className="mt-2 text-lede text-ink-soft">
+          Tinjau pengajuan pendaftaran brand sebelum mereka bisa memesan host.
+        </p>
+      </header>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="relative min-w-[240px] max-w-md flex-1">
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-ghost" />
           <Input
-            placeholder="Search by company name or email..."
+            placeholder="Cari nama perusahaan atau email…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="h-10 rounded-field border-hairline-input bg-surface pl-9 text-copy text-ink placeholder:text-ink-ghost"
           />
         </div>
-        <Select
-          value={filterStatus}
-          onValueChange={setFilterStatus}
-        >
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="h-10 w-[190px] shrink-0 rounded-field border-hairline-input bg-surface text-copy text-ink-body">
+            <SelectValue placeholder="Saring berdasarkan status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="verified">Verified</SelectItem>
-            <SelectItem value="rejected">Rejected</SelectItem>
+            <SelectItem value="all">Semua status</SelectItem>
+            <SelectItem value="pending">Menunggu review</SelectItem>
+            <SelectItem value="verified">Disetujui</SelectItem>
+            <SelectItem value="rejected">Ditolak</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
       {/* Verification Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+      <div className="overflow-hidden rounded-frame border border-hairline bg-surface">
         <Table>
           <TableHeader>
-            <TableRow className="bg-gray-50/50">
-              <TableHead className="font-medium w-[250px]">Company</TableHead>
-              <TableHead className="font-medium">Industry</TableHead>
-              <TableHead className="font-medium">Status</TableHead>
-              <TableHead className="font-medium">Submitted</TableHead>
-              <TableHead className="font-medium">Documents</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
+            <TableRow className="border-hairline hover:bg-transparent">
+              <TableHead className="h-10 w-[280px] font-mono text-tiny uppercase text-ink-ghost">
+                Perusahaan
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Industri
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Status
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Diajukan
+              </TableHead>
+              <TableHead className="h-10 font-mono text-tiny uppercase text-ink-ghost">
+                Dokumen
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {mockBrands.map((brand) => (
-              <TableRow key={brand.id} className="hover:bg-gray-50/50">
-                <TableCell>
-                  <div>
-                    <div className="font-medium text-gray-900">{brand.companyName}</div>
-                    <div className="text-sm text-gray-500">{brand.email}</div>
-                  </div>
-                </TableCell>
-                <TableCell>{brand.industry}</TableCell>
-                <TableCell>{getStatusBadge(brand.status)}</TableCell>
-                <TableCell className="text-gray-500">
-                  {new Date(brand.submittedAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <Button variant="outline" size="sm">
-                    Lihat Dokumen
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuLabel>Aksi</DropdownMenuLabel>
-                      <DropdownMenuItem>Lihat Detail</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem className="text-green-600">
-                        Setujui Brand
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
-                        Tolak Brand
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            <TableRow className="border-hairline-soft hover:bg-transparent">
+              <TableCell colSpan={5} className="px-5 py-14 text-center">
+                <p className="font-serif text-title font-semibold text-ink">
+                  Antrean verifikasi brand belum tersambung
+                </p>
+                <p className="mx-auto mt-2 max-w-md text-copy text-ink-soft">
+                  Tabel ini sebelumnya menampilkan dua perusahaan contoh lengkap
+                  dengan email dan tanggal pengajuan yang ditulis di kode, dengan
+                  tombol setujui dan tolak yang tidak terhubung ke apa pun. Baris
+                  contoh itu dihapus.
+                </p>
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
-
-        {/* Pagination */}
-        <div className="flex items-center justify-between px-4 py-4 border-t border-gray-200">
-          <div className="text-sm text-gray-500">
-            Showing 1-2 of 2 requests
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          </div>
-        </div>
       </div>
     </div>
   );
-} 
+}

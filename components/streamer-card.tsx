@@ -3,13 +3,13 @@ import Image from 'next/image';
 import { subtotalWithPlatformFee } from '@/lib/pricing';
 import {
   Star,
-  StarHalf,
   MapPin,
   User,
   Clock,
-  Monitor,
+  Music2,
+  Radio,
+  ShoppingBag,
   X,
-  Info,
 } from "lucide-react";
 
 import { CardActionBar } from "./ui/card-action-bar";
@@ -24,7 +24,7 @@ import {
 
 import { createClient } from "@/utils/supabase/client";
 import { resolveCity } from '@/lib/cities';
-import { VerificationBadge } from './ui/verification-badge';
+import { VerificationBadge, isVerificationApproved } from './ui/verification-badge';
 import {
   format,
 } from 'date-fns';
@@ -34,9 +34,6 @@ import { useRouter } from 'next/navigation';
 import { createOrGetConversation } from '@/services/message-service';
 
 import { cn } from '@/lib/utils';
-import {
-  calculatePriceWithPlatformFee,
-} from '@/lib/booking-rules';
 
 
 
@@ -179,6 +176,21 @@ const NO_RATING_LABEL = 'Belum ada rating';
 const NO_LOCATION_LABEL = 'Lokasi belum diatur';
 const NO_PRICE_LABEL = 'Harga belum diatur';
 
+/**
+ * The card's own wording for an unrated host. "Belum ada rating" describes a
+ * missing *number*; on the card the slot is where a brand looks for what other
+ * brands said, so it names the missing *thing* instead. Never a 0,0 — a zero
+ * there reads as a verdict on a real person rather than an absence.
+ */
+const NO_REVIEWS_LABEL = 'Belum ada ulasan';
+
+/**
+ * The booking rule that decides what a brand actually pays, so it belongs next
+ * to the hourly price rather than three screens later in the booking flow.
+ * Same wording as the public profile (`app/[username]`) and the booking step.
+ */
+const MIN_DURATION_LABEL = 'minimal 2 jam';
+
 /** Same stand-in avatar the bookings and messages surfaces use. */
 const PLACEHOLDER_AVATAR = '/default-avatar.png';
 
@@ -193,48 +205,16 @@ function streamerLocationLabel(streamer: Pick<Streamer, 'location' | 'city_slug'
   return city?.name || streamer.location?.trim() || NO_LOCATION_LABEL;
 }
 
-function RatingStars({ rating }: { rating: number | null | undefined }) {
-  // An unrated host is not a zero-rated host, and a non-numeric rating would
-  // make Math.floor return NaN — which Array(NaN) rejects outright.
-  if (rating == null || !Number.isFinite(rating) || rating <= 0) {
-    return (
-      <div className="flex items-center font-sans">
-        {[...Array(5)].map((_, i) => (
-          <Star key={i} className="w-3 h-3 text-gray-300" />
-        ))}
-        <span className="ml-1 text-[10px] text-foreground/70">{NO_RATING_LABEL}</span>
-      </div>
-    );
-  }
-
-  const safeRating = Math.min(rating, 5);
-  const fullStars = Math.floor(safeRating);
-  const hasHalfStar = safeRating % 1 >= 0.5;
-
-  return (
-    <div className="flex items-center font-sans">
-      {[...Array(fullStars)].map((_, i) => (
-        <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-      ))}
-      {hasHalfStar && <StarHalf className="w-3 h-3 fill-yellow-400 text-yellow-400" />}
-      {[...Array(Math.max(0, 5 - fullStars - (hasHalfStar ? 1 : 0)))].map((_, i) => (
-        <Star key={i + fullStars + (hasHalfStar ? 1 : 0)} className="w-3 h-3 text-gray-300" />
-      ))}
-      <span className="ml-1 text-[10px] text-foreground/70">
-        {safeRating.toFixed(1)}
-      </span>
-    </div>
-  );
-}
-
-// Update the formatPrice function to use adjusted price
-function formatPrice(price: number): string {
-  const adjustedPrice = subtotalWithPlatformFee(price); // base + 30% platform fee
-  if (adjustedPrice < 1000) {
-    return `Rp ${Math.round(adjustedPrice)}/hour`;
-  }
-  const firstTwoDigits = Math.floor(adjustedPrice / 1000);
-  return `Rp ${firstTwoDigits}K/hour`;
+/**
+ * The rating a brand can actually read, or null.
+ *
+ * `rating` is nullable, and a half-finished row can carry a string or a NaN, so
+ * everything that is not a usable number collapses to null here and the card
+ * says {@link NO_REVIEWS_LABEL} instead of printing a figure nobody earned.
+ */
+function usableRating(rating: number | null | undefined): number | null {
+  if (typeof rating !== 'number' || !Number.isFinite(rating) || rating <= 0) return null;
+  return Math.min(rating, 5);
 }
 
 // First, add a helper function to format the name
@@ -260,9 +240,16 @@ function formatDiscount(basePrice: number | null | undefined, previousPrice?: nu
     return { displayPrice: NO_PRICE_LABEL, hasPrice: false };
   }
 
-  // Calculate prices with platform fee
-  const currentPriceWithFee = calculatePriceWithPlatformFee(basePrice);
-  const previousPriceWithFee = previousPrice ? calculatePriceWithPlatformFee(previousPrice) : null;
+  // The brand-facing price: base + the 30% platform fee, straight from the
+  // pricing module. This used to call `calculatePriceWithPlatformFee` from
+  // `@/lib/booking-rules`, which computes `base * (1 + 30/100)` — bit-identical
+  // to `base * 1.3`, so no quoted figure moves — but it left the card quoting
+  // from a second copy of the fee. There is one fee model; it lives in
+  // `@/lib/pricing`, and the booking flow it hands off to already reads it from
+  // there. A card and a checkout that disagree about the price is the failure
+  // this file is most exposed to.
+  const currentPriceWithFee = subtotalWithPlatformFee(basePrice);
+  const previousPriceWithFee = previousPrice ? subtotalWithPlatformFee(previousPrice) : null;
 
   console.log('Price values in formatDiscount:', {
     basePrice,
@@ -411,6 +398,46 @@ function normalizePlatforms(streamer: Streamer): string[] {
     .filter(Boolean);
 }
 
+/**
+ * How each platform writes its own name. Keyed on the lowercased values
+ * {@link normalizePlatforms} produces, so the free-text column stays the only
+ * place the raw strings live.
+ *
+ * `full` leads the card's identity row, where a brand is deciding whether this
+ * host streams where their store is. `short` is for the two-platform case,
+ * where "Shopee Live & TikTok Live" would push the row past its own width.
+ */
+const PLATFORM_NAMES: Record<string, { full: string; short: string }> = {
+  shopee: { full: 'Shopee Live', short: 'Shopee' },
+  tiktok: { full: 'TikTok Live', short: 'TikTok' },
+};
+
+/**
+ * The glyph for each platform in the dense meta row. Neither product ships a
+ * mark in lucide, so these are the nearest honest stand-ins — a bag for the
+ * storefront, a note for TikTok — and each one carries the platform's real name
+ * as its label, so nothing depends on reading the shape.
+ */
+const PLATFORM_GLYPHS: Record<string, typeof Star> = {
+  shopee: ShoppingBag,
+  tiktok: Music2,
+};
+
+function platformName(platform: string, form: 'full' | 'short'): string {
+  const known = PLATFORM_NAMES[platform];
+  if (known) return known[form];
+  // `platform` is free text, so a value we have no name for still gets shown —
+  // just capitalised. Dropping it would tell a brand this host streams nowhere.
+  return platform.charAt(0).toUpperCase() + platform.slice(1);
+}
+
+/** One label for however many platforms a host actually streams on, or null. */
+function platformLabel(platforms: string[]): string | null {
+  if (platforms.length === 0) return null;
+  if (platforms.length === 1) return platformName(platforms[0], 'full');
+  return platforms.map((platform) => platformName(platform, 'short')).join(' & ');
+}
+
 interface StreamerCardProps {
   streamer: Streamer;
   isSelected?: boolean;
@@ -453,6 +480,25 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
     .map((category) => category.trim())
     .filter(Boolean)
     .slice(0, 3);
+
+  // Everything the card draws, derived once, in the order it is read.
+  const displayName = formatName(streamer.first_name, streamer.last_name);
+  const platforms = normalizePlatforms(streamer);
+  const platformPill = platformLabel(platforms);
+  const cardRating = usableRating(averageRating);
+  // Trust comes from the badge component, not from a second copy of the rule
+  // here: `isVerificationApproved` is the same predicate the badge itself
+  // renders on, so the mark and the scrim behind it can never disagree.
+  const isVerified = isVerificationApproved(streamer.verification_status);
+  // The host's own line about what they do. `bio` is typed non-null but the
+  // column is filled in days after signup, so half-finished rows really do
+  // carry '' — and an empty bold line is worse than no line.
+  const headline = typeof streamer.bio === 'string' ? streamer.bio.trim() : '';
+  // The identity mark. The card has exactly one photo and it is already the
+  // subject of the frame above; repeating it at 24px directly underneath reads
+  // as a duplicate rather than as an avatar, so the mark is the initial the
+  // name itself gives us.
+  const monogram = displayName.charAt(0).toUpperCase();
 
   // Load extended profile only when profile modal is opened
   useEffect(() => {
@@ -731,7 +777,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
           instead; the detail is still on the profile it opens.
         */
         aria-label={[
-          formatName(streamer.first_name, streamer.last_name),
+          displayName,
           priceInfo.hasPrice ? `${priceInfo.displayPrice} per jam` : NO_PRICE_LABEL,
           locationLabel,
           isBookable ? 'terverifikasi' : 'menunggu verifikasi',
@@ -744,127 +790,226 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
         }}
         onMouseEnter={handleCardHover}
       >
-        <div className="relative w-full overflow-hidden" style={{ aspectRatio: '4 / 5' }}>
+        {/*
+          The photo, edge to edge and 4:3.
+
+          It was 4:5 with a row of platform chips laid over it. Portrait is the
+          right crop for one face and the wrong one for a grid: at four columns
+          it made every tile taller than the viewport's share of it, so the row
+          of prices a brand is actually comparing fell below the fold. 4:3 is
+          the same photo, one scroll higher.
+        */}
+        <div
+          className="relative w-full overflow-hidden bg-surface-tint"
+          style={{ aspectRatio: '4 / 3' }}
+        >
           <img
             src={streamerImage(streamer.image_url)}
-            alt={formatName(streamer.first_name, streamer.last_name)}
+            alt={displayName}
             className="h-full w-full object-cover"
           />
+
           {/*
-            Platforms sit on the photo rather than in the text column: they are
-            a property of the image the way a label on a product shot is, and
-            moving them off the text column is what leaves room for the price to
-            lead. Dark translucent, not brand-coloured — an orange Shopee pill
-            and a blue primary button on the same card are two accents.
+            One mark on the photo, and only when it means something.
+            `VerificationBadge` renders nothing for a host who is not approved —
+            an unverified profile reads as "no badge", never as a badge in a
+            softer colour — so the scrim is gated on the same predicate the
+            badge itself uses rather than on a copy of the rule.
           */}
-          <div className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5">
-            {normalizePlatforms(streamer).map((platform) => (
-              <span
-                key={platform}
-                className="rounded-chip bg-ink/[.82] px-2 py-1 text-micro font-semibold
-                  uppercase tracking-[.03em] text-white backdrop-blur-[6px]"
-              >
-                {platform}
-              </span>
-            ))}
-          </div>
+          {isVerified && (
+            <>
+              {/*
+                design-lint-allow: gradient
+
+                The one exception the brief allows. The badge sits on a photo
+                nobody has approved: a light chip on a bright kitchen wall
+                disappears, and there is no flat scrim that survives both a dark
+                studio and an overexposed window. This one fades from the top
+                edge only, so it reads as the light in the photograph rather
+                than as a panel laid over it.
+              */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-ink/30 to-transparent"
+              />
+              <div className="absolute right-2.5 top-2.5 flex max-w-[calc(100%-1.25rem)] justify-end">
+                <VerificationBadge status={streamer.verification_status} />
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="flex flex-1 flex-col gap-2.5 px-4 pb-4 pt-3.5">
+        <div className="flex w-full flex-1 flex-col gap-2 px-4 pb-3 pt-3">
           {/*
-            Price first, at 22px. It is the single fact that decides whether a
-            brand reads the rest of the card, and it used to be set at the same
-            size and weight as the host's name — so the card asked you to
-            compare on the one attribute you cannot see.
+            Who this is, on one line.
+
+            The mark, the name and the platform are one row because they answer
+            one question — is this the right kind of host — and `min-w-0` +
+            `truncate` is what keeps that promise: a long name shortens, it does
+            not push the platform onto a second line where it reads as unrelated.
           */}
-          <div className="flex flex-wrap items-baseline gap-1.5">
+          <div className="flex items-center gap-2">
+            <span
+              aria-hidden="true"
+              className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full
+                border border-hairline bg-surface-tint text-micro font-semibold
+                tracking-normal text-ink-muted"
+            >
+              {monogram}
+            </span>
+            <h3 className="min-w-0 flex-1 truncate text-mini font-medium text-ink">
+              {displayName}
+            </h3>
+            {platformPill && (
+              <span
+                className="shrink-0 rounded-pill border border-hairline-input px-2 py-0.5
+                  text-tiny text-ink-muted"
+              >
+                {platformPill}
+              </span>
+            )}
+          </div>
+
+          {/*
+            The host's own line, one line only. It is prose a person wrote about
+            what they sell, which is the closest thing the listing has to a
+            title — and the fastest way for a brand to rule a card in or out
+            before they look at the price. Dropped entirely when the bio is
+            still empty; a bold blank line is worse than one fewer row.
+          */}
+          {headline && (
+            <span className="block truncate text-ui font-semibold text-ink">{headline}</span>
+          )}
+
+          {/*
+            The price, at 22px, and the loudest thing on the card. It is what a
+            brand is here to compare, and it is the brand-facing figure — base
+            plus the 30% platform fee — because comparing a host's take-home
+            against another host's invoice is not a comparison.
+
+            `whitespace-nowrap` on the row and `shrink-0` on the figure itself:
+            the price never wraps and never truncates. When a discount is
+            running it is the strike-through that gives up width first.
+          */}
+          <div className="flex items-baseline gap-x-2 whitespace-nowrap">
             <span
               className={cn(
-                'numeric text-price font-semibold',
+                'numeric shrink-0 text-price font-semibold',
                 priceInfo.hasPrice ? 'text-ink' : 'text-ink-ghost',
               )}
             >
               {priceInfo.displayPrice}
             </span>
             {priceInfo.hasPrice && (
-              <span className="text-mini text-ink-soft">/ jam</span>
+              <span className="shrink-0 text-mini text-ink-soft">/ jam</span>
             )}
             {priceInfo.originalPrice &&
               priceInfo.discountPercentage &&
               priceInfo.discountPercentage > 0 && (
-                <>
-                  <span className="numeric text-mini text-ink-ghost line-through">
+                <span className="flex min-w-0 items-baseline gap-x-1.5 overflow-hidden">
+                  <span className="numeric truncate text-mini text-ink-ghost line-through">
                     {priceInfo.originalPrice}
                   </span>
-                  <span className="rounded-chip bg-brand-tint px-1.5 py-0.5 text-micro font-semibold tracking-normal text-brand-deep">
+                  {/* Text on the canvas, not a filled chip. The saving is a
+                      fact about the price beside it, not a second thing to
+                      look at — and the card's only fill is already spent on
+                      the verification mark. */}
+                  <span className="shrink-0 text-mini font-medium text-positive">
                     Hemat {priceInfo.discountPercentage}%
+                  </span>
+                </span>
+              )}
+          </div>
+
+          {/*
+            The dense row: where they stream, what they sell, how they scored.
+
+            The reference card carries a count here — sessions, or reviews. The
+            marketplace query selects no count of anything (see
+            `app/api/streamers/route.ts`), so there is nothing to put in that
+            slot and it holds the rating instead: the one number on this card
+            that came from a brand rather than from the host.
+
+            It degrades by truncating the category, never by becoming two lines,
+            and a profile with none of the three loses the row rather than
+            drawing an empty one.
+          */}
+          {(platforms.length > 0 || categoryLabels.length > 0 || cardRating !== null) && (
+            <div className="flex items-center gap-1.5 overflow-hidden">
+              {platforms.length > 0 && (
+                <>
+                  {/* Glyphs, not a second set of pills — the platform is
+                      already named in full a row above; here it only has to be
+                      recognisable while a brand scans a column of cards. */}
+                  <span
+                    className="flex shrink-0 items-center gap-1"
+                    title={platformPill ?? undefined}
+                  >
+                    {platforms.map((platform) => {
+                      const Glyph = PLATFORM_GLYPHS[platform] ?? Radio;
+                      return (
+                        <Glyph
+                          key={platform}
+                          aria-hidden="true"
+                          className="h-3.5 w-3.5 shrink-0 text-ink-faint"
+                        />
+                      );
+                    })}
+                  </span>
+                  <span aria-hidden="true" className="shrink-0 text-mini text-ink-ghost">
+                    ·
                   </span>
                 </>
               )}
-          </div>
 
-          {/*
-            Name and trust on one line. `min-w-0` + `truncate` is what keeps the
-            promise that rows never wrap: a long name shortens, it does not push
-            the verification state onto a second line where it reads as
-            unrelated.
-          */}
-          <div className="flex items-center gap-2">
-            <h3 className="min-w-0 flex-1 truncate text-ui font-medium text-ink">
-              {formatName(streamer.first_name, streamer.last_name)}
-            </h3>
-            {isBookable ? (
-              <span className="shrink-0 rounded-chip border border-positive-line bg-positive-tint px-1.5 py-px text-micro font-semibold tracking-normal text-positive">
-                Terverifikasi
-              </span>
-            ) : (
-              // Status as text, not a filled pill. A yellow block here competes
-              // with the price for the eye and makes an ordinary queue state
-              // look like an error.
-              <span
-                className="shrink-0 text-micro font-medium tracking-normal text-caution"
-                title={UNVERIFIED_BOOKING_MESSAGE}
-              >
-                Menunggu verifikasi
-              </span>
-            )}
-          </div>
+              {categoryLabels.length > 0 && (
+                <span
+                  className="min-w-0 truncate rounded-pill border border-hairline-input
+                    px-2 py-0.5 text-tiny text-ink-muted"
+                  title={categoryLabels.join(', ')}
+                >
+                  {categoryLabels[0]}
+                </span>
+              )}
 
-          {/*
-            Everything else is one quiet column of facts at one size. The old
-            card gave the city an overlay on the photo, the rating a five-star
-            widget, and each category its own bordered chip with an icon —
-            three different visual treatments for three things of equal weight.
-          */}
-          <div className="flex flex-col gap-1 text-meta text-ink-body">
-            <div className="flex items-center gap-1.5 truncate">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
-              <span className="truncate">{locationLabel}</span>
-            </div>
-
-            <div className="flex items-center gap-1.5">
-              {typeof averageRating === 'number' &&
-              Number.isFinite(averageRating) &&
-              averageRating > 0 ? (
-                <>
-                  <Star className="h-3.5 w-3.5 shrink-0 fill-caution-dot text-caution-dot" />
-                  <span className="numeric">{Math.min(averageRating, 5).toFixed(1)}</span>
-                </>
+              {cardRating !== null ? (
+                <span
+                  className="inline-flex shrink-0 items-center gap-1 rounded-pill
+                    border border-hairline-input px-2 py-0.5 text-tiny text-ink-muted"
+                >
+                  <Star
+                    className="h-3 w-3 shrink-0 fill-caution-dot text-caution-dot"
+                    aria-hidden="true"
+                  />
+                  <span className="numeric">{cardRating.toFixed(1)}</span>
+                </span>
               ) : (
-                <>
-                  <Star className="h-3.5 w-3.5 shrink-0 text-ink-ghost" />
-                  <span className="text-ink-soft">{NO_RATING_LABEL}</span>
-                </>
+                // No pill and no empty stars. A bordered slot around "no
+                // reviews" makes an absence look like a score; plain text reads
+                // as what it is — nobody has rated this host yet.
+                <span className="shrink-0 text-tiny text-ink-soft">{NO_REVIEWS_LABEL}</span>
               )}
             </div>
+          )}
+        </div>
 
-            {categoryLabels.length > 0 && (
-              <div className="flex items-center gap-1.5 truncate">
-                <Monitor className="h-3.5 w-3.5 shrink-0 text-ink-faint" />
-                <span className="truncate">{categoryLabels.join(' · ')}</span>
-              </div>
-            )}
-          </div>
+        {/*
+          The footer, under a hairline.
+
+          The reference puts a budget bar here. Salda has no budget: nothing in
+          the schema, nothing in the query, nothing a percentage could honestly
+          be computed from — so the bar is gone rather than drawn empty or
+          drawn full. What sits here instead are the two facts that decide when
+          a brand can actually go live: the host's city, which sets how long the
+          product spends in transit, and the two-hour minimum, which is what
+          the hourly price above is really sold in.
+        */}
+        <div className="flex w-full items-center justify-between gap-3 border-t border-hairline-soft px-4 py-2.5">
+          <span className="inline-flex min-w-0 items-center gap-1.5 text-mini text-ink-soft">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-ink-faint" aria-hidden="true" />
+            <span className="truncate">{locationLabel}</span>
+          </span>
+          <span className="shrink-0 text-mini text-ink-faint">{MIN_DURATION_LABEL}</span>
         </div>
       </button>
 
@@ -886,15 +1031,15 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             */
             className="max-w-2xl w-full h-[85vh] z-[9999] fixed top-[50%] left-[50%] translate-x-[-50%] translate-y-[-50%] p-0 dialog-content-mobile flex flex-col overflow-hidden"
           >
-            <DialogHeader className="shrink-0 bg-white px-6 pb-4 pt-6 flex flex-row items-start justify-between">
+            <DialogHeader className="shrink-0 bg-surface px-6 pb-4 pt-6 flex flex-row items-start justify-between">
               <div>
-                <DialogTitle className="text-xl font-semibold text-gray-900">Streamer Profile</DialogTitle>
-                <DialogDescription className="text-sm text-gray-500 mt-1">
+                <DialogTitle className="text-xl font-semibold text-ink">Streamer Profile</DialogTitle>
+                <DialogDescription className="text-sm text-ink-soft mt-1">
                   View detailed information about this streamer
                 </DialogDescription>
               </div>
-              <DialogClose className="p-2 rounded-full hover:bg-gray-100 transition-colors">
-                <X className="h-5 w-5 text-gray-500" />
+              <DialogClose className="p-2 rounded-full hover:bg-surface-tint transition-colors">
+                <X className="h-5 w-5 text-ink-soft" />
               </DialogClose>
             </DialogHeader>
 
@@ -903,9 +1048,9 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
             <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto px-6 pb-6">
             {isLoadingProfile ? (
               <div className="space-y-4">
-                <div className="h-4 bg-gray-200 rounded animate-pulse" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2" />
+                <div className="h-4 bg-surface-deep rounded animate-pulse" />
+                <div className="h-4 bg-surface-deep rounded animate-pulse w-3/4" />
+                <div className="h-4 bg-surface-deep rounded animate-pulse w-1/2" />
               </div>
             ) : extendedProfile ? (
               <>
@@ -919,13 +1064,13 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                           src={streamerImage(streamer.image_url)}
                           alt={formatName(streamer.first_name, streamer.last_name)}
                           fill
-                          className="rounded-lg object-cover border-2 border-white shadow-md"
+                          className="rounded-lg object-cover border-2 border-white"
                         />
                       </div>
                       <div className="flex items-center gap-1.5">
                         <Star className={cn(
                           "w-4 h-4",
-                          extendedProfile.rating ? "text-yellow-400 fill-yellow-400" : "text-gray-300"
+                          extendedProfile.rating ? "text-caution fill-caution" : "text-ink-ghost"
                         )} />
                         <span className="text-sm font-medium">
                           {extendedProfile.rating ? `${Number(extendedProfile.rating).toFixed(1)} / 5.0` : NO_RATING_LABEL}
@@ -936,19 +1081,19 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                     {/* Right Column - Details */}
                     <div className="flex-1 space-y-4">
                       {/* Name and Title */}
-                      <div className="border-b border-blue-200 pb-3">
+                      <div className="border-b border-hairline pb-3">
                         <div className="flex items-center gap-2">
-                          <h2 className="text-xl font-semibold text-blue-900">
+                          <h2 className="font-serif text-title font-semibold text-ink">
                             {formatName(streamer.first_name, streamer.last_name)}
                           </h2>
                           <VerificationBadge status={streamer.verification_status} />
                         </div>
-                        <p className="text-sm text-blue-600 font-medium">Professional Livestreamer</p>
+                        <p className="text-copy text-ink-soft">Professional Livestreamer</p>
                         {/* Only rendered when the streamer actually has a handle */}
                         {profileHref && (
                           <a
                             href={profileHref}
-                            className="mt-1 inline-block text-xs font-medium text-blue-600 hover:underline"
+                            className="mt-1 inline-block text-mini font-medium text-brand hover:text-brand-hover hover:underline"
                           >
                             Lihat halaman profil &rarr;
                           </a>
@@ -959,44 +1104,44 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-4">
                         {/* Age */}
                         <div className="flex items-center gap-3">
-                          <div className="p-1.5 bg-blue-100 rounded-md">
-                            <User className="w-4 h-4 text-blue-600" />
+                          <div className="rounded-field bg-surface-tint p-1.5">
+                            <User className="h-4 w-4 text-ink-soft" />
                           </div>
                           <div>
-                            <p className="text-xs text-blue-600 font-medium">Age</p>
+                            <p className="text-mini font-medium text-ink-soft">Age</p>
                             <p className="text-sm">{extendedProfile.age ? `${extendedProfile.age} Years` : 'Not specified'}</p>
                           </div>
                         </div>
 
                         {/* Gender */}
                         <div className="flex items-center gap-3">
-                          <div className="p-1.5 bg-blue-100 rounded-md">
-                            <User className="w-4 h-4 text-blue-600" />
+                          <div className="rounded-field bg-surface-tint p-1.5">
+                            <User className="h-4 w-4 text-ink-soft" />
                           </div>
                           <div>
-                            <p className="text-xs text-blue-600 font-medium">Gender</p>
+                            <p className="text-mini font-medium text-ink-soft">Gender</p>
                             <p className="text-sm">{extendedProfile.gender || 'Not specified'}</p>
                           </div>
                         </div>
 
                         {/* Experience */}
                         <div className="flex items-center gap-3">
-                          <div className="p-1.5 bg-blue-100 rounded-md">
-                            <Clock className="w-4 h-4 text-blue-600" />
+                          <div className="rounded-field bg-surface-tint p-1.5">
+                            <Clock className="h-4 w-4 text-ink-soft" />
                           </div>
                           <div>
-                            <p className="text-xs text-blue-600 font-medium">Experience</p>
+                            <p className="text-mini font-medium text-ink-soft">Experience</p>
                             <p className="text-sm">{extendedProfile.experience || 'Not specified'}</p>
                           </div>
                         </div>
 
                         {/* Location */}
                         <div className="flex items-center gap-3">
-                          <div className="p-1.5 bg-blue-100 rounded-md">
-                            <MapPin className="w-4 h-4 text-blue-600" />
+                          <div className="rounded-field bg-surface-tint p-1.5">
+                            <MapPin className="h-4 w-4 text-ink-soft" />
                           </div>
                           <div>
-                            <p className="text-xs text-blue-600 font-medium">Location</p>
+                            <p className="text-mini font-medium text-ink-soft">Location</p>
                             <p className="text-sm">{extendedProfile.location || locationLabel}</p>
                           </div>
                         </div>
@@ -1024,9 +1169,9 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 </div>
 
                 {/* Bio Section */}
-                <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm mb-6">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">About Me</h3>
-                  <p className="text-sm text-gray-600 whitespace-pre-wrap">
+                <div className="bg-surface rounded-panel p-6 border border-hairline mb-6">
+                  <h3 className="text-sm font-semibold text-ink mb-3">About Me</h3>
+                  <p className="text-sm text-ink-muted whitespace-pre-wrap">
                     {extendedProfile.fullBio || extendedProfile.bio || 'Belum ada deskripsi tersedia'}
                   </p>
                 </div>
@@ -1034,12 +1179,12 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                 {/* Featured Content */}
                 {extendedProfile.video_url && (
                   <div className="space-y-4 mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900">Featured Content</h3>
+                    <h3 className="text-lg font-semibold text-ink">Featured Content</h3>
                     <div className="relative w-full max-w-[360px] mx-auto">
                       <div className="relative pb-[177.78%]">  {/* 9:16 aspect ratio */}
                         <iframe
                           src={`https://www.youtube.com/embed/${getYouTubeVideoId(extendedProfile.video_url) || ''}`}
-                          className="absolute inset-0 w-full h-full rounded-xl"
+                          className="absolute inset-0 w-full h-full rounded-panel"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                           allowFullScreen
                         />
@@ -1050,11 +1195,11 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
 
                 {/* Gallery Section */}
                 <div className="mb-8">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Gallery</h3>
+                  <h3 className="text-sm font-semibold text-ink mb-3">Gallery</h3>
                   {isLoadingGallery ? (
                     <div className="grid grid-cols-4 gap-2">
                       {[1, 2, 3, 4].map((n) => (
-                        <div key={n} className="aspect-square bg-gray-200 rounded animate-pulse" />
+                        <div key={n} className="aspect-square bg-surface-deep rounded animate-pulse" />
                       ))}
                     </div>
                   ) : extendedProfile?.gallery?.photos && extendedProfile.gallery.photos.length > 0 ? (
@@ -1062,7 +1207,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                       {extendedProfile.gallery.photos.map((photo) => (
                         <div
                           key={photo.id}
-                          className="aspect-square relative overflow-hidden rounded-lg shadow-sm"
+                          className="aspect-square relative overflow-hidden rounded-lg"
                         >
                           <Image
                             src={photo.photo_url}
@@ -1075,23 +1220,23 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center">No gallery photos available</p>
+                    <p className="text-sm text-ink-soft text-center">No gallery photos available</p>
                   )}
                 </div>
 
                 {/* Testimonials Section */}
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Client Testimonials</h3>
+                  <h3 className="text-sm font-semibold text-ink mb-3">Client Testimonials</h3>
                   {isLoadingTestimonials ? (
                     <div className="space-y-4">
                       {[1, 2].map((n) => (
-                        <div key={n} className="h-20 bg-gray-200 rounded animate-pulse" />
+                        <div key={n} className="h-20 bg-surface-deep rounded animate-pulse" />
                       ))}
                     </div>
                   ) : extendedProfile.testimonials?.length > 0 ? (
                     <div className="grid grid-cols-2 gap-3">
                       {extendedProfile.testimonials.map((testimonial, index) => (
-                        <div key={index} className="bg-white p-3 rounded-lg shadow-sm border border-gray-100">
+                        <div key={index} className="bg-surface p-3 rounded-lg border border-hairline">
                           <div className="flex items-center gap-2 mb-2">
                             <div className="flex">
                               {[1, 2, 3, 4, 5].map((star) => (
@@ -1100,22 +1245,22 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                                   className={cn(
                                     "w-3 h-3",
                                     testimonial.rating >= star 
-                                      ? "text-yellow-400 fill-yellow-400" 
-                                      : "text-gray-300"
+                                      ? "text-caution fill-caution" 
+                                      : "text-ink-ghost"
                                   )}
                                 />
                               ))}
                             </div>
-                            <span className="text-sm font-medium text-blue-600">
+                            <span className="text-copy font-medium text-ink-body">
                               {testimonial.client_name}
                             </span>
                           </div>
-                          <p className="text-sm text-gray-600 italic">"{testimonial.comment}"</p>
+                          <p className="text-sm text-ink-muted italic">"{testimonial.comment}"</p>
                         </div>
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center">No testimonials yet</p>
+                    <p className="text-sm text-ink-soft text-center">No testimonials yet</p>
                   )}
                 </div>
               </>
@@ -1149,7 +1294,7 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
                     toast.error(UNVERIFIED_BOOKING_MESSAGE, {
                       duration: 4000,
                       position: 'top-center',
-                      className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+                      className: 'bg-destructive-subtle text-destructive-emphasis border border-destructive-emphasis/20 px-4 py-3 rounded-panel',
                     });
                     return;
                   }
@@ -1185,29 +1330,38 @@ export function StreamerCard({ streamer, isSelected, onSelect }: StreamerCardPro
 }
 
 /**
- * Mirrors StreamerCard's geometry exactly — same 4/5 image, same panel radius,
- * same hairline, same padding, same four text rows in the same order. A
- * skeleton whose shape differs from the thing it stands in for produces a
- * visible jump on load, which reads as the page breaking rather than finishing.
+ * Mirrors StreamerCard's geometry exactly — same 4/3 image, same panel radius,
+ * same hairline, same padding, same rows in the same order, and the same
+ * hairline-separated footer. A skeleton whose shape differs from the thing it
+ * stands in for produces a visible jump on load, which reads as the page
+ * breaking rather than finishing.
  */
 export function StreamerCardSkeleton() {
   return (
     <div className="flex w-full animate-pulse flex-col overflow-hidden rounded-panel border border-hairline bg-surface">
-      <div className="w-full bg-surface-deep" style={{ aspectRatio: '4 / 5' }} />
-      <div className="flex flex-1 flex-col gap-2.5 px-4 pb-4 pt-3.5">
+      <div className="w-full bg-surface-deep" style={{ aspectRatio: '4 / 3' }} />
+      <div className="flex w-full flex-1 flex-col gap-2 px-4 pb-3 pt-3">
+        {/* mark + name + platform */}
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 shrink-0 rounded-full bg-surface-deep" />
+          <div className="h-[12px] flex-1 rounded-chip bg-surface-deep" />
+          <div className="h-[18px] w-20 shrink-0 rounded-pill bg-surface-deep" />
+        </div>
+        {/* headline */}
+        <div className="h-[14px] w-5/6 rounded-chip bg-surface-deep" />
         {/* price */}
         <div className="h-[22px] w-32 rounded-chip bg-surface-deep" />
-        {/* name + trust */}
-        <div className="flex items-center gap-2">
-          <div className="h-[14px] flex-1 rounded-chip bg-surface-deep" />
-          <div className="h-[14px] w-20 shrink-0 rounded-chip bg-surface-deep" />
+        {/* meta row */}
+        <div className="flex items-center gap-1.5">
+          <div className="h-[14px] w-9 shrink-0 rounded-chip bg-surface-deep" />
+          <div className="h-[18px] w-24 rounded-pill bg-surface-deep" />
+          <div className="h-[18px] w-12 shrink-0 rounded-pill bg-surface-deep" />
         </div>
-        {/* three meta rows */}
-        <div className="flex flex-col gap-1">
-          <div className="h-[13px] w-2/3 rounded-chip bg-surface-deep" />
-          <div className="h-[13px] w-1/4 rounded-chip bg-surface-deep" />
-          <div className="h-[13px] w-1/2 rounded-chip bg-surface-deep" />
-        </div>
+      </div>
+      {/* footer */}
+      <div className="flex w-full items-center justify-between gap-3 border-t border-hairline-soft px-4 py-2.5">
+        <div className="h-[12px] w-24 rounded-chip bg-surface-deep" />
+        <div className="h-[12px] w-16 shrink-0 rounded-chip bg-surface-deep" />
       </div>
     </div>
   );

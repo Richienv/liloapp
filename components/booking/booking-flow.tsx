@@ -14,7 +14,7 @@ import {
   isStreamerBookable,
 } from '@/components/streamer-card';
 import { isSameCity } from '@/lib/cities';
-import { subtotalWithPlatformFee } from '@/lib/pricing';
+import { TAX_RATE, subtotalWithPlatformFee } from '@/lib/pricing';
 import { cn } from '@/lib/utils';
 import { createClient } from '@/utils/supabase/client';
 import {
@@ -30,6 +30,20 @@ import {
   validateRequirementsForDateSelection,
   validateTimeSlotSelection,
 } from '@/lib/booking-rules';
+
+/*
+ * Toast looks, named once.
+ *
+ * These were eleven copies of the same literal, in Tailwind's own red / yellow /
+ * green rather than the design's state tokens — so a booking error and a
+ * verification error, raised two functions apart, could disagree about what red
+ * is. `border-2` went to a hairline with everything else.
+ */
+const TOAST_BASE = 'bg-surface px-4 py-3 rounded-panel border';
+const TOAST_ERROR = `${TOAST_BASE} text-destructive-emphasis border-destructive/30`;
+const TOAST_CAUTION = `${TOAST_BASE} text-caution border-caution-line`;
+const TOAST_SUCCESS = `${TOAST_BASE} text-positive border-positive-line`;
+
 
 function streamerCityValue(streamer: Pick<Streamer, 'location' | 'city_slug'>): string {
   return streamer.city_slug || streamer.location || '';
@@ -394,7 +408,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(requiredFieldsValidation.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       return;
@@ -412,7 +426,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(dateValidation.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_ERROR,
       });
       return;
     }
@@ -497,7 +511,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(UNVERIFIED_BOOKING_MESSAGE, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_ERROR,
       });
       return;
     }
@@ -662,7 +676,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(isRequirementsValid.error, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       return;
@@ -683,7 +697,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error("Tidak ada tanggal yang tersedia untuk pemilihan", {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       setActiveBulkMode(null);
@@ -695,7 +709,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error(`${invalidDates.length} tanggal dilewati karena pembatasan waktu`, {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-yellow-600 border-2 border-yellow-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_CAUTION,
         icon: '⚠️',
       });
     }
@@ -744,7 +758,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
         `Berhasil memilih ${newSelectedDates.size} hari dengan total ${Array.from(newSelectedDates.values()).reduce((total, date) => total + date.totalHours, 0)} jam`, {
           duration: 4000,
           position: 'top-center',
-          className: 'bg-white text-green-600 border-2 border-green-100 shadow-lg px-4 py-3 rounded-xl',
+          className: TOAST_SUCCESS,
           icon: '✓',
         }
       );
@@ -752,7 +766,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
       toast.error("Tidak ada slot waktu yang tersedia untuk periode yang dipilih", {
         duration: 4000,
         position: 'top-center',
-        className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg px-4 py-3 rounded-xl',
+        className: TOAST_ERROR,
         icon: '⚠️',
       });
       setActiveBulkMode(null);
@@ -777,7 +791,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
           toast.error(validation.error, {
             duration: 3000,
             position: 'top-center',
-            className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg',
+            className: TOAST_ERROR,
           });
           return prev;
         }
@@ -802,7 +816,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             toast.error("Tidak dapat memilih jam ini karena durasi 2 jam berikutnya tidak tersedia (total 3 slot)", {
               duration: 3000,
               position: 'top-center',
-              className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg',
+              className: TOAST_ERROR,
             });
             return prev;
           }
@@ -815,7 +829,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
             toast.error(validation.error, {
               duration: 3000,
               position: 'top-center',
-              className: 'bg-white text-red-600 border-2 border-red-100 shadow-lg',
+              className: TOAST_ERROR,
             });
             return prev;
           }
@@ -900,6 +914,17 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
   const basePrice = streamer.price ?? 0;
   const { totalHours, totalPrice } = getTotalHoursAndPrice(selectedDates, basePrice);
   const subtotal = subtotalWithPlatformFee(totalPrice);
+  /**
+   * The rail's two new lines, derived — not invented.
+   *
+   * `TAX_RATE` and the 30% platform fee both come from lib/pricing, and the
+   * arithmetic is the same order /booking-detail already uses (`subtotal * .11`,
+   * then `subtotal + tax`), which is the number the payment call actually
+   * charges. Nothing new is computed, fetched or sent; the screen simply stops
+   * hiding the last line of the sum until the step after this one.
+   */
+  const tax = subtotal * TAX_RATE;
+  const total = subtotal + tax;
   const minimumMet = isMinimumBookingMet();
 
   /**
@@ -939,11 +964,19 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
         Kembali
       </button>
 
-      <h1 className="font-serif text-section font-medium text-ink">
-        Booking {formatName(streamer.first_name, streamer.last_name)}
+      {/* The host's name moves off the H1 and into the eyebrow above it. The
+          screen is "Atur sesi live" — the name is which host, not what this
+          page is — and on a phone the rail that carries the name sits below
+          the whole form, so dropping it from the top entirely would leave the
+          brand with no idea who they are booking until they scroll past it. */}
+      <p className="font-mono text-tiny text-ink-ghost">
+        {formatName(streamer.first_name, streamer.last_name)}
+      </p>
+      <h1 className="mt-1 font-serif text-section font-medium text-ink">
+        Atur sesi live
       </h1>
       <p className="mt-1 text-copy text-ink-soft">
-        Tiga langkah. Kamu bisa ubah apa pun sebelum membayar.
+        Tiga langkah. Kamu bisa kembali kapan saja tanpa kehilangan pilihan.
       </p>
 
       {/* Stepper. Numbers, not a progress bar — a brand needs to know how many
@@ -1003,12 +1036,13 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
               They come first for that reason: asking them after the calendar
               means re-drawing the calendar underneath the brand's answer. */}
           <section className="rounded-panel border border-hairline bg-surface p-5">
-            <h2 className="text-title font-semibold text-ink">Kebutuhan kamu</h2>
+            <h2 className="text-title font-semibold text-ink">Dua hal yang menentukan jadwal</h2>
             <p className="mt-1 text-meta text-ink-soft">
-              Dua hal ini menentukan tanggal paling awal yang bisa dipilih.
+              Pengiriman produk menentukan tanggal paling awal yang bisa kamu pilih. Platform
+              menentukan akun apa yang perlu kamu siapkan nanti.
             </p>
 
-            <p className="mt-4 text-copy font-medium text-ink">Kirim produk ke host?</p>
+            <p className="mt-4 text-copy font-medium text-ink">Perlu kirim produk ke host?</p>
             <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {([
                 { value: 'yes' as ShippingOption, icon: Package, title: 'Ya, kirim produk', body: isSameCityAsClient ? 'Kota sama — bisa mulai besok.' : 'Beda kota — butuh 3 hari untuk pengiriman.' },
@@ -1038,7 +1072,7 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
               })}
             </div>
 
-            <p className="mt-5 text-copy font-medium text-ink">Platform live</p>
+            <p className="mt-5 text-copy font-medium text-ink">Live di platform mana?</p>
             <div className="mt-2 grid grid-cols-1 gap-2.5 sm:grid-cols-2">
               {['Shopee', 'TikTok'].map((option) => {
                 const selected = platform === option;
@@ -1063,18 +1097,15 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
 
           {/* Step 2 — dates and hours. */}
           <section className="rounded-panel border border-hairline bg-surface p-5">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className="text-title font-semibold text-ink">Pilih tanggal</h2>
-              <span className="text-mini text-ink-soft">
-                {format(currentWeekStart, 'MMMM yyyy')}
-              </span>
-            </div>
-
-            <div className="mt-1 flex items-center justify-between">
-              <p className="text-meta text-ink-soft">
-                Minimal 2 jam berurutan per hari.
-              </p>
-              <div className="flex gap-1">
+            {/* Heading, month and the week arrows on one row. The pair of
+                arrows and the month they move never break apart, so the row is
+                nowrap and only the heading is allowed to truncate. */}
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="min-w-0 truncate text-title font-semibold text-ink">Pilih tanggal</h2>
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="whitespace-nowrap text-mini text-ink-soft">
+                  {format(currentWeekStart, 'MMMM yyyy')}
+                </span>
                 <button
                   type="button"
                   onClick={handlePreviousWeek}
@@ -1131,10 +1162,38 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
                     )}
                   >
                     {format(day, 'd')}
-                    {picked && <span className="h-1 w-1 rounded-hair bg-brand" />}
+                    {/* Every cell carries a marker, not just the chosen ones.
+                        Rendering it only when picked made the date jump a pixel
+                        as you selected it, and left the legend below describing
+                        two states the grid never actually drew. */}
+                    <span
+                      className={cn(
+                        'h-1 w-1 rounded-pill',
+                        picked && 'bg-brand',
+                        !picked && disabled && 'bg-hairline-strong',
+                        !picked && !disabled && 'bg-ink-faint',
+                      )}
+                    />
                   </button>
                 );
               })}
+            </div>
+
+            {/* The legend. It is the key to the grid above, so it names the
+                three states in the order a brand meets them. */}
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-mini text-ink-soft">
+                <span className="h-2 w-2 shrink-0 rounded-hair bg-brand" />
+                Terpilih
+              </span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-mini text-ink-soft">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-ink-faint" />
+                Ada slot kosong
+              </span>
+              <span className="flex items-center gap-1.5 whitespace-nowrap text-mini text-ink-soft">
+                <span className="h-1.5 w-1.5 shrink-0 rounded-pill bg-hairline-strong" />
+                Host libur atau penuh
+              </span>
             </div>
 
             {selectedDate && (
@@ -1191,6 +1250,28 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
                 )}
               </div>
             )}
+
+            {/*
+              Why the first click marks three slots.
+
+              The design reference words this as "Kenapa slotnya 2 jam" and
+              explains it with two rules — a 2-hour minimum, and a 2-hour gap
+              between sessions on the same day. Only the first is a rule a brand
+              can meet or break here. The slots are one hour each, not two, and
+              the gap rule in lib/booking-rules is unreachable from this grid:
+              `isHourDisabled` only ever enables hours adjacent to or inside the
+              current block, so a second session on one day cannot be started at
+              all. Printing the reference's wording would have described a
+              product that does not exist, so this says what the grid does.
+            */}
+            <div className="mt-5 rounded-field bg-surface-tint px-4 py-3.5">
+              <p className="text-copy font-medium text-ink">Kenapa minimal 2 jam</p>
+              <p className="mt-1 text-meta text-ink-soft">
+                Satu sesi live minimal 2 jam. Jam pertama yang kamu pilih langsung menandai tiga
+                slot berurutan — awal, tengah, dan akhir dari 2 jam itu. Pilih slot di sebelahnya
+                kalau kamu mau sesi yang lebih panjang.
+              </p>
+            </div>
           </section>
 
           <CardActionBar
@@ -1206,7 +1287,12 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
               'Pilih minimal 2 jam berurutan.'
             ) : (
               <span className="numeric">
-                {selectedDates.size} hari · {totalHours} jam · {rupiah(subtotal)}
+                {/* The rail's Total, not its Subtotal. An unlabelled figure in
+                    the action bar reads as "what this costs", and the figure
+                    the next screen asks the brand to pay is the tax-inclusive
+                    one — showing the smaller number here is how a price
+                    appears to go up at checkout. */}
+                {selectedDates.size} hari · {totalHours} jam · {rupiah(total)}
               </span>
             )}
           </CardActionBar>
@@ -1248,16 +1334,35 @@ export function BookingFlow({ streamer }: BookingFlowProps) {
                 <span className="text-ink-soft">Total jam</span>
                 <span className="numeric text-ink">{totalHours}</span>
               </div>
+              <div className="flex justify-between text-copy">
+                <span className="text-ink-soft">Subtotal</span>
+                <span className="numeric text-ink">{rupiah(subtotal)}</span>
+              </div>
+              <div className="flex justify-between text-copy">
+                <span className="text-ink-soft">Pajak 11%</span>
+                <span className="numeric text-ink">{rupiah(tax)}</span>
+              </div>
               <div className="flex items-baseline justify-between border-t border-hairline-soft pt-2.5">
-                <span className="text-copy font-medium text-ink">Subtotal</span>
-                <span className="numeric text-price font-semibold text-ink">{rupiah(subtotal)}</span>
+                <span className="text-copy font-medium text-ink">Total</span>
+                <span className="numeric text-price font-semibold text-ink">{rupiah(total)}</span>
               </div>
               <p className="text-tiny tracking-normal text-ink-faint">
-                Belum termasuk pajak. Rincian penuh ada di langkah pembayaran.
+                Pembatalan gratis hingga 24 jam sebelum jadwal. Setelah itu dikenakan biaya 50%.
               </p>
             </div>
 
-            {selectedDates.size > 0 && (
+            {selectedDates.size === 0 ? (
+              /* The rail is the only part of the screen that is always in view
+                 on desktop, so it is where "nothing chosen yet" belongs — an
+                 empty summary that says which step is waiting, rather than a
+                 block that silently is not there. */
+              <div className="border-t border-hairline-soft p-4">
+                <p className="text-copy font-medium text-ink">Belum ada tanggal</p>
+                <p className="mt-1 text-meta text-ink-soft">
+                  Kembali ke langkah 2 dan pilih tanggal dulu.
+                </p>
+              </div>
+            ) : (
               <div className="border-t border-hairline-soft p-4">
                 <button
                   type="button"

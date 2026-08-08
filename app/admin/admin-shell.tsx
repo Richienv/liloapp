@@ -16,51 +16,75 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ReactNode;
-  isExpanded?: boolean;
   children?: {
     title: string;
     href: string;
   }[];
 }
 
+/**
+ * Sentence case, Bahasa Indonesia, one word where one word will do.
+ *
+ * The nav used to be "Overview / Streamers / Verification / Reports" — English
+ * Title Case in a product whose every other surface speaks Indonesian in
+ * sentence case. An internal tool is still the same product.
+ */
 const navItems: NavItem[] = [
   {
-    title: "Overview",
+    title: "Ringkasan",
     href: "/admin",
-    icon: <LayoutDashboard className="w-5 h-5" />,
+    icon: <LayoutDashboard className="h-4 w-4" />,
   },
   {
-    title: "Streamers",
+    title: "Streamer",
     href: "/admin/streamers",
-    icon: <Users className="w-5 h-5" />,
+    icon: <Users className="h-4 w-4" />,
   },
   {
-    title: "Verification",
+    title: "Verifikasi",
     href: "#",
-    icon: <ShieldCheck className="w-5 h-5" />,
+    icon: <ShieldCheck className="h-4 w-4" />,
     children: [
-      { title: "Brand Verification", href: "/admin/verificationbrand" },
-      { title: "Streamer Verification", href: "/admin/verificationstreamer" },
+      { title: "Brand", href: "/admin/verificationbrand" },
+      { title: "Streamer", href: "/admin/verificationstreamer" },
     ],
   },
   {
-    title: "Reports",
+    title: "Laporan",
     href: "/admin/reports",
-    icon: <FileText className="w-5 h-5" />,
+    icon: <FileText className="h-4 w-4" />,
   },
   {
-    title: "Vouchers",
+    title: "Voucher",
     href: "/admin/vouchers",
-    icon: <Ticket className="w-5 h-5" />,
+    icon: <Ticket className="h-4 w-4" />,
   },
   {
     // Answers the question the product could not answer at all before: of the
     // people who start signing up, where exactly do they stop?
     title: "Funnel",
     href: "/admin/funnel",
-    icon: <TrendingDown className="w-5 h-5" />,
+    icon: <TrendingDown className="h-4 w-4" />,
   },
 ];
+
+/**
+ * Path segment → what a human calls it.
+ *
+ * The breadcrumb used to be `segment[0].toUpperCase() + segment.slice(1)`,
+ * which turned `/admin/verificationstreamer` into "Admin / Verificationstreamer"
+ * — a route name shown to a person. Anything not in this map still falls back
+ * to the capitalised slug, so a new route degrades instead of disappearing.
+ */
+const CRUMB_LABELS: Record<string, string> = {
+  admin: "Admin",
+  streamers: "Streamer",
+  verificationbrand: "Verifikasi brand",
+  verificationstreamer: "Verifikasi streamer",
+  reports: "Laporan",
+  vouchers: "Voucher",
+  funnel: "Funnel",
+};
 
 export default function AdminShell({
   children,
@@ -72,7 +96,7 @@ export default function AdminShell({
   const getBreadcrumbs = () => {
     const paths = pathname.split('/').filter(Boolean);
     return paths.map((path, index) => ({
-      title: path.charAt(0).toUpperCase() + path.slice(1),
+      title: CRUMB_LABELS[path] ?? path.charAt(0).toUpperCase() + path.slice(1),
       href: '/' + paths.slice(0, index + 1).join('/'),
       isLast: index === paths.length - 1
     }));
@@ -84,21 +108,21 @@ export default function AdminShell({
 
     if (hasChildren && item.children) {
       return (
-        <div key={item.href} className="space-y-1">
-          <div className="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-600">
+        <div key={item.title} className="pt-2">
+          <div className="flex items-center gap-2.5 px-2.5 py-1.5 text-ui text-ink-faint">
             {item.icon}
-            <span>{item.title}</span>
+            <span className="truncate">{item.title}</span>
           </div>
-          <div className="ml-4 space-y-1 border-l-2 border-gray-100 pl-4">
+          <div className="ml-[1.0625rem] space-y-0.5 border-l border-hairline pl-3">
             {item.children.map(child => (
               <Link
                 key={child.href}
                 href={child.href}
                 className={cn(
-                  "block py-2 px-3 text-sm rounded-lg transition-colors",
+                  "block truncate rounded-field px-2.5 py-1.5 text-ui transition-colors",
                   pathname === child.href
-                    ? "text-blue-600 bg-blue-50 font-medium"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-surface-deep font-medium text-ink"
+                    : "text-ink-soft hover:bg-surface-tint hover:text-ink"
                 )}
               >
                 {child.title}
@@ -114,66 +138,67 @@ export default function AdminShell({
         key={item.href}
         href={item.href}
         className={cn(
-          "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
-          "hover:bg-gray-100",
-          isActive ? "text-blue-600 bg-blue-50" : "text-gray-600"
+          "flex items-center gap-2.5 rounded-field px-2.5 py-1.5 text-ui transition-colors",
+          isActive
+            ? "bg-surface-deep font-medium text-ink"
+            : "text-ink-soft hover:bg-surface-tint hover:text-ink"
         )}
       >
         {item.icon}
-        <span>{item.title}</span>
+        <span className="truncate">{item.title}</span>
       </Link>
     );
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/30">
-      <div className="flex h-screen flex-col">
-        <div className="flex flex-1 overflow-hidden">
-          {/* Sidebar */}
-          <aside className="w-64 border-r border-gray-200 bg-white px-4 py-6">
-            <div className="flex items-center gap-2 px-3 mb-8">
-              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                <span className="text-white font-semibold">A</span>
-              </div>
-              <span className="font-semibold text-gray-900">Admin Portal</span>
-            </div>
+    /*
+      One plane, not three. The old shell layered a `bg-surface-tint/30` page
+      under a white sidebar under a white breadcrumb bar, which drew two extra
+      horizontal edges before any content appeared. Canvas everywhere, hairlines
+      for the seams, and white reserved for the cards that hold data.
+    */
+    <div className="flex h-screen flex-col bg-canvas">
+      <div className="flex flex-1 overflow-hidden">
+        <aside className="flex w-60 shrink-0 flex-col overflow-y-auto border-r border-hairline px-3 py-5">
+          <div className="mb-7 flex items-baseline gap-2 px-2.5">
+            <span className="font-serif text-title font-semibold text-ink">
+              Salda
+            </span>
+            <span className="font-mono text-micro uppercase text-ink-ghost">
+              Admin
+            </span>
+          </div>
 
-            <nav className="space-y-1">
-              {navItems.map(renderNavItem)}
-            </nav>
-          </aside>
+          <nav className="space-y-0.5">
+            {navItems.map(renderNavItem)}
+          </nav>
+        </aside>
 
-          {/* Main Content */}
-          <main className="flex-1 overflow-y-auto">
-            {/* Breadcrumb */}
-            <div className="border-b border-gray-200 bg-white">
-              <div className="px-8 py-4">
-                <div className="flex items-center gap-2 text-sm">
-                  {getBreadcrumbs().map((crumb, index) => (
-                    <div key={crumb.href} className="flex items-center">
-                      {index > 0 && <span className="mx-2 text-gray-400">/</span>}
-                      {crumb.isLast ? (
-                        <span className="text-gray-900 font-medium">
-                          {crumb.title}
-                        </span>
-                      ) : (
-                        <Link
-                          href={crumb.href}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          {crumb.title}
-                        </Link>
-                      )}
-                    </div>
-                  ))}
+        <main className="flex-1 overflow-y-auto">
+          <div className="border-b border-hairline px-8 py-3">
+            <div className="flex items-center font-mono text-mini text-ink-soft">
+              {getBreadcrumbs().map((crumb, index) => (
+                <div key={crumb.href} className="flex items-center">
+                  {index > 0 && (
+                    <span className="mx-2 text-ink-ghost">/</span>
+                  )}
+                  {crumb.isLast ? (
+                    <span className="text-ink">{crumb.title}</span>
+                  ) : (
+                    <Link
+                      href={crumb.href}
+                      className="transition-colors hover:text-ink"
+                    >
+                      {crumb.title}
+                    </Link>
+                  )}
                 </div>
-              </div>
+              ))}
             </div>
+          </div>
 
-            {/* Page Content */}
-            {children}
-          </main>
-        </div>
+          {children}
+        </main>
       </div>
     </div>
   );

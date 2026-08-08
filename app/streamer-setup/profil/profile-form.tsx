@@ -2,7 +2,7 @@
 
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Camera, Clock, Info, Loader2, Package, Sparkles, X } from "lucide-react";
+import { Camera, Clock, Info, Loader2, Package, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -294,7 +294,7 @@ export function ProfileForm({
     <form onSubmit={handleSubmit} className="space-y-6" noValidate>
       {/* Profile photo */}
       <div className="space-y-2">
-        <Label htmlFor="image" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="image" className="text-copy font-medium text-ink-body">
           Foto profil
         </Label>
 
@@ -302,8 +302,8 @@ export function ProfileForm({
           <label
             htmlFor="image"
             className="flex h-20 w-20 flex-shrink-0 cursor-pointer items-center justify-center
-              overflow-hidden rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50/50
-              transition-colors hover:border-blue-200 hover:bg-blue-50/40"
+              overflow-hidden rounded-panel border border-dashed border-hairline-input bg-surface-tint
+              transition-colors hover:border-hairline-strong hover:bg-surface-deep"
           >
             {effectiveImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -313,32 +313,34 @@ export function ProfileForm({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <Camera className="h-6 w-6 text-gray-400" />
+              <Camera className="h-5 w-5 text-ink-faint" />
             )}
           </label>
 
+          {/* The picker and its undo share one row and never stack: the label
+              is the button, so it rides the same `quiet` variant as every
+              other secondary action in the product. */}
           <div className="min-w-0 flex-1">
-            <label
-              htmlFor="image"
-              className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl
-                border-2 border-gray-200 px-4 text-sm font-medium text-gray-700 transition-colors
-                hover:bg-gray-50"
-            >
-              {effectiveImageUrl ? "Ganti foto" : "Pilih foto"}
-            </label>
-            {photo && (
-              <button
-                type="button"
-                onClick={clearPhoto}
-                aria-label="Batalkan foto yang dipilih"
-                className="ml-2 inline-flex h-10 items-center gap-1 rounded-xl px-2 text-sm
-                  text-gray-500 transition-colors hover:bg-gray-50 hover:text-gray-700"
-              >
-                <X className="h-4 w-4" />
-                Batal
-              </button>
-            )}
-            <p className="mt-1 text-xs text-gray-500">
+            <div className="flex min-w-0 items-center gap-2">
+              <Button asChild variant="quiet" size="action-compact">
+                <label htmlFor="image" className="cursor-pointer">
+                  {effectiveImageUrl ? "Ganti foto" : "Pilih foto"}
+                </label>
+              </Button>
+              {photo && (
+                <button
+                  type="button"
+                  onClick={clearPhoto}
+                  aria-label="Batalkan foto yang dipilih"
+                  className="inline-flex h-11 shrink-0 items-center gap-1 rounded-lg px-2.5 text-copy
+                    text-ink-soft transition-colors hover:bg-surface-tint hover:text-ink-body"
+                >
+                  <X className="h-4 w-4" />
+                  Batal
+                </button>
+              )}
+            </div>
+            <p className="mt-2 text-meta text-ink-soft">
               Wajah kamu terlihat jelas, JPG/PNG/WEBP, maksimal 5 MB.
             </p>
           </div>
@@ -357,16 +359,16 @@ export function ProfileForm({
 
       {/* Username — pre-filled from their name, shown as the live public URL. */}
       <div className="space-y-2">
-        <Label htmlFor="username" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="username" className="text-copy font-medium text-ink-body">
           Username
         </Label>
         <div
-          className="flex h-12 w-full items-center rounded-xl border border-gray-200 bg-gray-50
-            transition-all duration-200 focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500"
+          className="flex h-12 w-full items-center overflow-hidden rounded-field border border-hairline-input
+            bg-surface transition-colors focus-within:border-brand focus-within:ring-1 focus-within:ring-brand"
         >
           <span
             aria-hidden="true"
-            className="flex h-full select-none items-center border-r border-gray-200 px-4 text-base text-gray-500"
+            className="flex h-full select-none items-center border-r border-hairline-input bg-surface-tint px-3.5 text-ui text-ink-soft"
           >
             salda.id/
           </span>
@@ -383,34 +385,38 @@ export function ProfileForm({
             autoCorrect="off"
             spellCheck={false}
             aria-describedby="username-help"
-            className="h-full w-full min-w-0 flex-1 rounded-r-xl bg-transparent px-4 text-base outline-none
-              placeholder:text-gray-400"
+            className="h-full w-full min-w-0 flex-1 bg-transparent px-3.5 text-ink outline-none
+              placeholder:text-ink-ghost"
             placeholder="rizky-pratama"
             style={{ fontSize: "16px" }}
           />
         </div>
-        <p id="username-help" className="text-xs text-gray-500">
+        <p id="username-help" className="text-meta text-ink-soft">
           Alamat profil publik kamu:{" "}
-          <span className="font-medium text-gray-800">salda.id/{username || "…"}</span>. Sudah
+          <span className="font-medium text-ink">salda.id/{username || "…"}</span>. Sudah
           kami isi dari namamu — ubah kalau mau.
         </p>
       </div>
 
       {/* City — canonical slug only, and the time zone is derived, never asked. */}
       <div className="space-y-2">
-        <Label htmlFor="city" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="city" className="text-copy font-medium text-ink-body">
           Kota
         </Label>
+        {/* The combobox ships with the old geometry (12px radius, tinted fill);
+            it takes a className, so it is brought onto the same field shape as
+            every other input on this form without touching the shared file. */}
         <CityCombobox
           id="city"
           value={citySlug}
           onChange={setCitySlug}
           aria-describedby="city-help"
+          className="rounded-field bg-surface px-3.5"
         />
-        <p id="city-help" className="text-xs text-gray-500">
+        <p id="city-help" className="text-meta text-ink-soft">
           {city ? (
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-3.5 w-3.5 text-gray-400" />
+              <Clock className="h-3.5 w-3.5 text-ink-ghost" />
               Zona waktu kamu {TIMEZONE_LABEL[city.timezone]} — otomatis dipakai untuk jadwal live.
             </span>
           ) : (
@@ -423,7 +429,7 @@ export function ProfileForm({
           product to this address, and a booking without one is a booking the
           brand has already paid for and cannot fulfil. */}
       <div className="space-y-2">
-        <Label htmlFor="full_address" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="full_address" className="text-copy font-medium text-ink-body">
           Alamat lengkap
         </Label>
         <Textarea
@@ -435,15 +441,15 @@ export function ProfileForm({
           rows={3}
           placeholder="Nama jalan, nomor rumah, kelurahan, kecamatan, kode pos"
           aria-describedby="full_address-help"
-          className="min-h-[96px] resize-none rounded-xl border-gray-200 bg-gray-50/50 text-base
-            focus:bg-white"
+          className="min-h-[96px] resize-none rounded-field border-hairline-input bg-surface px-3.5 py-3
+            text-ink placeholder:text-ink-ghost focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-offset-0"
           style={{ fontSize: "16px" }}
         />
         <p
           id="full_address-help"
-          className="flex items-start gap-1.5 text-xs text-gray-500"
+          className="flex items-start gap-1.5 text-meta text-ink-soft"
         >
-          <Package className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
+          <Package className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-ink-ghost" />
           <span>
             Diperlukan untuk pengiriman produk dari brand. Hanya dilihat admin dan brand
             yang sudah membooking kamu — tidak pernah tampil di profil publik.
@@ -453,7 +459,7 @@ export function ProfileForm({
 
       {/* Category — the input the price suggestion is derived from. */}
       <div className="space-y-2">
-        <Label htmlFor="category" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="category" className="text-copy font-medium text-ink-body">
           Kategori produk
         </Label>
         <select
@@ -461,8 +467,8 @@ export function ProfileForm({
           name="category"
           value={category}
           onChange={(event) => handleCategoryChange(event.target.value)}
-          className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 px-4 text-base
-            transition-all duration-200 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="h-12 w-full rounded-field border border-hairline-input bg-surface px-3.5 text-ink
+            transition-colors focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
           style={{ fontSize: "16px" }}
         >
           <option value="">Pilih kategori</option>
@@ -472,27 +478,28 @@ export function ProfileForm({
             </option>
           ))}
         </select>
-        <p className="text-xs text-gray-500">
+        <p className="text-meta text-ink-soft">
           Kategori yang paling sering kamu bawakan. Ini juga yang kami pakai untuk menyarankan
           harga.
         </p>
       </div>
 
-      {/* Platform */}
+      {/* Platform. Selected reads as ink on a pressed fill, not as a second
+          blue — the accent in this form is the submit button. */}
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium text-gray-700">Platform live</legend>
-        <div className="grid grid-cols-2 gap-3">
+        <legend className="text-copy font-medium text-ink-body">Platform live</legend>
+        <div className="grid grid-cols-2 gap-2">
           {PLATFORM_OPTIONS.map((option) => {
             const selected = platforms.includes(option.value);
             return (
               <label
                 key={option.value}
                 htmlFor={`platform-${option.value}`}
-                className={`flex h-12 cursor-pointer items-center justify-center rounded-xl border-2
-                  px-4 text-sm font-medium transition-colors ${
+                className={`flex h-12 cursor-pointer items-center justify-center rounded-field border
+                  px-4 text-ui transition-colors ${
                     selected
-                      ? "border-blue-600 bg-blue-50 text-blue-700"
-                      : "border-gray-200 bg-gray-50 text-gray-700 hover:border-blue-200"
+                      ? "border-ink-body bg-surface-deep font-medium text-ink"
+                      : "border-hairline-input bg-surface text-ink-muted hover:bg-surface-tint"
                   }`}
               >
                 <input
@@ -507,16 +514,16 @@ export function ProfileForm({
             );
           })}
         </div>
-        <p className="text-xs text-gray-500">Boleh pilih dua-duanya.</p>
+        <p className="text-meta text-ink-soft">Boleh pilih dua-duanya.</p>
       </fieldset>
 
       {/* Price — arrives pre-filled from the category band. */}
       <div className="space-y-2">
-        <Label htmlFor="price" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="price" className="text-copy font-medium text-ink-body">
           Harga per jam
         </Label>
         <div className="relative">
-          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-medium text-gray-500">
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ui text-ink-soft">
             Rp
           </span>
           <input
@@ -529,14 +536,14 @@ export function ProfileForm({
             onChange={(event) => handlePriceChange(event.target.value)}
             placeholder={formatPriceInput(String(band.suggested))}
             aria-describedby="price-help"
-            className="h-12 w-full rounded-xl border border-gray-200 bg-gray-50 pl-12 pr-4 text-base
-              font-medium transition-all duration-200 focus:border-blue-500 focus:outline-none
-              focus:ring-1 focus:ring-blue-500"
+            className="numeric h-12 w-full rounded-field border border-hairline-input bg-surface pl-11 pr-3.5
+              font-medium text-ink transition-colors placeholder:font-normal placeholder:text-ink-ghost
+              focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
             style={{ fontSize: "16px" }}
           />
         </div>
-        <p id="price-help" className="flex items-start gap-1.5 text-xs text-gray-500">
-          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-blue-500" />
+        <p id="price-help" className="flex items-start gap-1.5 text-meta text-ink-soft">
+          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-ink-ghost" />
           <span>
             {priceHint(category)}{" "}
             {!priceTouched && category
@@ -548,7 +555,7 @@ export function ProfileForm({
 
       {/* Bio */}
       <div className="space-y-2">
-        <Label htmlFor="bio" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="bio" className="text-copy font-medium text-ink-body">
           Deskripsi singkat
         </Label>
         <Textarea
@@ -560,67 +567,63 @@ export function ProfileForm({
           rows={4}
           placeholder="Contoh: Host fashion dengan 2 tahun pengalaman TikTok Live. Terbiasa bawa produk hijab dan outfit harian, rata-rata 3 jam per sesi."
           aria-describedby="bio-help"
-          className="min-h-[120px] resize-none rounded-xl border-gray-200 bg-gray-50/50 text-base
-            focus:bg-white"
+          className="min-h-[120px] resize-none rounded-field border-hairline-input bg-surface px-3.5 py-3
+            text-ink placeholder:text-ink-ghost focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-offset-0"
           style={{ fontSize: "16px" }}
         />
-        <p id="bio-help" className="flex items-center justify-between gap-2 text-xs text-gray-500">
-          <span>Satu sampai dua kalimat sudah cukup. Jangan tulis nomor HP atau akun pribadi.</span>
-          <span className={bio.length < BIO_MIN ? "text-gray-400" : "text-gray-500"}>
+        <p id="bio-help" className="flex items-start justify-between gap-3 text-meta text-ink-soft">
+          <span className="min-w-0">
+            Satu sampai dua kalimat sudah cukup. Jangan tulis nomor HP atau akun pribadi.
+          </span>
+          <span
+            className={`numeric shrink-0 ${bio.length < BIO_MIN ? "text-ink-ghost" : "text-ink-soft"}`}
+          >
             {bio.length}/{BIO_MAX}
           </span>
         </p>
       </div>
 
-      {/* Live readiness, using the same rule the hub and the server apply. */}
+      {/* Live readiness, using the same rule the hub and the server apply.
+          Ready is a positive tint; not-ready is quiet ink, because "you still
+          have fields to fill" is not an alarm. */}
       <div
-        className={`rounded-xl border px-4 py-3 text-sm ${
+        className={`rounded-panel border px-4 py-3 text-copy ${
           ready
-            ? "border-green-100 bg-green-50/60 text-green-800"
-            : "border-blue-100 bg-blue-50/60 text-blue-900"
+            ? "border-positive-line bg-positive-tint text-positive"
+            : "border-hairline bg-surface-tint text-ink-body"
         }`}
       >
-        <p className="flex items-start gap-2">
-          <Sparkles className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <span>
-            {ready
-              ? // Honest: saving does not put the profile on Salda. Listing also
-                // needs an approved verification, which only an admin can give.
-                "Semua lengkap. Setelah disimpan, profil kamu siap ditinjau tim Salda, dan " +
-                `kami langsung menyiapkan jadwal awal ${DEFAULT_SCHEDULE_LABEL} — bisa kamu ` +
-                "ubah kapan saja di menu Jadwal."
-              : `Tinggal lengkapi: ${missing.join(", ")}.`}
-          </span>
-        </p>
+        {ready
+          ? // Honest: saving does not put the profile on Salda. Listing also
+            // needs an approved verification, which only an admin can give.
+            "Semua lengkap. Setelah disimpan, profil kamu siap ditinjau tim Salda, dan " +
+            `kami langsung menyiapkan jadwal awal ${DEFAULT_SCHEDULE_LABEL} — bisa kamu ` +
+            "ubah kapan saja di menu Jadwal."
+          : `Tinggal lengkapi: ${missing.join(", ")}.`}
       </div>
 
       {error && (
         <p
           role="alert"
           aria-live="assertive"
-          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
+          className="rounded-panel border border-destructive-emphasis/25 bg-destructive-subtle px-4 py-3 text-copy text-destructive-emphasis"
         >
           {error}
         </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-medium
-          text-white transition-all hover:from-blue-700 hover:to-indigo-700"
-      >
+      <Button type="submit" variant="brand" size="action-full" disabled={isSubmitting}>
         {isSubmitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Menyimpan…
-          </span>
+          </>
         ) : (
           "Simpan profil"
         )}
       </Button>
 
-      <p className="text-center text-xs text-gray-500">
+      <p className="text-center text-meta text-ink-soft">
         Progres tersimpan setiap kali kamu menyimpan. Kamu boleh berhenti dan lanjut lagi nanti.
       </p>
     </form>

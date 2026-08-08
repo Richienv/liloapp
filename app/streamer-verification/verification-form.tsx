@@ -123,19 +123,18 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
-        <p className="flex items-start gap-2 text-sm text-blue-900">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-          <span>
-            Brand mengirim produk asli ke alamat rumah kamu, jadi kami perlu memastikan
-            identitas setiap host. Dokumen ini bersifat rahasia, hanya dipakai untuk
-            verifikasi, dan tidak pernah ditampilkan di profil publik kamu.
-          </span>
-        </p>
-      </div>
+      {/* Why we ask, in ink. The one blue on this screen is the submit button. */}
+      <p className="flex items-start gap-2 rounded-panel border border-hairline bg-surface-tint px-4 py-3 text-copy text-ink-body">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-ink-ghost" />
+        <span>
+          Brand mengirim produk asli ke alamat rumah kamu, jadi kami perlu memastikan
+          identitas setiap host. Dokumen ini bersifat rahasia, hanya dipakai untuk
+          verifikasi, dan tidak pernah ditampilkan di profil publik kamu.
+        </span>
+      </p>
 
       <div className="space-y-2">
-        <Label htmlFor="platform_handle" className="text-sm font-medium text-gray-700">
+        <Label htmlFor="platform_handle" className="text-copy font-medium text-ink-body">
           Username akun live kamu
         </Label>
         <Input
@@ -144,10 +143,11 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
           required
           defaultValue={defaultHandle ?? ""}
           placeholder="@username"
-          className="h-11 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white"
+          className="h-12 rounded-field border-hairline-input bg-surface px-3.5 text-ink
+            placeholder:text-ink-ghost focus-visible:ring-1 focus-visible:ring-brand focus-visible:ring-offset-0"
           style={{ fontSize: "16px" }}
         />
-        <p className="text-xs text-gray-500">
+        <p className="text-meta text-ink-soft">
           Tulis persis seperti di TikTok atau Shopee Live, agar cocok dengan screenshot.
         </p>
       </div>
@@ -158,33 +158,33 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
 
         return (
           <div key={field.name} className="space-y-2">
-            <Label htmlFor={field.name} className="text-sm font-medium text-gray-700">
+            <Label htmlFor={field.name} className="text-copy font-medium text-ink-body">
               {field.label}
             </Label>
 
             <label
               htmlFor={field.name}
-              className="flex cursor-pointer items-center gap-3 rounded-xl border-2 border-dashed
-                border-gray-200 bg-gray-50/50 p-4 transition-colors hover:border-blue-200 hover:bg-blue-50/40"
+              className="flex min-w-0 cursor-pointer items-center gap-3 rounded-panel border border-dashed
+                border-hairline-input bg-surface p-3 transition-colors hover:border-hairline-strong hover:bg-surface-tint"
             >
               {preview ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={preview}
                   alt={`Pratinjau ${field.label}`}
-                  className="h-16 w-16 rounded-lg object-cover"
+                  className="h-14 w-14 shrink-0 rounded-field object-cover"
                 />
               ) : (
-                <span className="flex h-16 w-16 items-center justify-center rounded-lg bg-white text-gray-400">
-                  <Upload className="h-5 w-5" />
+                <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-field border border-hairline-soft bg-surface-tint text-ink-faint">
+                  <Upload className="h-4 w-4" />
                 </span>
               )}
 
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium text-gray-900">
+                <span className="block truncate text-ui font-medium text-ink">
                   {selected ? selected.name : "Pilih file"}
                 </span>
-                <span className="block text-xs text-gray-500">{field.help}</span>
+                <span className="block text-meta text-ink-soft">{field.help}</span>
               </span>
 
               {selected && (
@@ -197,7 +197,7 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
                     const input = document.getElementById(field.name) as HTMLInputElement | null;
                     if (input) input.value = "";
                   }}
-                  className="rounded-full p-1 text-gray-400 transition-colors hover:bg-white hover:text-gray-700"
+                  className="grid h-7 w-7 shrink-0 place-items-center rounded-chip text-ink-ghost transition-colors hover:bg-surface-deep hover:text-ink-body"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -221,23 +221,18 @@ export function VerificationForm({ defaultHandle }: { defaultHandle?: string | n
         <p
           role="alert"
           aria-live="assertive"
-          className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive-emphasis"
+          className="rounded-panel border border-destructive-emphasis/25 bg-destructive-subtle px-4 py-3 text-copy text-destructive-emphasis"
         >
           {error}
         </p>
       )}
 
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="h-11 w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 font-medium
-          text-white transition-all hover:from-blue-700 hover:to-indigo-700"
-      >
+      <Button type="submit" variant="brand" size="action-full" disabled={isSubmitting}>
         {isSubmitting ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Mengirim…
-          </span>
+          </>
         ) : (
           "Kirim untuk diverifikasi"
         )}

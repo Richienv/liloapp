@@ -16,7 +16,7 @@ export function DatePicker({
   onChange,
   minDate,
   maxDate,
-  placeholderText = "Select a date",
+  placeholderText = "Pilih tanggal",
   className = "",
 }: DatePickerProps) {
   return (
@@ -26,8 +26,8 @@ export function DatePicker({
       minDate={minDate}
       maxDate={maxDate}
       placeholderText={placeholderText}
-      className={`w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
-      dateFormat="MMMM d, yyyy"
+      className={`numeric h-12 w-full rounded-field border border-hairline-input bg-surface px-3.5 text-ui text-ink outline-none transition-colors placeholder:text-ink-faint focus:border-brand ${className}`}
+      dateFormat="d MMMM yyyy"
     />
   );
 }

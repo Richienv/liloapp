@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowLeft, Store } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { getCityBySlug, resolveCity } from "@/lib/cities";
 import { suggestUsername } from "@/lib/username";
@@ -44,22 +45,23 @@ export default async function StreamerSetupProfilePage() {
 
   if (!streamer && profile?.user_type === "client") {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-10">
-        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] sm:p-8">
-          <h1 className="text-xl font-semibold text-gray-900">Halaman khusus host</h1>
-          <p className="mt-2 text-gray-600">
-            Akun ini terdaftar sebagai brand, bukan host.
-          </p>
-          <Link
-            href="/protected"
-            className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-gradient-to-r
-              from-blue-600 to-indigo-600 px-5 font-medium text-white transition-all
-              hover:from-blue-700 hover:to-indigo-700"
-          >
-            Kembali ke beranda
-          </Link>
-        </div>
-      </main>
+      <div className="min-h-screen bg-canvas">
+        <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+          <div className="rounded-frame border border-hairline bg-surface p-5 sm:p-8">
+            <h1 className="font-serif text-title font-semibold text-ink">
+              Halaman khusus host
+            </h1>
+            <p className="mt-2 text-copy text-ink-muted">
+              Akun ini terdaftar sebagai brand, bukan host.
+            </p>
+            <div className="mt-6">
+              <Button asChild variant="brand" size="action">
+                <Link href="/protected">Kembali ke beranda</Link>
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
     );
   }
 
@@ -95,45 +97,49 @@ export default async function StreamerSetupProfilePage() {
     typeof streamer?.price === "string" ? Number(streamer.price) : streamer?.price;
 
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <Link
-        href="/streamer-setup"
-        className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Kembali ke setup
-      </Link>
+    <div className="min-h-screen bg-canvas">
+      <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+        <header>
+          <Link
+            href="/streamer-setup"
+            className="-ml-1 inline-flex items-center gap-1 text-meta text-ink-soft transition-colors hover:text-ink"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Kembali ke setup
+          </Link>
 
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-        <div className="p-6 sm:p-8">
-          <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-            <Store className="h-4 w-4" /> Langkah 1 dari 3
-          </span>
-          <h1 className="mt-4 text-xl font-semibold text-gray-900">Lengkapi profil kamu</h1>
-          <p className="mt-2 text-gray-600">
+          {/* Step label as a mono eyebrow, not a blue pill: the accent on this
+              page belongs to the button that saves the form. */}
+          <p className="mt-4 font-mono text-tiny uppercase text-ink-ghost">
+            Langkah 1 dari 3
+          </p>
+          <h1 className="mt-2 font-serif text-section font-semibold text-ink sm:text-display">
+            Lengkapi profil kamu
+          </h1>
+          <p className="mt-2 text-lede text-ink-soft">
             Ini yang dilihat brand sebelum memesan, plus alamat untuk pengiriman produk.
             Delapan isian, sekitar 4 menit — foto galeri dan video perkenalan bisa
             ditambahkan nanti kapan saja.
           </p>
+        </header>
 
-          <div className="mt-6">
-            <ProfileForm
-              defaultUsername={defaultUsername}
-              currentImageUrl={streamer?.image_url ?? null}
-              defaultCitySlug={defaultCitySlug}
-              defaultFullAddress={streamer?.full_address ?? ""}
-              defaultCategory={streamer?.category ?? ""}
-              defaultPlatforms={defaultPlatforms}
-              defaultPrice={
-                typeof rawPrice === "number" && Number.isFinite(rawPrice) && rawPrice > 0
-                  ? rawPrice
-                  : null
-              }
-              defaultBio={streamer?.bio ?? ""}
-            />
-          </div>
+        <div className="mt-8 rounded-frame border border-hairline bg-surface p-4 sm:p-6">
+          <ProfileForm
+            defaultUsername={defaultUsername}
+            currentImageUrl={streamer?.image_url ?? null}
+            defaultCitySlug={defaultCitySlug}
+            defaultFullAddress={streamer?.full_address ?? ""}
+            defaultCategory={streamer?.category ?? ""}
+            defaultPlatforms={defaultPlatforms}
+            defaultPrice={
+              typeof rawPrice === "number" && Number.isFinite(rawPrice) && rawPrice > 0
+                ? rawPrice
+                : null
+            }
+            defaultBio={streamer?.bio ?? ""}
+          />
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }

@@ -99,7 +99,10 @@ const FormLabel = React.forwardRef<
   return (
     <Label
       ref={ref}
-      className={cn(error && "text-red-500", className)}
+      // `text-red-500` is the raw hue; `destructive-emphasis` is the same red
+      // darkened to clear 4.5:1 as text on a card, which is the only place a
+      // form label ever sits.
+      className={cn(error && "text-destructive-emphasis", className)}
       htmlFor={formItemId}
       {...props}
     />
@@ -143,7 +146,7 @@ const FormDescription = React.forwardRef<
     <p
       ref={ref}
       id={formDescriptionId}
-      className={cn("text-sm text-gray-500", className)}
+      className={cn("text-meta text-ink-soft", className)}
       {...props}
     />
   )
@@ -165,7 +168,7 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, FormMessageProps>(
       <p
         ref={ref}
         id={formMessageId}
-        className={cn("text-sm font-medium text-red-500", className)}
+        className={cn("text-meta font-medium text-destructive-emphasis", className)}
         {...props}
       >
         {body}

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, Clock, ShieldCheck } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/server";
 import { VerificationForm } from "./verification-form";
 
@@ -17,11 +18,36 @@ export const dynamic = "force-dynamic";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10">
-      <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
-        <div className="p-6 sm:p-8">{children}</div>
-      </div>
-    </main>
+    <div className="min-h-screen bg-canvas">
+      <main className="mx-auto w-full max-w-2xl px-4 py-8 sm:px-6 sm:py-12">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+/**
+ * The state of a verification, said in words.
+ *
+ * Every one of these used to be a filled pill in its own hue — green, orange,
+ * yellow, blue — which put four different colours on four screens that are the
+ * same screen. A tone on a mono eyebrow carries the same information and leaves
+ * the page's one accent free for the thing the host can actually press.
+ */
+function StatusEyebrow({
+  icon: Icon,
+  label,
+  tone,
+}: {
+  icon: typeof Clock;
+  label: string;
+  tone: string;
+}) {
+  return (
+    <p className={`flex items-center gap-2 font-mono text-tiny uppercase ${tone}`}>
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </p>
   );
 }
 
@@ -45,18 +71,20 @@ export default async function StreamerVerificationPage() {
   if (!streamer) {
     return (
       <Shell>
-        <h1 className="text-xl font-semibold text-gray-900">Halaman khusus host</h1>
-        <p className="mt-2 text-gray-600">
-          Akun ini terdaftar sebagai brand, bukan host. Kalau kamu ingin jadi host live
-          streaming, daftar lewat halaman pendaftaran host.
-        </p>
-        <Link
-          href="/streamer-sign-up"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5
-            font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          Daftar sebagai host
-        </Link>
+        <div className="rounded-frame border border-hairline bg-surface p-5 sm:p-8">
+          <h1 className="font-serif text-title font-semibold text-ink">
+            Halaman khusus host
+          </h1>
+          <p className="mt-2 text-copy text-ink-muted">
+            Akun ini terdaftar sebagai brand, bukan host. Kalau kamu ingin jadi host live
+            streaming, daftar lewat halaman pendaftaran host.
+          </p>
+          <div className="mt-6">
+            <Button asChild variant="brand" size="action">
+              <Link href="/streamer-sign-up">Daftar sebagai host</Link>
+            </Button>
+          </div>
+        </div>
       </Shell>
     );
   }
@@ -72,20 +100,24 @@ export default async function StreamerVerificationPage() {
   if (streamer.verification_status === "approved") {
     return (
       <Shell>
-        <span className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 text-sm font-medium text-green-700">
-          <CheckCircle2 className="h-4 w-4" /> Terverifikasi
-        </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">Akun kamu sudah terverifikasi</h1>
-        <p className="mt-2 text-gray-600">
-          Profil kamu sudah tampil di Salda dan brand sudah bisa memesan jadwal live kamu.
-        </p>
-        <Link
-          href="/streamer-dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl bg-blue-600 px-5
-            font-medium text-white transition-colors hover:bg-blue-700"
-        >
-          Buka dashboard
-        </Link>
+        <header>
+          <StatusEyebrow
+            icon={CheckCircle2}
+            label="Terverifikasi"
+            tone="text-positive"
+          />
+          <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
+            Akun kamu sudah terverifikasi
+          </h1>
+          <p className="mt-2 text-lede text-ink-soft">
+            Profil kamu sudah tampil di Salda dan brand sudah bisa memesan jadwal live kamu.
+          </p>
+        </header>
+        <div className="mt-8">
+          <Button asChild variant="brand" size="action">
+            <Link href="/streamer-dashboard">Buka dashboard</Link>
+          </Button>
+        </div>
       </Shell>
     );
   }
@@ -93,15 +125,21 @@ export default async function StreamerVerificationPage() {
   if (streamer.verification_status === "suspended") {
     return (
       <Shell>
-        <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-3 py-1 text-sm font-medium text-orange-700">
-          <AlertTriangle className="h-4 w-4" /> Ditangguhkan
-        </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">Akun kamu sedang ditangguhkan</h1>
-        <p className="mt-2 text-gray-600">
-          {submission?.notes
-            ? submission.notes
-            : "Hubungi dukungan Salda lewat WhatsApp untuk mengetahui langkah selanjutnya."}
-        </p>
+        <header>
+          <StatusEyebrow
+            icon={AlertTriangle}
+            label="Ditangguhkan"
+            tone="text-caution"
+          />
+          <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
+            Akun kamu sedang ditangguhkan
+          </h1>
+          <p className="mt-2 text-lede text-ink-soft">
+            {submission?.notes
+              ? submission.notes
+              : "Hubungi dukungan Salda lewat WhatsApp untuk mengetahui langkah selanjutnya."}
+          </p>
+        </header>
       </Shell>
     );
   }
@@ -110,26 +148,29 @@ export default async function StreamerVerificationPage() {
   if (submission?.status === "pending") {
     return (
       <Shell>
-        <span className="inline-flex items-center gap-2 rounded-full bg-yellow-50 px-3 py-1 text-sm font-medium text-yellow-800">
-          <Clock className="h-4 w-4" /> Sedang ditinjau
-        </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">Pengajuan kamu sedang diperiksa</h1>
-        <p className="mt-2 text-gray-600">
-          Tim kami sedang memeriksa dokumen untuk akun{" "}
-          <span className="font-medium text-gray-900">{submission.platform_handle}</span>. Proses ini
-          biasanya selesai dalam 1–2 hari kerja, dan kamu akan diberi tahu begitu selesai.
+        <header>
+          <StatusEyebrow icon={Clock} label="Sedang ditinjau" tone="text-caution" />
+          <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
+            Pengajuan kamu sedang diperiksa
+          </h1>
+          <p className="mt-2 text-lede text-ink-soft">
+            Tim kami sedang memeriksa dokumen untuk akun{" "}
+            <span className="font-medium text-ink">{submission.platform_handle}</span>. Proses
+            ini biasanya selesai dalam 1–2 hari kerja, dan kamu akan diberi tahu begitu
+            selesai.
+          </p>
+        </header>
+
+        <p className="mt-8 rounded-frame border border-hairline bg-surface px-4 py-4 text-copy text-ink-body sm:px-5">
+          Selama menunggu, kamu sudah bisa melengkapi jadwal dan harga di dashboard. Profil
+          kamu baru tampil untuk brand setelah verifikasi disetujui.
         </p>
-        <p className="mt-4 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          Selama menunggu, kamu sudah bisa melengkapi jadwal dan harga di dashboard. Profil kamu
-          baru tampil untuk brand setelah verifikasi disetujui.
-        </p>
-        <Link
-          href="/streamer-dashboard"
-          className="mt-6 inline-flex h-11 items-center justify-center rounded-xl border-2
-            border-gray-200 px-5 font-medium text-gray-700 transition-colors hover:bg-gray-50"
-        >
-          Buka dashboard
-        </Link>
+
+        <div className="mt-6">
+          <Button asChild variant="quiet" size="action">
+            <Link href="/streamer-dashboard">Buka dashboard</Link>
+          </Button>
+        </div>
       </Shell>
     );
   }
@@ -138,28 +179,28 @@ export default async function StreamerVerificationPage() {
 
   return (
     <Shell>
-      <div className="mb-6">
-        <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-sm font-medium text-blue-700">
-          <ShieldCheck className="h-4 w-4" /> Verifikasi host
-        </span>
-        <h1 className="mt-4 text-xl font-semibold text-gray-900">
+      <header>
+        <StatusEyebrow icon={ShieldCheck} label="Verifikasi host" tone="text-ink-ghost" />
+        <h1 className="mt-3 font-serif text-section font-semibold text-ink sm:text-display">
           {wasRejected ? "Kirim ulang dokumen verifikasi" : "Lengkapi verifikasi akun kamu"}
         </h1>
-        <p className="mt-2 text-gray-600">
+        <p className="mt-2 text-lede text-ink-soft">
           {wasRejected
             ? "Pengajuan sebelumnya belum bisa kami setujui. Perbaiki sesuai catatan di bawah, lalu kirim ulang."
             : "Satu langkah terakhir sebelum profil kamu bisa dipesan brand."}
         </p>
-      </div>
+      </header>
 
       {wasRejected && submission?.notes && (
-        <div className="mb-6 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3">
-          <p className="text-sm font-medium text-destructive-emphasis">Catatan dari tim kami</p>
-          <p className="mt-1 text-sm text-gray-700">{submission.notes}</p>
+        <div className="mt-8 rounded-panel border border-caution-line bg-caution-tint px-4 py-3">
+          <p className="text-mini text-caution">Catatan dari tim kami</p>
+          <p className="mt-1 text-copy text-ink-body">{submission.notes}</p>
         </div>
       )}
 
-      <VerificationForm defaultHandle={submission?.platform_handle} />
+      <div className="mt-8 rounded-frame border border-hairline bg-surface p-4 sm:p-6">
+        <VerificationForm defaultHandle={submission?.platform_handle} />
+      </div>
     </Shell>
   );
 }
